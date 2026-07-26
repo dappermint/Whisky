@@ -49,6 +49,11 @@ public struct BottleData: Codable {
 
     private var fileVersion: SemanticVersion
 
+    /// The registry file this instance reads and writes. Defaults to
+    /// ``bottleEntriesDir``; injectable so tests can run against a temp
+    /// directory instead of the user's real registry. Never persisted.
+    var entriesFile: URL = BottleData.bottleEntriesDir
+
     /// Non-nil when ``init()`` found an existing registry file it couldn't
     /// read and moved it aside instead of overwriting it, so the UI can tell
     /// the user where their old bottle list went. Never persisted.
@@ -61,6 +66,13 @@ public struct BottleData: Codable {
     }
 
     public init() {
+        self.init(entriesFile: Self.bottleEntriesDir)
+    }
+
+    /// Reads or creates the registry at `entriesFile`. Factored out of
+    /// ``init()`` so it can be tested against a temp directory.
+    init(entriesFile: URL) {
+        self.entriesFile = entriesFile
         fileVersion = Self.currentVersion
 
         if !decode() {
@@ -68,10 +80,16 @@ public struct BottleData: Codable {
         }
     }
 
-    private init(fileVersion: SemanticVersion, paths: [URL], corruptRegistryBackupURL: URL?) {
+    private init(
+        fileVersion: SemanticVersion,
+        paths: [URL],
+        corruptRegistryBackupURL: URL?,
+        entriesFile: URL
+    ) {
         self.fileVersion = fileVersion
         self.paths = paths
         self.corruptRegistryBackupURL = corruptRegistryBackupURL
+        self.entriesFile = entriesFile
     }
 
     @MainActor
@@ -103,13 +121,13 @@ public struct BottleData: Codable {
         if !paths.contains(url) {
             paths.append(url) // didSet persists via encode()
         }
-        return Self.persistedPaths()?.contains(url) ?? false
+        return persistedPaths()?.contains(url) ?? false
     }
 
     /// Reads the bottle paths back from the entries file, accepting both the
     /// full and the minimal (fallback) encodings.
-    private static func persistedPaths() -> [URL]? {
-        guard let data = try? Data(contentsOf: bottleEntriesDir) else { return nil }
+    private func persistedPaths() -> [URL]? {
+        guard let data = try? Data(contentsOf: entriesFile) else { return nil }
         let decoder = PropertyListDecoder()
         if let full = try? decoder.decode(BottleData.self, from: data) {
             return full.paths
@@ -120,12 +138,24 @@ public struct BottleData: Codable {
         return nil
     }
 
+    /// Rebuilds self at the current version, carrying entriesFile over
+    /// explicitly: it's excluded from Codable, so a decoded value always
+    /// holds the production default and must never supply it.
+    private func replacement(paths: [URL], corruptRegistryBackupURL: URL? = nil) -> BottleData {
+        BottleData(
+            fileVersion: Self.currentVersion,
+            paths: paths,
+            corruptRegistryBackupURL: corruptRegistryBackupURL,
+            entriesFile: entriesFile
+        )
+    }
+
     @discardableResult
     private mutating func decode() -> Bool {
         let decoder = PropertyListDecoder()
         let data: Data
         do {
-            data = try Data(contentsOf: Self.bottleEntriesDir)
+            data = try Data(contentsOf: entriesFile)
         } catch {
             // Missing entries file: first run, start with an empty registry.
             Logger.wineKit.error("Failed to read BottleData: \(error)")
@@ -139,14 +169,10 @@ public struct BottleData: Codable {
                 )
                 // Keep the registered paths; init() re-encodes them in the
                 // current format instead of discarding them.
-                self = BottleData(
-                    fileVersion: Self.currentVersion,
-                    paths: decoded.paths,
-                    corruptRegistryBackupURL: nil
-                )
+                self = replacement(paths: decoded.paths)
                 return false
             }
-            self = decoded
+            self = replacement(paths: decoded.paths)
             return true
         } catch {
             Logger.wineKit.error("Failed to decode BottleData: \(error)")
@@ -155,38 +181,33 @@ public struct BottleData: Codable {
         // shape written by encodeFallback() before treating it as corrupt.
         if let minimal = try? decoder.decode(BottleDataMinimal.self, from: data) {
             Logger.wineKit.warning("Recovered \(minimal.paths.count) bottle path(s) from minimal registry")
-            self = BottleData(
-                fileVersion: Self.currentVersion,
-                paths: minimal.paths,
-                corruptRegistryBackupURL: nil
-            )
+            self = replacement(paths: minimal.paths)
             return false
         }
         // Truly unreadable: move the file aside so the fresh registry written
         // by init() doesn't destroy the user's bottle list (issue #61).
-        self = BottleData(
-            fileVersion: Self.currentVersion,
+        self = replacement(
             paths: [],
-            corruptRegistryBackupURL: Self.backUpCorruptRegistry()
+            corruptRegistryBackupURL: Self.backUpCorruptRegistry(at: entriesFile)
         )
         return false
     }
 
     /// Moves an unreadable registry file aside, returning the backup location.
-    private static func backUpCorruptRegistry() -> URL? {
+    private static func backUpCorruptRegistry(at file: URL) -> URL? {
         let fileManager = FileManager.default
-        guard fileManager.fileExists(atPath: bottleEntriesDir.path(percentEncoded: false)) else {
+        guard fileManager.fileExists(atPath: file.path(percentEncoded: false)) else {
             return nil
         }
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyyMMdd-HHmmss"
-        let name = bottleEntriesDir.deletingPathExtension().lastPathComponent
-        let backupURL = bottleEntriesDir
+        let name = file.deletingPathExtension().lastPathComponent
+        let backupURL = file
             .deletingLastPathComponent()
             .appending(path: "\(name).corrupt-\(formatter.string(from: Date())).plist")
         do {
-            try fileManager.moveItem(at: bottleEntriesDir, to: backupURL)
+            try fileManager.moveItem(at: file, to: backupURL)
             Logger.wineKit.warning("Moved unreadable bottle registry to \(backupURL.path)")
             return backupURL
         } catch {
@@ -201,9 +222,12 @@ public struct BottleData: Codable {
         encoder.outputFormat = .xml
 
         do {
-            try FileManager.default.createDirectory(at: Self.containerDir, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: entriesFile.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
             let data = try encoder.encode(self)
-            try data.write(to: Self.bottleEntriesDir, options: .atomic)
+            try data.write(to: entriesFile, options: .atomic)
             return true
         } catch {
             Logger.wineKit.error("Failed to encode BottleData: \(error)")
@@ -218,11 +242,14 @@ public struct BottleData: Codable {
         encoder.outputFormat = .xml
 
         do {
-            try FileManager.default.createDirectory(at: Self.containerDir, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: entriesFile.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
             // Create a minimal BottleData with just the paths
             let fallbackData = BottleDataMinimal(paths: self.paths)
             let data = try encoder.encode(fallbackData)
-            try data.write(to: Self.bottleEntriesDir, options: .atomic)
+            try data.write(to: entriesFile, options: .atomic)
             return true
         } catch {
             Logger.wineKit.error("Failed to encode fallback BottleData: \(error)")
