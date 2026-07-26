@@ -23,11 +23,14 @@ import WhiskyKit
 
 // MARK: - Bottle Creation Errors
 
-enum BottleCreationError: LocalizedError {
+enum BottleCreationError: LocalizedError, Equatable {
     case directoryCreationFailed
     case metadataCreationFailed
     case wineVersionChangeFailed
     case persistenceSaveFailed
+    /// The Wine runtime (WhiskyWine) is not installed, so the prefix can't be
+    /// initialized. Surfaced with a "Run Setup" action in the failure alert.
+    case runtimeMissing
     /// The chosen location failed pre-flight validation. Carries the already
     /// localized, user-facing message (built at the throw site) since the alert
     /// displays `errorDescription` verbatim.
@@ -43,6 +46,8 @@ enum BottleCreationError: LocalizedError {
             String(localized: "bottle.creation.error.wineVersionChangeFailed")
         case .persistenceSaveFailed:
             String(localized: "bottle.creation.error.persistenceSaveFailed")
+        case .runtimeMissing:
+            String(localized: "bottle.creation.error.runtimeMissing")
         case let .locationUnsuitable(message):
             message
         }
@@ -66,6 +71,9 @@ final class BottleVM: ObservableObject {
         let id = UUID()
         let message: String
         let diagnostics: String
+        /// When true the alert offers a "Run Setup" action so the user can
+        /// install the missing Wine runtime directly.
+        let isRuntimeMissing: Bool
     }
 
     func loadBottles() {
@@ -101,6 +109,13 @@ final class BottleVM: ObservableObject {
     private func createBottleTask(request: BottleCreationRequest) async {
         var bottle: Bottle?
         do {
+            // The Wine runtime is required to initialize the prefix; fail fast
+            // with an actionable error instead of a low-level file-not-found
+            // failure from the wine invocation (issue #61).
+            guard WhiskyWineInstaller.isWhiskyWineInstalled() else {
+                throw BottleCreationError.runtimeMissing
+            }
+
             // Pre-flight the chosen location before creating anything, so an
             // unwritable or near-full destination surfaces a clear error up
             // front instead of a cryptic late wineboot failure (issue #61).
@@ -143,7 +158,7 @@ final class BottleVM: ObservableObject {
             // Save settings
             createdBottle.saveBottleSettings()
 
-            persistBottleCreation(request: request)
+            try persistBottleCreation(request: request)
             loadBottles()
             Telemetry.capture(.firstBottleCreated)
         } catch {
@@ -163,9 +178,12 @@ final class BottleVM: ObservableObject {
         }
     }
 
-    private func persistBottleCreation(request: BottleCreationRequest) {
-        if !bottlesList.paths.contains(request.newBottleDir) {
-            bottlesList.paths.append(request.newBottleDir)
+    private func persistBottleCreation(request: BottleCreationRequest) throws {
+        // registerBottlePath verifies the entries file on disk actually
+        // contains the new path; a silent save failure here used to make the
+        // bottle vanish on the next launch with no explanation (issue #61).
+        guard bottlesList.registerBottlePath(request.newBottleDir) else {
+            throw BottleCreationError.persistenceSaveFailed
         }
     }
 
@@ -186,7 +204,8 @@ final class BottleVM: ObservableObject {
         bottleVMLogger.error("\(diagnostics, privacy: .public)")
         bottleCreationAlert = BottleCreationAlert(
             message: message,
-            diagnostics: diagnostics
+            diagnostics: diagnostics,
+            isRuntimeMissing: (error as? BottleCreationError) == .runtimeMissing
         )
 
         // Clean up on failure

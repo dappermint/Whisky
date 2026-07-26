@@ -28,6 +28,11 @@ private struct BottleDataMinimal: Codable {
 // MARK: - BottleData
 
 public struct BottleData: Codable {
+    private enum CodingKeys: String, CodingKey {
+        case fileVersion
+        case paths
+    }
+
     public static let containerDir = FileManager.default.homeDirectoryForCurrentUser
         .appending(path: "Library")
         .appending(path: "Containers")
@@ -43,6 +48,12 @@ public struct BottleData: Codable {
     static let currentVersion = SemanticVersion(1, 0, 0)
 
     private var fileVersion: SemanticVersion
+
+    /// Non-nil when ``init()`` found an existing registry file it couldn't
+    /// read and moved it aside instead of overwriting it, so the UI can tell
+    /// the user where their old bottle list went. Never persisted.
+    public private(set) var corruptRegistryBackupURL: URL?
+
     public var paths: [URL] = [] {
         didSet {
             encode()
@@ -55,6 +66,12 @@ public struct BottleData: Codable {
         if !decode() {
             encode()
         }
+    }
+
+    private init(fileVersion: SemanticVersion, paths: [URL], corruptRegistryBackupURL: URL?) {
+        self.fileVersion = fileVersion
+        self.paths = paths
+        self.corruptRegistryBackupURL = corruptRegistryBackupURL
     }
 
     @MainActor
@@ -77,22 +94,104 @@ public struct BottleData: Codable {
         return bottles
     }
 
+    /// Appends a bottle path to the registry and verifies the entries file on
+    /// disk actually contains it afterwards, so a failed save can't silently
+    /// drop the bottle on the next launch (issue #61).
+    ///
+    /// - Returns: `true` when the path is durably persisted.
+    public mutating func registerBottlePath(_ url: URL) -> Bool {
+        if !paths.contains(url) {
+            paths.append(url) // didSet persists via encode()
+        }
+        return Self.persistedPaths()?.contains(url) ?? false
+    }
+
+    /// Reads the bottle paths back from the entries file, accepting both the
+    /// full and the minimal (fallback) encodings.
+    private static func persistedPaths() -> [URL]? {
+        guard let data = try? Data(contentsOf: bottleEntriesDir) else { return nil }
+        let decoder = PropertyListDecoder()
+        if let full = try? decoder.decode(BottleData.self, from: data) {
+            return full.paths
+        }
+        if let minimal = try? decoder.decode(BottleDataMinimal.self, from: data) {
+            return minimal.paths
+        }
+        return nil
+    }
+
     @discardableResult
     private mutating func decode() -> Bool {
         let decoder = PropertyListDecoder()
+        let data: Data
         do {
-            let data = try Data(contentsOf: Self.bottleEntriesDir)
-            self = try decoder.decode(BottleData.self, from: data)
-            let loadedVersion = self.fileVersion
-            let currentVersion = Self.currentVersion
-            if loadedVersion != currentVersion {
-                Logger.wineKit.warning("Invalid file version \(loadedVersion), expected \(currentVersion)")
+            data = try Data(contentsOf: Self.bottleEntriesDir)
+        } catch {
+            // Missing entries file: first run, start with an empty registry.
+            Logger.wineKit.error("Failed to read BottleData: \(error)")
+            return false
+        }
+        do {
+            let decoded = try decoder.decode(BottleData.self, from: data)
+            if decoded.fileVersion != Self.currentVersion {
+                Logger.wineKit.warning(
+                    "Invalid file version \(decoded.fileVersion), expected \(Self.currentVersion)"
+                )
+                // Keep the registered paths; init() re-encodes them in the
+                // current format instead of discarding them.
+                self = BottleData(
+                    fileVersion: Self.currentVersion,
+                    paths: decoded.paths,
+                    corruptRegistryBackupURL: nil
+                )
                 return false
             }
+            self = decoded
             return true
         } catch {
             Logger.wineKit.error("Failed to decode BottleData: \(error)")
+        }
+        // The full decode failed on an existing file. Salvage the paths-only
+        // shape written by encodeFallback() before treating it as corrupt.
+        if let minimal = try? decoder.decode(BottleDataMinimal.self, from: data) {
+            Logger.wineKit.warning("Recovered \(minimal.paths.count) bottle path(s) from minimal registry")
+            self = BottleData(
+                fileVersion: Self.currentVersion,
+                paths: minimal.paths,
+                corruptRegistryBackupURL: nil
+            )
             return false
+        }
+        // Truly unreadable: move the file aside so the fresh registry written
+        // by init() doesn't destroy the user's bottle list (issue #61).
+        self = BottleData(
+            fileVersion: Self.currentVersion,
+            paths: [],
+            corruptRegistryBackupURL: Self.backUpCorruptRegistry()
+        )
+        return false
+    }
+
+    /// Moves an unreadable registry file aside, returning the backup location.
+    private static func backUpCorruptRegistry() -> URL? {
+        let fileManager = FileManager.default
+        guard fileManager.fileExists(atPath: bottleEntriesDir.path(percentEncoded: false)) else {
+            return nil
+        }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyyMMdd-HHmmss"
+        let name = bottleEntriesDir.deletingPathExtension().lastPathComponent
+        let backupURL = bottleEntriesDir
+            .deletingLastPathComponent()
+            .appending(path: "\(name).corrupt-\(formatter.string(from: Date())).plist")
+        do {
+            try fileManager.moveItem(at: bottleEntriesDir, to: backupURL)
+            Logger.wineKit.warning("Moved unreadable bottle registry to \(backupURL.path)")
+            return backupURL
+        } catch {
+            Logger.wineKit.error("Failed to back up unreadable bottle registry: \(error)")
+            return nil
         }
     }
 

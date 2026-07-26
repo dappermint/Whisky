@@ -38,6 +38,7 @@ struct ContentView: View {
 
     @State private var bottleFilter = ""
     @State private var toast: ToastData?
+    @State private var corruptRegistryBackupURL: URL?
 
     var body: some View {
         NavigationSplitView {
@@ -67,6 +68,11 @@ struct ContentView: View {
             ),
             presenting: bottleVM.bottleCreationAlert
         ) { alert in
+            if alert.isRuntimeMissing {
+                Button("bottle.creation.failed.runSetup") {
+                    showSetup = true
+                }
+            }
             Button("bottle.creation.failed.copyDiagnostics") {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(alert.diagnostics, forType: .string)
@@ -77,6 +83,21 @@ struct ContentView: View {
             Button("button.ok", role: .cancel) {}
         } message: { alert in
             Text(alert.message)
+        }
+        .alert(
+            "bottle.registry.corrupt.title",
+            isPresented: Binding(
+                get: { corruptRegistryBackupURL != nil },
+                set: { if !$0 { corruptRegistryBackupURL = nil } }
+            ),
+            presenting: corruptRegistryBackupURL
+        ) { _ in
+            Button("button.ok", role: .cancel) {}
+        } message: { url in
+            Text(String(
+                format: String(localized: "bottle.registry.corrupt.message"),
+                url.prettyPath()
+            ))
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -149,6 +170,10 @@ struct ContentView: View {
         .task {
             bottleVM.loadBottles()
             bottlesLoaded = true
+
+            // Surface a registry that couldn't be read and was moved aside at
+            // startup, so the reset bottle list doesn't pass silently (#61).
+            corruptRegistryBackupURL = bottleVM.bottlesList.corruptRegistryBackupURL
 
             if !bottleVM.bottles.isEmpty || bottleVM.countActive() != 0 {
                 if let bottle = bottleVM.bottles.first(where: { $0.url == selectedBottleURL && $0.isAvailable }) {

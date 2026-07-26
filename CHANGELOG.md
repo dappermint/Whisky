@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- An unreadable bottle registry no longer silently wipes the bottle list. On
+  startup the corrupt file is moved aside (an alert says where) and, when the
+  file is in the older paths-only fallback format, the bottle paths are
+  recovered instead of being overwritten with an empty list (Refs #61).
+- Bottle creation now fails loudly when the new bottle can't be saved to the
+  registry: the save is verified on disk and the existing failure alert (with
+  copyable diagnostics) fires. Previously the error case existed but was never
+  raised, so the bottle silently vanished on the next launch (Refs #61).
+- Creating a bottle while the Wine runtime (WhiskyWine) isn't installed now
+  shows a clear "runtime missing" error with a Run Setup button instead of a
+  low-level file-not-found failure (Refs #61).
+- The Winetricks button now shows an error when the bundled winetricks
+  resources can't be found, instead of silently doing nothing (Refs #134).
+
 ## [3.5.1] - 2026-07-24 (App)
 
 ### Fixed

@@ -1021,6 +1021,16 @@
         }
       }
     },
+    "bottle.creation.error.runtimeMissing" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Wine runtime (WhiskyWine) isn't installed, so the bottle can't be initialized. Run Setup to download it, then try again."
+          }
+        }
+      }
+    },
     "bottle.creation.error.wineVersionChangeFailed" : {
       "localizations" : {
         "en" : {
@@ -1037,6 +1047,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Copy Diagnostics"
+          }
+        }
+      }
+    },
+    "bottle.creation.failed.runSetup" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Run Setup…"
           }
         }
       }
@@ -1077,6 +1097,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Some processes were started outside Whisky"
+          }
+        }
+      }
+    },
+    "bottle.registry.corrupt.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whisky couldn't read its saved bottle list, so a fresh empty list was created. The unreadable file was moved to “%@”. Your bottle folders on disk were not deleted."
+          }
+        }
+      }
+    },
+    "bottle.registry.corrupt.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bottle List Couldn't Be Read"
           }
         }
       }
@@ -21883,6 +21923,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The AppData directory is missing or incomplete. This will cause dependency installations to fail."
+          }
+        }
+      }
+    },
+    "winetricks.error.missingResources" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Winetricks Is Missing"
+          }
+        }
+      }
+    },
+    "winetricks.error.missingResourcesInfo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The winetricks tool bundled with Whisky couldn't be found. Reinstall Whisky from a fresh download to restore it."
           }
         }
       }

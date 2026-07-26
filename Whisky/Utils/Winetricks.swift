@@ -78,7 +78,18 @@ class Winetricks {
 
         guard let resourcesURL = Bundle.main.url(forResource: "cabextract", withExtension: nil)?
             .deletingLastPathComponent()
-        else { return }
+        else {
+            // A missing bundled resource is unrecoverable in-app; tell the
+            // user instead of silently doing nothing (refs #134).
+            logger.error("Bundled winetricks resources are missing; cannot run '\(command)'")
+            let alert = NSAlert()
+            alert.messageText = String(localized: "winetricks.error.missingResources")
+            alert.informativeText = String(localized: "winetricks.error.missingResourcesInfo")
+            alert.alertStyle = .critical
+            alert.addButton(withTitle: String(localized: "button.ok"))
+            alert.runModal()
+            return
+        }
         // Winetricks ships in the app bundle Resources alongside cabextract. Invoke it via
         // `bash` (matching the headless install paths) so no executable bit is relied upon.
         let winetricksPath = resourcesURL.appending(path: "winetricks").path(percentEncoded: false)
