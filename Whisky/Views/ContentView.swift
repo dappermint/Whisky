@@ -218,6 +218,11 @@ struct ContentView: View {
         }
     }
 
+}
+
+// MARK: - Sidebar & Detail
+
+extension ContentView {
     var sidebar: some View {
         ScrollViewReader { proxy in
             List(selection: $selected) {

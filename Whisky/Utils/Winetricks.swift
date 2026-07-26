@@ -60,12 +60,7 @@ class Winetricks {
             // Don't offer repair again if this is already a retry after repair
             if isRetryAfterRepair {
                 logger.error("Validation still failing after repair attempt")
-                let alert = NSAlert()
-                alert.messageText = String(localized: "winetricks.error.repairFailed")
-                alert.informativeText = String(localized: "winetricks.error.repairFailedInfo")
-                alert.alertStyle = .critical
-                alert.addButton(withTitle: String(localized: "button.ok"))
-                alert.runModal()
+                showRepairFailedAlert(info: String(localized: "winetricks.error.repairFailedInfo"))
                 return
             }
             await showPrefixErrorAlert(
@@ -79,15 +74,7 @@ class Winetricks {
         guard let resourcesURL = Bundle.main.url(forResource: "cabextract", withExtension: nil)?
             .deletingLastPathComponent()
         else {
-            // A missing bundled resource is unrecoverable in-app; tell the
-            // user instead of silently doing nothing (refs #134).
-            logger.error("Bundled winetricks resources are missing; cannot run '\(command)'")
-            let alert = NSAlert()
-            alert.messageText = String(localized: "winetricks.error.missingResources")
-            alert.informativeText = String(localized: "winetricks.error.missingResourcesInfo")
-            alert.alertStyle = .critical
-            alert.addButton(withTitle: String(localized: "button.ok"))
-            alert.runModal()
+            showMissingResourcesAlert(command: command)
             return
         }
         // Winetricks ships in the app bundle Resources alongside cabextract. Invoke it via
@@ -123,6 +110,30 @@ class Winetricks {
                 }
             }
         }
+    }
+
+    /// Shown when the bundled winetricks resources can't be located. A missing
+    /// bundled resource is unrecoverable in-app, so tell the user instead of
+    /// silently doing nothing (refs #134).
+    @MainActor
+    private static func showMissingResourcesAlert(command: String) {
+        logger.error("Bundled winetricks resources are missing; cannot run '\(command)'")
+        let alert = NSAlert()
+        alert.messageText = String(localized: "winetricks.error.missingResources")
+        alert.informativeText = String(localized: "winetricks.error.missingResourcesInfo")
+        alert.alertStyle = .critical
+        alert.addButton(withTitle: String(localized: "button.ok"))
+        alert.runModal()
+    }
+
+    @MainActor
+    private static func showRepairFailedAlert(info: String) {
+        let alert = NSAlert()
+        alert.messageText = String(localized: "winetricks.error.repairFailed")
+        alert.informativeText = info
+        alert.alertStyle = .critical
+        alert.addButton(withTitle: String(localized: "button.ok"))
+        alert.runModal()
     }
 
     @MainActor
@@ -183,12 +194,7 @@ class Winetricks {
             await runCommandInternal(command: command, bottle: bottle, isRetryAfterRepair: true)
         } catch {
             logger.error("Failed to repair prefix: \(error.localizedDescription)")
-            let alert = NSAlert()
-            alert.messageText = String(localized: "winetricks.error.repairFailed")
-            alert.informativeText = error.localizedDescription
-            alert.alertStyle = .critical
-            alert.addButton(withTitle: String(localized: "button.ok"))
-            alert.runModal()
+            showRepairFailedAlert(info: error.localizedDescription)
         }
     }
 
