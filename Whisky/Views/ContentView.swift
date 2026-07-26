@@ -217,7 +217,6 @@ struct ContentView: View {
             }
         }
     }
-
 }
 
 // MARK: - Sidebar & Detail
