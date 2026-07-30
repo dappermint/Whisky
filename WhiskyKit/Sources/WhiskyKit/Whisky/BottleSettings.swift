@@ -787,16 +787,23 @@ public struct BottleSettings: Codable, Equatable {
     /// This method replaces the direct dict mutation in the deprecated ``environmentVariables(wineEnv:)``.
     /// DLL override entries are returned separately for composition by ``DLLOverrideResolver``.
     ///
-    /// - Parameter builder: The environment builder to populate.
+    /// - Parameters:
+    ///   - builder: The environment builder to populate.
+    ///   - resolvedBackend: The concrete backend to use when the bottle is set to
+    ///     `.recommended`. Defaults to `nil`, which resolves via
+    ///     ``GraphicsBackendResolver`` and therefore depends on the machine's
+    ///     installed runtime — tests pin an explicit value so the suite answers
+    ///     the same everywhere.
     /// - Returns: Managed DLL override entries with their sources for the DLLOverrideResolver.
     public func populateBottleManagedLayer(
-        builder: inout EnvironmentBuilder
+        builder: inout EnvironmentBuilder,
+        resolvedBackend: GraphicsBackend? = nil
     ) -> [(entry: DLLOverrideEntry, source: DLLOverrideSource)] {
         var managedDLLOverrides: [(entry: DLLOverrideEntry, source: DLLOverrideSource)] = []
 
         // Resolve the graphics backend (`.recommended` -> concrete backend)
         let resolvedBackend = if graphicsBackend == .recommended {
-            GraphicsBackendResolver.resolve()
+            resolvedBackend ?? GraphicsBackendResolver.resolve()
         } else {
             graphicsBackend
         }

@@ -312,13 +312,39 @@ final class EnvironmentVariablesTests: XCTestCase {
     }
 
     func testPopulateBottleManagedLayerNoDXVKOverridesWhenDisabled() {
+        // `dxvk = false` maps the backend to `.recommended`, whose ambient
+        // resolution depends on the machine's installed runtime. Pin a
+        // builtin-backed backend: this test is about the DXVK toggle being
+        // off, not about resolution.
         var settings = BottleSettings()
         settings.dxvk = false
 
         var builder = EnvironmentBuilder()
-        let managedOverrides = settings.populateBottleManagedLayer(builder: &builder)
+        let managedOverrides = settings.populateBottleManagedLayer(
+            builder: &builder, resolvedBackend: .d3dMetal
+        )
 
         XCTAssertTrue(managedOverrides.isEmpty)
+    }
+
+    func testPopulateBottleManagedLayerRecommendedWithoutRuntimeAppliesDXVKPreset() {
+        // On a machine with no installed runtime `.recommended` resolves to
+        // DXVK, and the managed layer applies the DXVK preset even though the
+        // legacy `dxvk` toggle is off — backend selection supersedes the
+        // toggle, matching explicit `.dxvk` behavior.
+        var settings = BottleSettings()
+        settings.dxvk = false
+
+        let resolved = GraphicsBackendResolver.resolve(runtimeInfo: nil, d3dMetalInstalled: false)
+        XCTAssertEqual(resolved, .dxvk)
+
+        var builder = EnvironmentBuilder()
+        let managedOverrides = settings.populateBottleManagedLayer(
+            builder: &builder, resolvedBackend: resolved
+        )
+
+        XCTAssertEqual(managedOverrides.count, 4) // dxgi, d3d9, d3d10core, d3d11
+        XCTAssertTrue(managedOverrides.allSatisfy { $0.source == .dxvk })
     }
 
     func testPopulateLauncherManagedLayerReturnsEmptyWhenDisabled() {
