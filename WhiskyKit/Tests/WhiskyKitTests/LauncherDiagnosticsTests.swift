@@ -405,6 +405,12 @@ final class LauncherDiagnosticsTests: XCTestCase {
         bottle.settings.detectedLauncher = .steam // Steam doesn't require DXVK
         bottle.settings.autoEnableDXVK = true
         bottle.settings.dxvk = false
+        // Pin a builtin-backed backend: `.recommended` resolves via ambient
+        // machine state and would add the DXVK preset through the bottle layer
+        // on machines without a runtime. Auto-enable applies through the
+        // launcher layer regardless of backend, so the assertion below still
+        // catches Steam wrongly auto-enabling.
+        bottle.settings.graphicsBackend = .d3dMetal
 
         var env: [String: String] = [:]
         bottle.settings.environmentVariables(wineEnv: &env)
