@@ -94,6 +94,29 @@ final class TarIntegrationTests: XCTestCase {
         XCTAssertFalse(extractedItems.isEmpty)
     }
 
+    func testUntarRoundTripWithDayFirstDateLocale() throws {
+        // bsdtar formats verbose listing dates per locale; en_GB prints
+        // "13 Jun 09:54" instead of "Jun 13 09:54". Archive validation must
+        // not depend on the host locale (see #139).
+        let previous = getenv("LC_ALL").map { String(cString: $0) }
+        setenv("LC_ALL", "en_GB.UTF-8", 1)
+        defer {
+            if let previous {
+                setenv("LC_ALL", previous, 1)
+            } else {
+                unsetenv("LC_ALL")
+            }
+        }
+
+        let testFile = sourceDir.appending(path: "test.txt")
+        try Data("Hello, World!".utf8).write(to: testFile)
+
+        let tarURL = tempDir.appending(path: "locale.tar.gz")
+        try Tar.tar(folder: sourceDir, toURL: tarURL)
+
+        XCTAssertNoThrow(try Tar.untar(tarBall: tarURL, toURL: extractDir))
+    }
+
     func testTarWithMultipleFiles() throws {
         try Data("File 1 content".utf8).write(to: sourceDir.appending(path: "file1.txt"))
         try Data("File 2 content".utf8).write(to: sourceDir.appending(path: "file2.txt"))

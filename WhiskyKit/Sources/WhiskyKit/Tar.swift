@@ -118,6 +118,14 @@ public class Tar {
         // Use verbose listing to see file types and symlink targets
         // Format: "lrwxr-xr-x  0 user group    0 Jan 10 12:00 linkname -> target"
         process.arguments = ["-tvzf", "\(tarBall.path)"]
+        // bsdtar's verbose listing is locale dependent: many locales print
+        // day-first dates ("13 Jun 09:54") that extractPathFromTarLine cannot
+        // parse, so every entry would be rejected as unsafe. Pin the C locale
+        // to get the month-first format the parser expects.
+        var environment = ProcessInfo.processInfo.environment
+        environment["LC_ALL"] = "C"
+        environment["LANG"] = "C"
+        process.environment = environment
         process.standardOutput = pipe
         process.standardError = pipe
 
