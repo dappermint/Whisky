@@ -250,25 +250,25 @@ public class Tar {
         let fileManager = FileManager.default
 
         for name in try fileManager.contentsOfDirectory(atPath: source.path(percentEncoded: false)) {
-            let from = source.appending(path: name)
-            let to = destination.appending(path: name)
+            let staged = source.appending(path: name)
+            let target = destination.appending(path: name)
 
             // attributesOfItem does not follow symlinks, so a staged link to a
             // directory is moved as a link, never merged as a directory.
-            let fromType = try fileManager.attributesOfItem(
-                atPath: from.path(percentEncoded: false)
+            let stagedType = try fileManager.attributesOfItem(
+                atPath: staged.path(percentEncoded: false)
             )[.type] as? FileAttributeType
-            let toType = (try? fileManager.attributesOfItem(
-                atPath: to.path(percentEncoded: false)
+            let targetType = (try? fileManager.attributesOfItem(
+                atPath: target.path(percentEncoded: false)
             ))?[.type] as? FileAttributeType
 
-            if fromType == .typeDirectory, toType == .typeDirectory {
-                try mergeContents(of: from, into: to)
+            if stagedType == .typeDirectory, targetType == .typeDirectory {
+                try mergeContents(of: staged, into: target)
             } else {
-                if toType != nil {
-                    try fileManager.removeItem(at: to)
+                if targetType != nil {
+                    try fileManager.removeItem(at: target)
                 }
-                try fileManager.moveItem(at: from, to: to)
+                try fileManager.moveItem(at: staged, to: target)
             }
         }
     }
