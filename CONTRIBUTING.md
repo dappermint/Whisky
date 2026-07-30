@@ -35,6 +35,15 @@ unzip swiftformat.zip
 sudo mv swiftformat /usr/local/bin/
 ```
 
+**Option 3: Nix**
+
+If you use Nix, the repository flake provides a dev shell with SwiftFormat
+pinned to exactly the version above (plus SwiftLint):
+```bash
+nix develop
+swiftformat --version  # 0.58.7
+```
+
 #### Usage
 
 To format all Swift files in the project:

@@ -1,0 +1,61 @@
+{
+  description = "Whisky development tools (pinned swiftformat and swiftlint)";
+
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+  };
+
+  outputs =
+    { nixpkgs, ... }:
+    let
+      systems = [
+        "aarch64-darwin"
+        "x86_64-darwin"
+      ];
+      forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
+
+      # CONTRIBUTING.md requires this exact version; CI lints with it too.
+      swiftformatVersion = "0.58.7";
+      swiftlintVersion = "0.65.0";
+
+      swiftformat =
+        pkgs:
+        pkgs.stdenvNoCC.mkDerivation {
+          pname = "swiftformat-bin";
+          version = swiftformatVersion;
+          src = pkgs.fetchurl {
+            url = "https://github.com/nicklockwood/SwiftFormat/releases/download/${swiftformatVersion}/swiftformat.zip";
+            hash = "sha256-fkP44U4gie64PWlYzhYv+pDJMw8/MJygVGk2FLKxskE=";
+          };
+          nativeBuildInputs = [ pkgs.unzip ];
+          unpackPhase = "unzip $src";
+          installPhase = "install -Dm755 swiftformat $out/bin/swiftformat";
+        };
+
+      swiftlint =
+        pkgs:
+        pkgs.stdenvNoCC.mkDerivation {
+          pname = "swiftlint-bin";
+          version = swiftlintVersion;
+          src = pkgs.fetchurl {
+            url = "https://github.com/realm/SwiftLint/releases/download/${swiftlintVersion}/portable_swiftlint.zip";
+            hash = "sha256-1ssKp6L18e8wb8nje8tU3Jom+syPd4SsDD3T7M9ca6Y=";
+          };
+          nativeBuildInputs = [ pkgs.unzip ];
+          unpackPhase = "unzip $src";
+          installPhase = "install -Dm755 swiftlint $out/bin/swiftlint";
+        };
+    in
+    {
+      devShells = forAllSystems (pkgs: {
+        default = pkgs.mkShell {
+          packages = [
+            (swiftformat pkgs)
+            (swiftlint pkgs)
+          ];
+        };
+      });
+
+      formatter = forAllSystems (pkgs: pkgs.nixfmt);
+    };
+}
