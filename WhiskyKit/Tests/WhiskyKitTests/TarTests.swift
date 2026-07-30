@@ -117,6 +117,95 @@ final class TarIntegrationTests: XCTestCase {
         XCTAssertNoThrow(try Tar.untar(tarBall: tarURL, toURL: extractDir))
     }
 
+    func testUntarPreservesInternalSymlink() throws {
+        try Data("Hello, World!".utf8).write(to: sourceDir.appending(path: "test.txt"))
+        try FileManager.default.createSymbolicLink(
+            atPath: sourceDir.appending(path: "link").path(percentEncoded: false),
+            withDestinationPath: "test.txt"
+        )
+
+        let tarURL = tempDir.appending(path: "symlink.tar.gz")
+        try Tar.tar(folder: sourceDir, toURL: tarURL)
+        try Tar.untar(tarBall: tarURL, toURL: extractDir)
+
+        // The extracted tree must still contain the (safe, internal) symlink.
+        let enumerator = FileManager.default.enumerator(
+            at: extractDir,
+            includingPropertiesForKeys: [.isSymbolicLinkKey]
+        )
+        let symlinks = (enumerator?.compactMap { item -> URL? in
+            guard let url = item as? URL else { return nil }
+            let isLink = (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) ?? false
+            return isLink ? url : nil
+        }) ?? []
+        XCTAssertEqual(symlinks.count, 1)
+    }
+
+    func testUntarRejectsAbsoluteSymlink() throws {
+        try Data("decoy".utf8).write(to: sourceDir.appending(path: "decoy.txt"))
+        try FileManager.default.createSymbolicLink(
+            atPath: sourceDir.appending(path: "evil").path(percentEncoded: false),
+            withDestinationPath: "/etc/passwd"
+        )
+
+        let tarURL = tempDir.appending(path: "abs-symlink.tar.gz")
+        try Tar.tar(folder: sourceDir, toURL: tarURL)
+
+        XCTAssertThrowsError(try Tar.untar(tarBall: tarURL, toURL: extractDir)) { error in
+            guard case .unsafeSymlink = error as? TarError else {
+                return XCTFail("Expected unsafeSymlink error, got \(error)")
+            }
+        }
+
+        // Extraction is staged: a rejected archive leaves the destination untouched.
+        let contents = try FileManager.default.contentsOfDirectory(
+            at: extractDir, includingPropertiesForKeys: nil
+        )
+        XCTAssertTrue(contents.isEmpty)
+    }
+
+    func testUntarRejectsEscapingRelativeSymlink() throws {
+        // Deep enough to escape any staging root regardless of temp-path depth.
+        let escape = String(repeating: "../", count: 40) + "etc"
+        try FileManager.default.createSymbolicLink(
+            atPath: sourceDir.appending(path: "evil").path(percentEncoded: false),
+            withDestinationPath: escape
+        )
+
+        let tarURL = tempDir.appending(path: "rel-symlink.tar.gz")
+        try Tar.tar(folder: sourceDir, toURL: tarURL)
+
+        XCTAssertThrowsError(try Tar.untar(tarBall: tarURL, toURL: extractDir)) { error in
+            guard case .unsafeSymlink = error as? TarError else {
+                return XCTFail("Expected unsafeSymlink error, got \(error)")
+            }
+        }
+    }
+
+    func testUntarRejectsCraftedTraversalPath() throws {
+        // Build an archive whose member path literally contains `../` using
+        // tar -P, which stores the path verbatim instead of sanitizing it.
+        try Data("outside".utf8).write(to: tempDir.appending(path: "escape.txt"))
+
+        let tarURL = tempDir.appending(path: "traversal.tar.gz")
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
+        process.arguments = [
+            "-czPf", tarURL.path(percentEncoded: false),
+            "-C", sourceDir.path(percentEncoded: false),
+            "../escape.txt"
+        ]
+        try process.run()
+        process.waitUntilExit()
+        XCTAssertEqual(process.terminationStatus, 0)
+
+        XCTAssertThrowsError(try Tar.untar(tarBall: tarURL, toURL: extractDir)) { error in
+            guard case .pathTraversal = error as? TarError else {
+                return XCTFail("Expected pathTraversal error, got \(error)")
+            }
+        }
+    }
+
     func testTarWithMultipleFiles() throws {
         try Data("File 1 content".utf8).write(to: sourceDir.appending(path: "file1.txt"))
         try Data("File 2 content".utf8).write(to: sourceDir.appending(path: "file2.txt"))
