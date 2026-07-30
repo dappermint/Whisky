@@ -16,6 +16,9 @@
 
       # CONTRIBUTING.md requires this exact version; CI lints with it too.
       swiftformatVersion = "0.58.7";
+      # Current SwiftLint release. CI's action bundles its own build, so lint
+      # results are close but not guaranteed identical; the SwiftFormat pin is
+      # the load-bearing one.
       swiftlintVersion = "0.65.0";
 
       swiftformat =
