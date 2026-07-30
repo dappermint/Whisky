@@ -27,16 +27,32 @@ import os.log
 public enum GraphicsBackendResolver {
     /// Resolves the recommended graphics backend for the current system.
     ///
-    /// D3DMetal is the default and best-supported path on macOS 15+ Apple Silicon.
-    /// Future versions may adjust based on GPU family or macOS version.
+    /// D3DMetal is the best-supported path on macOS 15+ Apple Silicon, but only
+    /// GPTK-based runtimes bundle its payload. Recommending it on a runtime
+    /// without the payload makes launches silently fall back to wined3d, which
+    /// cannot bring up D3D11 on current macOS — so the resolver only recommends
+    /// backends that are actually installed: DXMT (native D3D11-to-Metal) when
+    /// the runtime bundles it, otherwise DXVK, which ships with every runtime.
     ///
-    /// - Parameter macOSVersion: The macOS version to consider. Defaults to the running system.
+    /// - Parameters:
+    ///   - macOSVersion: The macOS version to consider. Defaults to the running system.
+    ///   - runtimeInfo: The runtime record to consider. Defaults to the installed
+    ///     runtime's version plist.
+    ///   - d3dMetalInstalled: Whether the D3DMetal payload exists on disk. Defaults
+    ///     to checking the installed runtime.
     /// - Returns: A concrete ``GraphicsBackend`` (never `.recommended`).
-    public static func resolve(macOSVersion: MacOSVersion = .current) -> GraphicsBackend {
-        // D3DMetal is Wine's native Metal translation layer and the best-supported
-        // path on Apple Silicon. The architecture supports future heuristic
-        // sophistication without changing the data model.
-        .d3dMetal
+    public static func resolve(
+        macOSVersion: MacOSVersion = .current,
+        runtimeInfo: WhiskyWineVersion? = WhiskyWineInstaller.whiskyWineInfo(),
+        d3dMetalInstalled: Bool = WhiskyWineInstaller.isD3DMetalInstalled()
+    ) -> GraphicsBackend {
+        if d3dMetalInstalled {
+            return .d3dMetal
+        }
+        if GraphicsBackend.dxmt.isAvailable(runtimeInfo: runtimeInfo) {
+            return .dxmt
+        }
+        return .dxvk
     }
 
     /// Returns a localized explanation for the recommended backend choice.

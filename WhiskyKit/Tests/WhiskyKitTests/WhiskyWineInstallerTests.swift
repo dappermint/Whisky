@@ -169,6 +169,34 @@ final class WhiskyWineInstallerTests: XCTestCase {
         XCTAssertFalse(WhiskyWineInstaller.isRuntimePresent(inLibraryFolder: tempDir))
     }
 
+    // MARK: - isD3DMetalPresent (GPTK payload)
+
+    func testD3DMetalPresentWhenFrameworkExists() throws {
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+        let external = tempDir.appending(path: "Wine").appending(path: "lib").appending(path: "external")
+        try FileManager.default.createDirectory(
+            at: external.appending(path: "D3DMetal.framework"),
+            withIntermediateDirectories: true
+        )
+
+        XCTAssertTrue(WhiskyWineInstaller.isD3DMetalPresent(inLibraryFolder: tempDir))
+    }
+
+    func testD3DMetalNotPresentInRuntimeWithoutGPTKPayload() throws {
+        // The layout the current Libraries bundle actually ships: Wine, DXVK
+        // and DXMT, but no D3DMetal payload under Wine/lib/external.
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+        try makeRuntime(in: tempDir, plist: true, wine64: true)
+        try FileManager.default.createDirectory(
+            at: tempDir.appending(path: "DXVK").appending(path: "x64"),
+            withIntermediateDirectories: true
+        )
+
+        XCTAssertFalse(WhiskyWineInstaller.isD3DMetalPresent(inLibraryFolder: tempDir))
+    }
+
     func testRuntimeNotPresentWhenFolderEmpty() {
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         XCTAssertFalse(WhiskyWineInstaller.isRuntimePresent(inLibraryFolder: tempDir))

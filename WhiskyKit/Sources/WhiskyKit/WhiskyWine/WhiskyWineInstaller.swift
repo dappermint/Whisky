@@ -130,6 +130,29 @@ public class WhiskyWineInstaller {
         return FileManager.default.fileExists(atPath: wineBinary.path(percentEncoded: false))
     }
 
+    /// Checks whether the installed runtime bundles Apple's D3DMetal layer.
+    ///
+    /// GPTK-based Wine builds carry D3DMetal under `Wine/lib/external/` as
+    /// `D3DMetal.framework` with `libd3dshared.dylib` alongside. Runtimes built
+    /// without GPTK ship neither, and a bottle configured for D3DMetal silently
+    /// falls back to wined3d at launch.
+    ///
+    /// - Returns: `true` only if the D3DMetal payload is present on disk.
+    public static func isD3DMetalInstalled() -> Bool {
+        isD3DMetalPresent(inLibraryFolder: libraryFolder)
+    }
+
+    /// Whether the D3DMetal payload exists under `folder`. Factored out of
+    /// ``isD3DMetalInstalled()`` so it can be tested against a temp directory.
+    static func isD3DMetalPresent(inLibraryFolder folder: URL) -> Bool {
+        let external = folder.appending(path: "Wine").appending(path: "lib").appending(path: "external")
+        let candidates = [
+            external.appending(path: "D3DMetal.framework"),
+            external.appending(path: "libd3dshared.dylib")
+        ]
+        return candidates.contains { FileManager.default.fileExists(atPath: $0.path(percentEncoded: false)) }
+    }
+
     /// Installs WhiskyWine from a downloaded tarball.
     ///
     /// This method extracts the WhiskyWine tarball to the application support
