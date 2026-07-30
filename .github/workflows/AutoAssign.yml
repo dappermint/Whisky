@@ -3,7 +3,10 @@ name: Auto Assign
 on:
   issues:
     types: [opened]
-  pull_request:
+  # pull_request_target, not pull_request: fork PRs get a read-only token
+  # under pull_request, so addAssignees fails with a 403. This workflow
+  # never checks out PR code, so the privileged trigger is safe here.
+  pull_request_target:
     types: [opened]
 
 permissions:
@@ -13,9 +16,6 @@ permissions:
 jobs:
   assign:
     name: Assign
-    # Fork PRs run with a read-only GITHUB_TOKEN regardless of the permissions
-    # block above, so the assign call always 403s — skip them.
-    if: github.event_name == 'issues' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Assign to maintainers
