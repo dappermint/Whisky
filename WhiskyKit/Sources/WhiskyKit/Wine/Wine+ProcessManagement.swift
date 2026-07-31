@@ -37,30 +37,33 @@ public extension Wine {
     /// - Returns: `true` if the wineserver is active, `false` otherwise.
     @MainActor
     static func isWineserverRunning(for bottle: Bottle) async -> Bool {
-        do {
-            let stream = try Wine.runWineserverProcess(
-                name: "wineserver-probe",
-                args: ["-k0"],
-                bottle: bottle
-            )
-
-            var running = false
-            for await output in stream {
-                if case let .terminated(code) = output {
-                    running = code == 0
-                }
+        // Deliberately does NOT go through runWineserverProcess: a -k0 probe
+        // only needs WINEPREFIX, while the full path builds the entire launch
+        // environment and creates + retention-scans a log file per call — the
+        // sidebar repeats this probe every 60 seconds for every visible bottle.
+        let running: Bool = await withCheckedContinuation { continuation in
+            let process = Process()
+            process.executableURL = WhiskyWineInstaller.binFolder.appending(path: "wineserver")
+            process.arguments = ["-k0"]
+            process.environment = ["WINEPREFIX": bottle.url.path]
+            process.standardOutput = FileHandle.nullDevice
+            process.standardError = FileHandle.nullDevice
+            process.terminationHandler = { probe in
+                continuation.resume(returning: probe.terminationStatus == 0)
             }
 
-            processLogger.debug(
-                "Wineserver probe for '\(bottle.settings.name)': \(running ? "active" : "idle")"
-            )
-            return running
-        } catch {
-            processLogger.debug(
-                "Wineserver probe for '\(bottle.settings.name)' failed: \(error.localizedDescription)"
-            )
-            return false
+            do {
+                try process.run()
+            } catch {
+                process.terminationHandler = nil
+                continuation.resume(returning: false)
+            }
         }
+
+        processLogger.debug(
+            "Wineserver probe for '\(bottle.settings.name)': \(running ? "active" : "idle")"
+        )
+        return running
     }
 
     /// Parses the CSV output of `tasklist.exe` into an array of ``WineProcess`` values.
