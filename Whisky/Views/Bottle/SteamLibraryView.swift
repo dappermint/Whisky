@@ -76,13 +76,24 @@ struct SteamLibraryView: View {
             }
             Spacer()
             statusView(for: game)
-            Button {
-                Task { await orchestrator.launch(game) }
-            } label: {
-                Image(systemName: "play.fill")
+            if orchestrator.runningAppIds.contains(game.appId) {
+                Button {
+                    Task { await orchestrator.stop(game) }
+                } label: {
+                    Image(systemName: "stop.fill")
+                }
+                .accessibilityIdentifier("steamLibrary.stop.\(game.appId)")
+                .help("steam.button.stop")
+            } else {
+                Button {
+                    Task { await orchestrator.launch(game) }
+                } label: {
+                    Image(systemName: "play.fill")
+                }
+                .disabled(orchestrator.phase != .idle)
+                .accessibilityIdentifier("steamLibrary.play.\(game.appId)")
+                .help("steam.button.play")
             }
-            .disabled(orchestrator.phase != .idle)
-            .accessibilityIdentifier("steamLibrary.play.\(game.appId)")
         }
     }
 

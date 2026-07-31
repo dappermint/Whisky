@@ -120,18 +120,35 @@ final class SteamClientOrchestrator: ObservableObject {
             let installURL = game.installURL
             executableNamesByAppId[game.appId] = Self.executableNames(under: installURL)
         }
-        let namesByAppId = executableNamesByAppId
         trackingTask = Task { [weak self] in
             while !Task.isCancelled {
-                guard let self else { return }
-                let running = await self.runningImageNames()
+                await self?.refreshRunningState()
                 guard !Task.isCancelled else { return }
-                self.runningAppIds = Set(
-                    namesByAppId.filter { !$0.value.isDisjoint(with: running) }.keys
-                )
                 try? await Task.sleep(for: .seconds(10))
             }
         }
+    }
+
+    /// Asks the game's processes to close, then refreshes the running state.
+    func stop(_ game: SteamGame) async {
+        let names = executableNamesByAppId[game.appId]
+            ?? Self.executableNames(under: game.installURL)
+        guard let output = try? await Wine.runWine(["tasklist.exe", "/FO", "CSV"], bottle: bottle) else {
+            return
+        }
+
+        for process in Wine.parseTasklistOutput(output)
+            where names.contains(process.imageName.lowercased()) {
+            await Wine.gracefulKillProcess(winePID: process.winePID, bottle: bottle)
+        }
+        await refreshRunningState()
+    }
+
+    private func refreshRunningState() async {
+        let running = await runningImageNames()
+        runningAppIds = Set(
+            executableNamesByAppId.filter { !$0.value.isDisjoint(with: running) }.keys
+        )
     }
 
     /// Stops download monitoring and process tracking. Call when the owning
