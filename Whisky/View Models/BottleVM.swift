@@ -80,11 +80,8 @@ final class BottleVM: ObservableObject {
         // Keep the live instance for any bottle that is mid-operation:
         // rebuilding it would reset inFlight and drop the guard that blocks
         // conflicting actions during move/export/duplicate.
-        let inFlightBottles = Dictionary(
-            bottles.filter(\.inFlight).map { ($0.url, $0) },
-            uniquingKeysWith: { first, _ in first }
-        )
-        bottles = bottlesList.loadBottles().map { inFlightBottles[$0.url] ?? $0 }
+        let inFlight = Dictionary(bottles.filter(\.inFlight).map { ($0.url, $0) }) { first, _ in first }
+        bottles = bottlesList.loadBottles().map { inFlight[$0.url] ?? $0 }
     }
 
     /// Bottles found on disk with no registry entry, awaiting a re-import
