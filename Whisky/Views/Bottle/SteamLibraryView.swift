@@ -88,21 +88,29 @@ struct SteamLibraryView: View {
 
     @ViewBuilder
     private func statusView(for game: SteamGame) -> some View {
-        switch orchestrator.phase {
-        case .startingClient:
-            Text("steam.status.starting")
+        if orchestrator.runningAppIds.contains(game.appId) {
+            Label("steam.status.running", systemImage: "circle.fill")
+                .labelStyle(.titleAndIcon)
                 .font(.caption)
-                .foregroundStyle(.secondary)
-        case let .launching(appId) where appId == game.appId:
-            ProgressView()
-                .controlSize(.small)
-        default:
-            if case .confirmedStall = orchestrator.downloadStatus {
-                Image(systemName: "exclamationmark.arrow.circlepath")
-                    .foregroundStyle(.orange)
-            } else if case .downloading = orchestrator.downloadStatus {
-                Image(systemName: "arrow.down.circle")
+                .imageScale(.small)
+                .foregroundStyle(.green)
+        } else {
+            switch orchestrator.phase {
+            case .startingClient:
+                Text("steam.status.starting")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
+            case let .launching(appId) where appId == game.appId:
+                ProgressView()
+                    .controlSize(.small)
+            default:
+                if case .confirmedStall = orchestrator.downloadStatus {
+                    Image(systemName: "exclamationmark.arrow.circlepath")
+                        .foregroundStyle(.orange)
+                } else if case .downloading = orchestrator.downloadStatus {
+                    Image(systemName: "arrow.down.circle")
+                        .foregroundStyle(.secondary)
+                }
             }
         }
     }
@@ -111,5 +119,6 @@ struct SteamLibraryView: View {
         let bottleURL = bottle.url
         games = await Task.detached { SteamLibrary.enumerate(bottleURL: bottleURL) }.value
         loaded = true
+        orchestrator.startTracking(games: games)
     }
 }

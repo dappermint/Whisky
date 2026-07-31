@@ -19766,6 +19766,16 @@
         }
       }
     },
+    "steam.status.running" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Running"
+          }
+        }
+      }
+    },
     "steam.status.starting" : {
       "localizations" : {
         "en" : {

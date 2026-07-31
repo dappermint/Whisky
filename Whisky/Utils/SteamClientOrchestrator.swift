@@ -49,11 +49,15 @@ final class SteamClientOrchestrator: ObservableObject {
 
     @Published private(set) var phase: Phase = .idle
     @Published private(set) var downloadStatus: StallStatus = .noDownloads
+    /// App IDs whose executables are currently in the bottle's process list.
+    @Published private(set) var runningAppIds: Set<Int> = []
     @Published var launchError: String?
 
     private let bottle: Bottle
     private let downloadMonitor = SteamDownloadMonitor()
     private var cancellables: Set<AnyCancellable> = []
+    private var trackingTask: Task<Void, Never>?
+    private var executableNamesByAppId: [Int: Set<String>] = [:]
 
     private let clientReadyTimeout: TimeInterval = 90
     /// Steam forks the game and the -applaunch invocation returns immediately;
@@ -108,8 +112,33 @@ final class SteamClientOrchestrator: ObservableObject {
         }
     }
 
-    /// Stops download monitoring. Call when the owning view disappears.
+    /// Polls the bottle's process list so the library can show which games
+    /// are running, including ones started outside Whisky.
+    func startTracking(games: [SteamGame]) {
+        trackingTask?.cancel()
+        for game in games where executableNamesByAppId[game.appId] == nil {
+            let installURL = game.installURL
+            executableNamesByAppId[game.appId] = Self.executableNames(under: installURL)
+        }
+        let namesByAppId = executableNamesByAppId
+        trackingTask = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let self else { return }
+                let running = await self.runningImageNames()
+                guard !Task.isCancelled else { return }
+                self.runningAppIds = Set(
+                    namesByAppId.filter { !$0.value.isDisjoint(with: running) }.keys
+                )
+                try? await Task.sleep(for: .seconds(10))
+            }
+        }
+    }
+
+    /// Stops download monitoring and process tracking. Call when the owning
+    /// view disappears.
     func stop() {
+        trackingTask?.cancel()
+        trackingTask = nil
         downloadMonitor.stopMonitoring()
     }
 
