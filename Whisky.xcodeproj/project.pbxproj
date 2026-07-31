@@ -42,6 +42,7 @@
 		6E40495A29CCA19C006E3F1B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6E40495929CCA19C006E3F1B /* Assets.xcassets */; };
 		6E40495D29CCA19C006E3F1B /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6E40495C29CCA19C006E3F1B /* Preview Assets.xcassets */; };
 		6E40498129CCA8B0006E3F1B /* BottleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E40498029CCA8B0006E3F1B /* BottleView.swift */; };
+		A5175A536850D4926FE4C480 /* SteamLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1453C3A95B17CD3DE867F7 /* SteamLibraryView.swift */; };
 		6E40498329CCA91B006E3F1B /* Bottle+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E40498229CCA91B006E3F1B /* Bottle+Extensions.swift */; };
 		6E49E0212AECB7DB00009CAC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E49E0202AECB7DB00009CAC /* SettingsView.swift */; };
 		6E50D98329CD6066008C39F6 /* BottleVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E50D98229CD6066008C39F6 /* BottleVM.swift */; };
@@ -121,6 +122,7 @@
 		H1A2B3C4E5F61101A9B0C1D0 /* DependencyConfigSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1A2B3C4E5F61101A9B0C1D1 /* DependencyConfigSection.swift */; };
 		H1A2B3C4E5F61101A9B0C1D2 /* DependencyInstallSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1A2B3C4E5F61101A9B0C1D3 /* DependencyInstallSheet.swift */; };
 		I1A2B3C4E5F61201A9B0C1D0 /* SteamDownloadMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = I1A2B3C4E5F61201A9B0C1D1 /* SteamDownloadMonitor.swift */; };
+		129146529D772EC1C559C0CB /* SteamClientOrchestrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B94A3D15B907CF55C906C9A /* SteamClientOrchestrator.swift */; };
 		J1A2B3C4E5F61301A9B0C1D0 /* TroubleshootingWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = J1A2B3C4E5F61301A9B0C1D1 /* TroubleshootingWizardView.swift */; };
 		J1A2B3C4E5F61301A9B0C1D2 /* ProgressRailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = J1A2B3C4E5F61301A9B0C1D3 /* ProgressRailView.swift */; };
 		J1A2B3C4E5F61301A9B0C1D4 /* SymptomPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = J1A2B3C4E5F61301A9B0C1D5 /* SymptomPickerView.swift */; };
@@ -226,6 +228,7 @@
 		6E40495C29CCA19C006E3F1B /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		6E40495E29CCA19C006E3F1B /* Whisky.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Whisky.entitlements; sourceTree = "<group>"; };
 		6E40498029CCA8B0006E3F1B /* BottleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottleView.swift; sourceTree = "<group>"; };
+		BB1453C3A95B17CD3DE867F7 /* SteamLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SteamLibraryView.swift; sourceTree = "<group>"; };
 		6E40498229CCA91B006E3F1B /* Bottle+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Bottle+Extensions.swift"; sourceTree = "<group>"; };
 		6E49E0202AECB7DB00009CAC /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		6E50D98229CD6066008C39F6 /* BottleVM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottleVM.swift; sourceTree = "<group>"; };
@@ -304,6 +307,7 @@
 		H1A2B3C4E5F61101A9B0C1D1 /* DependencyConfigSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DependencyConfigSection.swift; sourceTree = "<group>"; };
 		H1A2B3C4E5F61101A9B0C1D3 /* DependencyInstallSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DependencyInstallSheet.swift; sourceTree = "<group>"; };
 		I1A2B3C4E5F61201A9B0C1D1 /* SteamDownloadMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SteamDownloadMonitor.swift; sourceTree = "<group>"; };
+		2B94A3D15B907CF55C906C9A /* SteamClientOrchestrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SteamClientOrchestrator.swift; sourceTree = "<group>"; };
 		J1A2B3C4E5F61301A9B0C1D1 /* TroubleshootingWizardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TroubleshootingWizardView.swift; sourceTree = "<group>"; };
 		J1A2B3C4E5F61301A9B0C1D3 /* ProgressRailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressRailView.swift; sourceTree = "<group>"; };
 		J1A2B3C4E5F61301A9B0C1D5 /* SymptomPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymptomPickerView.swift; sourceTree = "<group>"; };
@@ -428,6 +432,7 @@
 			children = (
 				C1A2B3C4E5F60601A9B0C1D9 /* AudioConfigSection.swift */,
 				6E40498029CCA8B0006E3F1B /* BottleView.swift */,
+				BB1453C3A95B17CD3DE867F7 /* SteamLibraryView.swift */,
 				6365C4C22B1AA8CD00AAE1FD /* BottleListEntry.swift */,
 				6E50D98429CDF25B008C39F6 /* BottleCreationView.swift */,
 				6E355E5729D78249002D83BE /* ConfigView.swift */,
@@ -563,6 +568,7 @@
 				G1A2B3C4E5F60901A9B0C1D1 /* DependencyManager.swift */,
 				F1A2B3C4E5F60801A9B0C1D0 /* ControllerMonitor.swift */,
 				I1A2B3C4E5F61201A9B0C1D1 /* SteamDownloadMonitor.swift */,
+				2B94A3D15B907CF55C906C9A /* SteamClientOrchestrator.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -977,6 +983,7 @@
 				6E7C07C02AAF570100F6E66B /* FileOpenView.swift in Sources */,
 				6E6C0CF22A419A6800356232 /* WelcomeView.swift in Sources */,
 				6E40498129CCA8B0006E3F1B /* BottleView.swift in Sources */,
+				A5175A536850D4926FE4C480 /* SteamLibraryView.swift in Sources */,
 				6E355E5E29D7D85D002D83BE /* ProgramView.swift in Sources */,
 				954F64484BFDF7786A5B184E /* LauncherDetection.swift in Sources */,
 				689B4F6DF3B8006E89E1395F /* LauncherDiagnostics.swift in Sources */,
@@ -1018,6 +1025,7 @@
 				H1A2B3C4E5F61101A9B0C1D0 /* DependencyConfigSection.swift in Sources */,
 				H1A2B3C4E5F61101A9B0C1D2 /* DependencyInstallSheet.swift in Sources */,
 				I1A2B3C4E5F61201A9B0C1D0 /* SteamDownloadMonitor.swift in Sources */,
+				129146529D772EC1C559C0CB /* SteamClientOrchestrator.swift in Sources */,
 				J1A2B3C4E5F61301A9B0C1D0 /* TroubleshootingWizardView.swift in Sources */,
 				J1A2B3C4E5F61301A9B0C1D2 /* ProgressRailView.swift in Sources */,
 				J1A2B3C4E5F61301A9B0C1D4 /* SymptomPickerView.swift in Sources */,

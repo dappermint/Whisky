@@ -19666,6 +19666,56 @@
         }
       }
     },
+    "steam.client.missing" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This bottle no longer contains a Steam installation."
+          }
+        }
+      }
+    },
+    "steam.client.timeout" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam didn't start within 90 seconds. Check the launcher troubleshooting guide."
+          }
+        }
+      }
+    },
+    "steam.launch.failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam Launch"
+          }
+        }
+      }
+    },
+    "steam.launch.timeout" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The game didn't start within two minutes. It may still be loading, or the launch failed."
+          }
+        }
+      }
+    },
+    "steam.library.empty" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No installed Steam games found in this bottle."
+          }
+        }
+      }
+    },
     "steam.stall.detected" : {
       "localizations" : {
         "en" : {
@@ -19712,6 +19762,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No progress for %lld minutes"
+          }
+        }
+      }
+    },
+    "steam.status.starting" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starting Steam…"
           }
         }
       }
@@ -20131,6 +20191,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已安裝的程式"
+          }
+        }
+      }
+    },
+    "tab.steamLibrary" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam Library"
           }
         }
       }

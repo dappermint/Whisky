@@ -1,0 +1,115 @@
+//
+//  SteamLibraryView.swift
+//  Whisky
+//
+//  This file is part of Whisky.
+//
+//  Whisky is free software: you can redistribute it and/or modify it under the terms
+//  of the GNU General Public License as published by the Free Software Foundation,
+//  either version 3 of the License, or (at your option) any later version.
+//
+//  Whisky is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+//  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+//  See the GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License along with Whisky.
+//  If not, see https://www.gnu.org/licenses/.
+//
+
+import SwiftUI
+import WhiskyKit
+
+struct SteamLibraryView: View {
+    @ObservedObject var bottle: Bottle
+    @StateObject private var orchestrator: SteamClientOrchestrator
+    @State private var games: [SteamGame] = []
+    @State private var loaded = false
+
+    init(bottle: Bottle) {
+        self.bottle = bottle
+        _orchestrator = StateObject(wrappedValue: SteamClientOrchestrator(bottle: bottle))
+    }
+
+    var body: some View {
+        Form {
+            if loaded, games.isEmpty {
+                Text("steam.library.empty")
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(games) { game in
+                gameRow(game)
+            }
+        }
+        .formStyle(.grouped)
+        .navigationTitle("tab.steamLibrary")
+        .task { await refresh() }
+        .onDisappear { orchestrator.stop() }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    Task { await refresh() }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .accessibilityIdentifier("steamLibrary.refresh")
+            }
+        }
+        .alert(
+            "steam.launch.failed",
+            isPresented: Binding(
+                get: { orchestrator.launchError != nil },
+                set: { if !$0 { orchestrator.launchError = nil } }
+            )
+        ) {} message: {
+            Text(orchestrator.launchError ?? "")
+        }
+    }
+
+    @ViewBuilder
+    private func gameRow(_ game: SteamGame) -> some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text(game.name)
+                Text(verbatim: String(game.appId))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            statusView(for: game)
+            Button {
+                Task { await orchestrator.launch(game) }
+            } label: {
+                Image(systemName: "play.fill")
+            }
+            .disabled(orchestrator.phase != .idle)
+            .accessibilityIdentifier("steamLibrary.play.\(game.appId)")
+        }
+    }
+
+    @ViewBuilder
+    private func statusView(for game: SteamGame) -> some View {
+        switch orchestrator.phase {
+        case .startingClient:
+            Text("steam.status.starting")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        case let .launching(appId) where appId == game.appId:
+            ProgressView()
+                .controlSize(.small)
+        default:
+            if case .confirmedStall = orchestrator.downloadStatus {
+                Image(systemName: "exclamationmark.arrow.circlepath")
+                    .foregroundStyle(.orange)
+            } else if case .downloading = orchestrator.downloadStatus {
+                Image(systemName: "arrow.down.circle")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func refresh() async {
+        let bottleURL = bottle.url
+        games = await Task.detached { SteamLibrary.enumerate(bottleURL: bottleURL) }.value
+        loaded = true
+    }
+}
