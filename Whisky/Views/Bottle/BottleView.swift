@@ -285,7 +285,6 @@ struct BottleView: View {
             }
         }
     }
-
 }
 
 extension BottleView {
