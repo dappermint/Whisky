@@ -16,6 +16,7 @@
 //  If not, see https://www.gnu.org/licenses/.
 //
 
+import CryptoKit
 import Foundation
 import os.log
 import SwiftUI
@@ -155,6 +156,53 @@ public final class Program: ObservableObject, Equatable, Hashable, Identifiable 
         self.init(url: url, bottle: bottle, peFile: try? PEFile(url: url))
     }
 
+    /// The settings file for a program, keyed by the executable's
+    /// bottle-relative path so two programs sharing a filename
+    /// (the classic `Launch.exe` case) never collide. The name keeps the
+    /// executable's stem for readability: `Launch-3fa2b1c9.plist`.
+    ///
+    /// Legacy filename-keyed settings are migrated by copying (never moving)
+    /// the old plist to the identity-keyed name on first load, so downgrading
+    /// loses nothing.
+    static func settingsURL(for url: URL, in bottle: Bottle, legacyName: String) -> URL {
+        let settingsFolder = bottle.url.appending(path: "Program Settings")
+        try? FileManager.default.createDirectory(at: settingsFolder, withIntermediateDirectories: true)
+        let identityURL = settingsFolder
+            .appending(path: settingsIdentity(for: url, bottleURL: bottle.url))
+            .appendingPathExtension("plist")
+        let legacyURL = settingsFolder.appending(path: legacyName).appendingPathExtension("plist")
+
+        let fileManager = FileManager.default
+        if !fileManager.fileExists(atPath: identityURL.path(percentEncoded: false)),
+           fileManager.fileExists(atPath: legacyURL.path(percentEncoded: false)) {
+            do {
+                try fileManager.copyItem(at: legacyURL, to: identityURL)
+            } catch {
+                Logger.wineKit.error(
+                    "Failed to migrate settings for `\(legacyName)`: \(error.localizedDescription)"
+                )
+            }
+        }
+        return identityURL
+    }
+
+    /// A stable identity for a program: the executable's stem plus a short
+    /// hash of its bottle-relative path. Stable across bottle moves (the
+    /// relative path doesn't change) and across game updates (file contents
+    /// don't participate).
+    nonisolated static func settingsIdentity(for url: URL, bottleURL: URL) -> String {
+        let bottlePath = bottleURL.standardizedFileURL.path
+        let fullPath = url.standardizedFileURL.path
+        let relativePath = fullPath.hasPrefix(bottlePath)
+            ? String(fullPath.dropFirst(bottlePath.count))
+            : fullPath
+
+        let digest = SHA256.hash(data: Data(relativePath.utf8))
+        let shortHash = digest.prefix(4).map { String(format: "%02x", $0) }.joined()
+        let stem = url.deletingPathExtension().lastPathComponent
+        return "\(stem)-\(shortHash)"
+    }
+
     /// Creates a new program instance from an already-parsed PE file.
     ///
     /// Use this when the PE file was parsed off the main actor (e.g. during a
@@ -174,17 +222,10 @@ public final class Program: ObservableObject, Equatable, Hashable, Identifiable 
         self._displayName = nil
         self.pinned = bottle.settings.pins.contains(where: { $0.url == url })
 
-        // Warning: This will break if two programs share the same name such as "Launch.exe"
-        // Best to add some sort of UUID in the path or file
-        let settingsFolder = bottle.url.appending(path: "Program Settings")
-        let settingsUrl = settingsFolder.appending(path: name).appendingPathExtension("plist")
+        let settingsUrl = Self.settingsURL(for: url, in: bottle, legacyName: name)
         self.settingsURL = settingsUrl
 
         do {
-            if !FileManager.default.fileExists(atPath: settingsFolder.path(percentEncoded: false)) {
-                try FileManager.default.createDirectory(at: settingsFolder, withIntermediateDirectories: true)
-            }
-
             self.settings = try ProgramSettings.decode(from: settingsUrl)
         } catch {
             Logger.wineKit.error(
@@ -216,15 +257,10 @@ public final class Program: ObservableObject, Equatable, Hashable, Identifiable 
         self.pinned = bottle.settings.pins.contains(where: { $0.url == appRefURL })
         self.peFile = nil
 
-        let settingsFolder = bottle.url.appending(path: "Program Settings")
-        let settingsUrl = settingsFolder.appending(path: displayName).appendingPathExtension("plist")
+        let settingsUrl = Self.settingsURL(for: appRefURL, in: bottle, legacyName: displayName)
         self.settingsURL = settingsUrl
 
         do {
-            if !FileManager.default.fileExists(atPath: settingsFolder.path(percentEncoded: false)) {
-                try FileManager.default.createDirectory(at: settingsFolder, withIntermediateDirectories: true)
-            }
-
             self.settings = try ProgramSettings.decode(from: settingsUrl)
         } catch {
             Logger.wineKit.error(

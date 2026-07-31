@@ -149,7 +149,9 @@ final class ProgramCoreTests: XCTestCase {
         let program = Program(url: programURL, bottle: bottle)
 
         XCTAssertTrue(program.settingsURL.path.contains("Program Settings"))
-        XCTAssertTrue(program.settingsURL.path.contains("test_game.exe.plist"))
+        // Identity-keyed: exe stem plus a short path hash, not the bare filename
+        XCTAssertTrue(program.settingsURL.lastPathComponent.hasPrefix("test_game-"))
+        XCTAssertTrue(program.settingsURL.pathExtension == "plist")
     }
 
     // MARK: - Pinned Property Tests
