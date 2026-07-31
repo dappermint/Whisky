@@ -142,6 +142,19 @@ struct VDFParserTests {
         #expect(try VDFParser.parse("// only a comment\n").isEmpty)
     }
 
+    // MARK: - Accessors
+
+    @Test("Accessors return nil for mismatched kinds")
+    func accessorsMismatch() {
+        let string = VDFValue.string("text")
+        let object = VDFValue.object([:])
+
+        #expect(string.objectValue == nil)
+        #expect(string.intValue == nil)
+        #expect(object.stringValue == nil)
+        #expect(object.intValue == nil)
+    }
+
     // MARK: - Malformed input
 
     @Test("Throws on unclosed object")
@@ -177,5 +190,33 @@ struct VDFParserTests {
         #expect(throws: VDFParseError.unexpectedEnd) {
             try VDFParser.parse("\"lonely\"")
         }
+    }
+
+    @Test("Throws on escape at end of document")
+    func throwsOnTrailingEscape() {
+        #expect(throws: VDFParseError.unterminatedString(line: 1)) {
+            try VDFParser.parse("\"key\" \"value\\")
+        }
+    }
+
+    @Test("Throws on object opening without a key")
+    func throwsOnBraceWithoutKey() {
+        #expect(throws: VDFParseError.unexpectedToken(line: 1)) {
+            try VDFParser.parse("{ \"a\" \"b\" }")
+        }
+    }
+
+    @Test("Errors carry descriptions")
+    func errorsCarryDescriptions() {
+        #expect(
+            VDFParseError.unexpectedToken(line: 3).errorDescription == "Unexpected token at line 3"
+        )
+        #expect(
+            VDFParseError.unterminatedString(line: 7).errorDescription == "Unterminated string at line 7"
+        )
+        #expect(
+            VDFParseError.unexpectedEnd.errorDescription
+                == "Unexpected end of document inside an unclosed object"
+        )
     }
 }
