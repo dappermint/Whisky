@@ -95,3 +95,81 @@ public enum ShortcutCreator {
         )
     }
 }
+
+public extension ShortcutCreator {
+    /// What a live shortcut launches.
+    enum LiveTarget: Equatable {
+        /// A Steam game, launched by App ID through the client so DRM and
+        /// GameDB profiles apply.
+        case steamGame(appId: Int)
+        /// A program addressed by bottle name and Windows path. The Windows
+        /// path is bottle-relative by construction, so the shortcut survives
+        /// the bottle moving.
+        case program(bottleName: String, windowsPath: String)
+    }
+
+    /// Picks the live target for a program: a Steam game when the executable
+    /// belongs to one of the bottle's Steam libraries (or ships a
+    /// steam_appid.txt), otherwise a bottle-name + Windows-path launch.
+    @MainActor
+    static func liveTarget(for url: URL, bottle: Bottle) -> LiveTarget {
+        if SteamLibrary.detectInstall(bottleURL: bottle.url) != nil {
+            let games = SteamLibrary.enumerate(bottleURL: bottle.url)
+            let path = url.standardizedFileURL.path
+            if let game = games.first(where: {
+                path.hasPrefix($0.installURL.standardizedFileURL.path + "/")
+            }) {
+                return .steamGame(appId: game.appId)
+            }
+            if let appId = SteamAppManifest.findAppIdForProgram(at: url) {
+                return .steamGame(appId: appId)
+            }
+        }
+
+        let windowsPath = windowsPath(for: url, bottleURL: bottle.url)
+            ?? url.path(percentEncoded: false)
+        return .program(bottleName: bottle.settings.name, windowsPath: windowsPath)
+    }
+
+    /// A launch script that goes through Whisky's live pipeline (WhiskyCmd)
+    /// instead of baking the environment at creation time: current settings,
+    /// GameDB profiles, backend deployment, and run logs all apply at launch,
+    /// and nothing breaks when the bottle moves or settings change.
+    static func liveLaunchScript(for target: LiveTarget) -> String {
+        let invocation = switch target {
+        case let .steamGame(appId):
+            "launch \(appId)"
+        case let .program(bottleName, windowsPath):
+            "run \(shellQuoted(bottleName)) \(shellQuoted(windowsPath))"
+        }
+
+        return """
+        WHISKY_CMD="/Applications/Whisky.app/Contents/Resources/WhiskyCmd"
+        if [ ! -x "$WHISKY_CMD" ]; then
+            WHISKY_APP="$(mdfind "kMDItemCFBundleIdentifier == '\(Bundle
+            .whiskyBundleIdentifier)'" 2>/dev/null | head -n 1)"
+            WHISKY_CMD="$WHISKY_APP/Contents/Resources/WhiskyCmd"
+        fi
+        if [ ! -x "$WHISKY_CMD" ]; then
+            osascript -e 'display alert "Whisky not found" message "Install Whisky to use this shortcut."'
+            exit 1
+        fi
+        exec "$WHISKY_CMD" \(invocation)
+        """
+    }
+
+    /// The Windows-style path (`C:\...`) of a file on the bottle's C drive,
+    /// or `nil` when the file lives elsewhere.
+    static func windowsPath(for url: URL, bottleURL: URL) -> String? {
+        let path = url.standardizedFileURL.path
+        let driveC = bottleURL.standardizedFileURL.appending(path: "drive_c").path
+        guard path.hasPrefix(driveC + "/") else { return nil }
+        let rest = String(path.dropFirst(driveC.count + 1))
+        return "C:\\" + rest.replacingOccurrences(of: "/", with: "\\")
+    }
+
+    /// Wraps a value in single quotes for safe shell interpolation.
+    static func shellQuoted(_ value: String) -> String {
+        "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+}
