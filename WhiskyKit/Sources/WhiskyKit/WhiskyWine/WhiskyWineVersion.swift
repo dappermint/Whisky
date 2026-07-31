@@ -53,23 +53,35 @@ public struct WhiskyWineVersion: Codable {
     /// path stays backward-compatible when no hash is advertised).
     public var sha256: String?
 
+    /// Whether this runtime's Wine build can execute Apple's GPTK/D3DMetal
+    /// payload. The payload's forwarder DLLs are C++ with exception handling,
+    /// and unwinding them requires personality-routine support for builtin
+    /// modules that upstream Wine lacks — on a build without it, every process
+    /// that runs D3DMetal code dies on its first internal throw. Absent (all
+    /// runtimes to date) means not capable; a future GPTK-ready runtime build
+    /// advertises `true` here.
+    public var gptkCapable: Bool?
+
     enum CodingKeys: String, CodingKey {
         case version
         case dxvkVersion
         case dxmtVersion
         case sha256
+        case gptkCapable
     }
 
     public init(
         version: SemanticVersion,
         dxvkVersion: String? = nil,
         dxmtVersion: String? = nil,
-        sha256: String? = nil
+        sha256: String? = nil,
+        gptkCapable: Bool? = nil
     ) {
         self.version = version
         self.dxvkVersion = Self.normalized(dxvkVersion)
         self.dxmtVersion = Self.normalized(dxmtVersion)
         self.sha256 = Self.normalizedDigest(sha256)
+        self.gptkCapable = gptkCapable
     }
 
     public init(from decoder: Decoder) throws {
@@ -82,6 +94,7 @@ public struct WhiskyWineVersion: Codable {
         dxvkVersion = try Self.normalized(container.decodeIfPresent(String.self, forKey: .dxvkVersion))
         dxmtVersion = try Self.normalized(container.decodeIfPresent(String.self, forKey: .dxmtVersion))
         sha256 = try Self.normalizedDigest(container.decodeIfPresent(String.self, forKey: .sha256))
+        gptkCapable = try container.decodeIfPresent(Bool.self, forKey: .gptkCapable)
     }
 
     /// Collapses an empty string to `nil` so "absent" and "blank" map to the
@@ -119,6 +132,7 @@ public struct WhiskyWineVersion: Codable {
         try container.encodeIfPresent(dxvkVersion, forKey: .dxvkVersion)
         try container.encodeIfPresent(dxmtVersion, forKey: .dxmtVersion)
         try container.encodeIfPresent(sha256, forKey: .sha256)
+        try container.encodeIfPresent(gptkCapable, forKey: .gptkCapable)
     }
 
     private enum VersionKeys: String, CodingKey {

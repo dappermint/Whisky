@@ -9357,6 +9357,66 @@
         }
       }
     },
+    "gptk.error.attachFailed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not open the disk image:"
+          }
+        }
+      }
+    },
+    "gptk.error.forwarderNotBuiltin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is not a Game Porting Toolkit payload, a DLL has the wrong variant:"
+          }
+        }
+      }
+    },
+    "gptk.error.payloadIncomplete" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Game Porting Toolkit payload is missing files:"
+          }
+        }
+      }
+    },
+    "gptk.error.payloadNotFound" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Game Porting Toolkit payload was found at this location. Select Apple's evaluation environment disk image or its redist folder."
+          }
+        }
+      }
+    },
+    "gptk.error.storeEmpty" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No imported Game Porting Toolkit payload to deploy."
+          }
+        }
+      }
+    },
+    "gptk.error.versionUnreadable" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not read the D3DMetal version from the payload."
+          }
+        }
+      }
+    },
     "help.github" : {
       "localizations" : {
         "ar" : {
@@ -15075,6 +15135,86 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "一般"
+          }
+        }
+      }
+    },
+    "settings.gptk" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Game Porting Toolkit"
+          }
+        }
+      }
+    },
+    "settings.gptk.capability.blocked" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The installed engine build cannot run D3DMetal yet. Imported payloads are kept and deploy automatically once a GPTK-capable engine is installed."
+          }
+        }
+      }
+    },
+    "settings.gptk.capability.ok" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The installed engine can run D3DMetal. Imported payloads deploy automatically."
+          }
+        }
+      }
+    },
+    "settings.gptk.import" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import from Game Porting Toolkit…"
+          }
+        }
+      }
+    },
+    "settings.gptk.import.failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Failed"
+          }
+        }
+      }
+    },
+    "settings.gptk.remove" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Imported Payload"
+          }
+        }
+      }
+    },
+    "settings.gptk.status.none" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No D3DMetal payload imported"
+          }
+        }
+      }
+    },
+    "settings.gptk.version" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D3DMetal Version"
           }
         }
       }
