@@ -54,7 +54,7 @@ struct GameProfileLayerTests {
             gameProfileEnvironment: [
                 "GAME_PROFILE_ONLY": "1",
                 "CONTESTED": "gamedb",
-                "not a valid key!": "dropped",
+                "not a valid key!": "dropped"
             ]
         )
 

@@ -74,7 +74,7 @@ public enum LaunchResolver {
             overrides: overrides,
             gameProfileEnvironment: variant.environmentVariables ?? [:],
             provenance: [
-                "gamedb: \(match.entry.title) — \(variant.label) (\(match.explanation))",
+                "gamedb: \(match.entry.title) — \(variant.label) (\(match.explanation))"
             ]
         )
     }
