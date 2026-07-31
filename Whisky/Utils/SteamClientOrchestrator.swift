@@ -59,6 +59,10 @@ final class SteamClientOrchestrator: ObservableObject {
     private var trackingTask: Task<Void, Never>?
     private var executableNamesByAppId: [Int: Set<String>] = [:]
 
+    private lazy var watch = SteamProcessWatch(pollInterval: .seconds(2)) { [weak self] in
+        await self?.runningImageNames() ?? []
+    }
+
     private let clientReadyTimeout: TimeInterval = 90
     /// Steam forks the game and the -applaunch invocation returns immediately;
     /// shader precompilation can hold the real game process back for a long
@@ -145,10 +149,7 @@ final class SteamClientOrchestrator: ObservableObject {
     }
 
     private func refreshRunningState() async {
-        let running = await runningImageNames()
-        runningAppIds = Set(
-            executableNamesByAppId.filter { !$0.value.isDisjoint(with: running) }.keys
-        )
+        runningAppIds = await watch.runningKeys(byExecutables: executableNamesByAppId)
     }
 
     /// Stops download monitoring and process tracking. Call when the owning
@@ -178,13 +179,9 @@ final class SteamClientOrchestrator: ObservableObject {
             _ = try? await Wine.runProgram(at: steamExe, args: ["-silent"], bottle: bottle)
         }
 
-        let deadline = Date(timeIntervalSinceNow: clientReadyTimeout)
-        while Date() < deadline {
-            try? await Task.sleep(for: .seconds(2))
-            if await isClientRunning() {
-                startDownloadMonitoringIfNeeded()
-                return
-            }
+        if await watch.waitForAny(of: ["steam.exe"], timeout: clientReadyTimeout) {
+            startDownloadMonitoringIfNeeded()
+            return
         }
         throw SteamOrchestratorError.clientTimeout
     }
@@ -199,16 +196,7 @@ final class SteamClientOrchestrator: ObservableObject {
     /// could be determined, in which case there is nothing to watch for).
     private func waitForGameProcess(installURL: URL) async -> Bool {
         let candidates = SteamLibrary.executableNames(under: installURL)
-        guard !candidates.isEmpty else { return true }
-
-        let deadline = Date(timeIntervalSinceNow: launchGrace)
-        while Date() < deadline {
-            if await !runningImageNames().isDisjoint(with: candidates) {
-                return true
-            }
-            try? await Task.sleep(for: .seconds(3))
-        }
-        return false
+        return await watch.waitForAny(of: candidates, timeout: launchGrace)
     }
 
     private func startDownloadMonitoringIfNeeded() {
