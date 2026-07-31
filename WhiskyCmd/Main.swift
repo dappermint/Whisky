@@ -34,6 +34,8 @@ struct Whisky: AsyncParsableCommand {
             Delete.self,
             Remove.self,
             Run.self,
+            Games.self,
+            Launch.self,
             Shortcut.self,
             Shellenv.self
             /* Install.self,
@@ -453,5 +455,107 @@ extension Whisky {
         @Flag(name: [.long, .short], help: "Uninstall WhiskyWine") var whiskyWine = false
 
         mutating func run() throws {}
+    }
+}
+
+extension Whisky {
+    struct Games: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(
+            abstract: "List Steam games installed in a bottle."
+        )
+
+        @Argument(help: "Name of the bottle to inspect")
+        var bottleName: String
+
+        @Flag(name: .long, help: "Output as JSON")
+        var json: Bool = false
+
+        @MainActor
+        mutating func run() async throws {
+            var bottlesList = BottleData()
+            let bottles = bottlesList.loadBottles()
+
+            guard let bottle = bottles.first(where: { $0.settings.name == bottleName }) else {
+                throw ValidationError("A bottle with that name doesn't exist.")
+            }
+
+            let games = SteamLibrary.enumerate(bottleURL: bottle.url)
+
+            if json {
+                let payload = games.map { game in
+                    [
+                        "appId": String(game.appId),
+                        "name": game.name,
+                        "installPath": game.installURL.path(percentEncoded: false)
+                    ]
+                }
+                let data = try JSONSerialization.data(
+                    withJSONObject: payload, options: [.prettyPrinted, .sortedKeys]
+                )
+                print(String(bytes: data, encoding: .utf8) ?? "")
+                return
+            }
+
+            var table = TextTable(headers: ["App ID", "Name", "Install Dir"])
+            for game in games {
+                table.addRow(values: [
+                    String(game.appId),
+                    game.name,
+                    game.installURL.lastPathComponent
+                ])
+            }
+            print(table.render())
+        }
+    }
+
+    struct Launch: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(
+            abstract: "Launch a Steam game by App ID.",
+            discussion: """
+            Without --bottle, the bottle a game was last launched from is used, \
+            falling back to the first bottle that has it installed.
+            """
+        )
+
+        @Argument(help: "Steam App ID of the game")
+        var appId: Int
+
+        @Option(name: .long, help: "Name of the bottle to launch from")
+        var bottle: String?
+
+        @Flag(name: .long, help: "Output as JSON")
+        var json: Bool = false
+
+        @MainActor
+        mutating func run() async throws {
+            var bottlesList = BottleData()
+            let bottles = bottlesList.loadBottles()
+
+            let target: Bottle
+            if let bottleName = bottle {
+                guard let named = bottles.first(where: { $0.settings.name == bottleName }) else {
+                    throw ValidationError("A bottle with that name doesn't exist.")
+                }
+                target = named
+            } else {
+                target = try SteamLauncher.resolveBottle(appId: appId, in: bottles)
+            }
+
+            try SteamLauncher.launch(appId: appId, bottle: target)
+
+            if json {
+                let payload = [
+                    "appId": String(appId),
+                    "bottle": target.settings.name,
+                    "status": "launched"
+                ]
+                let data = try JSONSerialization.data(
+                    withJSONObject: payload, options: [.prettyPrinted, .sortedKeys]
+                )
+                print(String(bytes: data, encoding: .utf8) ?? "")
+            } else {
+                print("Launched \(appId) in \(target.settings.name)")
+            }
+        }
     }
 }

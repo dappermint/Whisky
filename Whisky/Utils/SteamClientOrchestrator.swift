@@ -118,21 +118,18 @@ final class SteamClientOrchestrator: ObservableObject {
         }
 
         phases[game.appId] = .launching
-        let plan = LaunchResolver.plan(
-            steamAppId: game.appId,
-            userOverrides: userOverrides(for: game)
-        )
-        let bottle = self.bottle
-        let appId = game.appId
-        // With the client already up this invocation just forwards and exits,
-        // but if the client died in between it becomes the client itself and
-        // runs for the whole session -- never await it.
-        Task {
-            _ = try? await Wine.runProgram(
-                at: steamExe, args: ["-applaunch", String(appId)], bottle: bottle,
-                programOverrides: plan.overrides,
-                gameProfileEnvironment: plan.gameProfileEnvironment
+        // Shared with `whisky launch`: resolves the GameDB profile and the
+        // user's overrides, records the bottle for this App ID, and hands
+        // -applaunch to the client. The returned task can outlive the game, so
+        // it is never awaited. installURL is already known here, which saves
+        // the launcher a library rescan.
+        do {
+            try SteamLauncher.launch(
+                appId: game.appId, bottle: bottle, installURL: game.installURL
             )
+        } catch {
+            launchError = error.localizedDescription
+            return
         }
 
         if await !waitForGameProcess(installURL: game.installURL) {
@@ -185,25 +182,6 @@ final class SteamClientOrchestrator: ObservableObject {
         clientStartup?.cancel()
         clientStartup = nil
         downloadMonitor.stopMonitoring()
-    }
-
-    /// The user's persisted overrides for this game's executables, so settings
-    /// tuned in the Programs tab survive a launch from the library.
-    private func userOverrides(for game: SteamGame) -> ProgramOverrides? {
-        let scanned = Dictionary(
-            bottle.programs.compactMap { program in
-                program.settings.overrides.map { (program.url.standardizedFileURL, $0) }
-            },
-            uniquingKeysWith: { first, _ in first }
-        )
-        let candidates = SteamLibrary.executableURLs(under: game.installURL).map { url in
-            // Falls back to a direct load for executables the bottle scan has
-            // not reached, so Play works before the Programs tab is opened.
-            let overrides = scanned[url.standardizedFileURL]
-                ?? Program(url: url, bottle: bottle, peFile: nil).settings.overrides
-            return ProgramOverrideCandidate(url: url, overrides: overrides ?? ProgramOverrides())
-        }
-        return SteamLibrary.preferredOverrides(among: candidates)
     }
 
     private func ensureClientRunning(steamExe: URL) async throws {

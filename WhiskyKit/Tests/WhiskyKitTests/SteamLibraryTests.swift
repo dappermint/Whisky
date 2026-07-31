@@ -228,6 +228,28 @@ struct SteamLibraryTests {
         #expect(!games.contains { $0.appId == 999 || $0.appId == 777 })
     }
 
+    @Test("Runtime payloads are not listed as games")
+    func filtersRuntimePayloads() throws {
+        let (bottle, tempRoot) = try makeFixtureBottle()
+        defer { try? FileManager.default.removeItem(at: tempRoot) }
+
+        let steamApps = bottle.appending(path: "drive_c")
+            .appending(path: "Program Files (x86)").appending(path: "Steam")
+            .appending(path: "steamapps")
+        try FileManager.default.createDirectory(
+            at: steamApps.appending(path: "common").appending(path: "Steamworks Shared"),
+            withIntermediateDirectories: true
+        )
+        try Data(acf(
+            appId: 228_980, name: "Steamworks Common Redistributables",
+            installDir: "Steamworks Shared", stateFlags: 4
+        ).utf8).write(to: steamApps.appending(path: "appmanifest_228980.acf"))
+
+        let games = SteamLibrary.enumerate(bottleURL: bottle)
+
+        #expect(!games.contains { $0.appId == 228_980 })
+    }
+
     @Test("Collects executable names at root and one level deep")
     func collectsExecutableNames() throws {
         let tempDir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)

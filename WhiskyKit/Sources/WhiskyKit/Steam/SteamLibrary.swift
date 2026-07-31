@@ -40,6 +40,15 @@ public enum SteamLibrary {
         "Program Files/Steam"
     ]
 
+    /// App IDs Steam installs as shared runtime payloads rather than games.
+    /// They appear as ordinary manifests but have nothing to launch.
+    static let nonGameAppIds: Set<Int> = [
+        228_980, // Steamworks Common Redistributables
+        1_070_560, // Steam Linux Runtime 1.0 (soldier)
+        1_391_110, // Steam Linux Runtime 2.0 (soldier)
+        1_628_350 // Steam Linux Runtime 3.0 (sniper)
+    ]
+
     /// Locates the Steam installation inside a bottle.
     ///
     /// - Parameter bottleURL: The root URL of the Wine bottle.
@@ -171,7 +180,8 @@ public enum SteamLibrary {
         for filename in contents where filename.hasPrefix("appmanifest_") && filename.hasSuffix(".acf") {
             guard let manifest = SteamAppManifest(contentsOf: steamApps.appending(path: filename)),
                   manifest.isFullyInstalled,
-                  isSafePathComponent(manifest.installDir)
+                  isSafePathComponent(manifest.installDir),
+                  !nonGameAppIds.contains(manifest.appId)
             else { continue }
 
             let installURL = steamApps.appending(path: "common").appending(path: manifest.installDir)
