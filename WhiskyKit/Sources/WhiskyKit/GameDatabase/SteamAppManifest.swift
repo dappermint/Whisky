@@ -18,11 +18,12 @@
 
 import Foundation
 
-/// Utilities for extracting Steam App IDs from manifest files.
+/// A parsed Steam application manifest (`appmanifest_<appid>.acf`).
 ///
 /// Steam stores application metadata in ACF/VDF format files alongside
-/// installed games. This enum provides methods to parse those files and
-/// locate Steam App IDs within a Wine bottle or executable directory.
+/// installed games. This type parses those files fully via ``VDFParser``,
+/// and also provides the legacy fast-path helpers for extracting App IDs
+/// from manifest text and `steam_appid.txt` files.
 ///
 /// ## ACF Format
 ///
@@ -34,7 +35,48 @@ import Foundation
 ///     "name"      "Elden Ring"
 /// }
 /// ```
-public enum SteamAppManifest {
+public struct SteamAppManifest: Equatable, Sendable {
+    /// The Steam App ID.
+    public let appId: Int
+    /// The display name of the app.
+    public let name: String
+    /// The install directory name, relative to `<library>/steamapps/common/`.
+    public let installDir: String
+    /// Steam's install-state bitmask. Bit 4 means fully installed.
+    public let stateFlags: Int
+    /// The installed build number, when present.
+    public let buildID: Int?
+    /// The size on disk in bytes, when present.
+    public let sizeOnDisk: Int64?
+
+    /// Whether Steam considers the app fully installed (not downloading,
+    /// updating, or partially removed).
+    public var isFullyInstalled: Bool {
+        stateFlags & 4 != 0
+    }
+
+    /// Parses a manifest file.
+    ///
+    /// - Parameter url: The URL to an `appmanifest_*.acf` file.
+    /// - Returns: `nil` if the file can't be read, isn't valid VDF, or lacks
+    ///   the required `appid`, `name`, or `installdir` fields.
+    public init?(contentsOf url: URL) {
+        guard let text = try? String(contentsOf: url, encoding: .utf8),
+              let root = try? VDFParser.parse(text),
+              let appState = root["appstate"]?.objectValue,
+              let appId = appState["appid"]?.intValue,
+              let name = appState["name"]?.stringValue,
+              let installDir = appState["installdir"]?.stringValue
+        else { return nil }
+
+        self.appId = appId
+        self.name = name
+        self.installDir = installDir
+        self.stateFlags = appState["stateflags"]?.intValue ?? 0
+        self.buildID = appState["buildid"]?.intValue
+        self.sizeOnDisk = appState["sizeondisk"]?.stringValue.flatMap(Int64.init)
+    }
+
     /// Parses a Steam App ID from ACF/VDF format text.
     ///
     /// Looks for a `"appid"` key followed by its value in Valve's
@@ -74,37 +116,13 @@ public enum SteamAppManifest {
         return nil
     }
 
-    /// Searches a Wine bottle for Steam App ID by scanning manifest files.
-    ///
-    /// Looks for `appmanifest_*.acf` files in the standard Steam library
-    /// directory within the bottle's `drive_c`. Also checks for
-    /// `steam_appid.txt` in common locations.
+    /// Searches a Wine bottle for a Steam App ID by scanning manifest files.
     ///
     /// - Parameter bottleURL: The root URL of the Wine bottle.
     /// - Returns: The first App ID found, or `nil` if none found.
+    @available(*, deprecated, message: "Use SteamLibrary.enumerate(bottleURL:) instead")
     public static func findAppId(in bottleURL: URL) -> Int? {
-        let steamAppsDir = bottleURL
-            .appending(path: "drive_c/Program Files (x86)/Steam/steamapps")
-
-        let fileManager = FileManager.default
-        let steamAppsPath = steamAppsDir.path(percentEncoded: false)
-
-        guard fileManager.fileExists(atPath: steamAppsPath) else { return nil }
-
-        // Scan for appmanifest_*.acf files
-        guard let contents = try? fileManager.contentsOfDirectory(atPath: steamAppsPath) else {
-            return nil
-        }
-
-        for filename in contents where filename.hasPrefix("appmanifest_") && filename.hasSuffix(".acf") {
-            let fileURL = steamAppsDir.appending(path: filename)
-            guard let text = try? String(contentsOf: fileURL, encoding: .utf8) else { continue }
-            if let appId = parseAppId(from: text) {
-                return appId
-            }
-        }
-
-        return nil
+        SteamLibrary.enumerate(bottleURL: bottleURL).first?.appId
     }
 
     /// Searches for a Steam App ID near a specific executable.
