@@ -261,9 +261,17 @@ extension Bottle {
 
     @MainActor
     func move(destination: URL) {
+        let bottle = BottleVM.shared.bottles.first(where: { $0.url == url })
+        // The URL rewrite must happen before the move so the persisted settings
+        // travel with the bottle, so keep a snapshot to restore on failure.
+        let originalPins = bottle?.settings.pins
+        let originalBlocklist = bottle?.settings.blocklist
+
+        bottle?.inFlight = true
+        defer { bottle?.inFlight = false }
+
         do {
-            if let bottle = BottleVM.shared.bottles.first(where: { $0.url == url }) {
-                bottle.inFlight = true
+            if let bottle {
                 for index in 0 ..< bottle.settings.pins.count {
                     let pin = bottle.settings.pins[index]
                     if let pinURL = pin.url {
@@ -288,6 +296,16 @@ extension Bottle {
             }
             BottleVM.shared.loadBottles()
         } catch {
+            // A failed move must not leave settings pointing at a path that
+            // was never created.
+            if let bottle {
+                if let originalPins {
+                    bottle.settings.pins = originalPins
+                }
+                if let originalBlocklist {
+                    bottle.settings.blocklist = originalBlocklist
+                }
+            }
             Logger.wineKit.error("Failed to move bottle: \(error.localizedDescription)")
         }
     }
