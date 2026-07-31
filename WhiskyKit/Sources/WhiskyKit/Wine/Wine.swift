@@ -238,7 +238,8 @@ public class Wine {
     @MainActor
     public static func runProgram(
         at url: URL, args: [String] = [], bottle: Bottle, environment: [String: String] = [:],
-        programOverrides: ProgramOverrides? = nil, programSettings: ProgramSettings? = nil
+        programOverrides: ProgramOverrides? = nil, programSettings: ProgramSettings? = nil,
+        gameProfileEnvironment: [String: String] = [:]
     ) async throws -> ProgramRunResult {
         // Note: Launcher detection is handled at the app level (FileOpenView/BottleView)
         // before calling this method. The detection logic uses LauncherDetection utility
@@ -296,7 +297,7 @@ public class Wine {
 
         let wineEnvironment = constructWineEnvironment(
             for: bottle, environment: environment, programOverrides: programOverrides,
-            programSettings: programSettings
+            programSettings: programSettings, gameProfileEnvironment: gameProfileEnvironment
         )
 
         // Create a run log entry to track this session
