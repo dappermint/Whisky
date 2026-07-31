@@ -37,7 +37,7 @@ public enum SteamLibrary {
     /// Candidate Steam install locations under `drive_c`.
     private static let installCandidates = [
         "Program Files (x86)/Steam",
-        "Program Files/Steam",
+        "Program Files/Steam"
     ]
 
     /// Locates the Steam installation inside a bottle.
@@ -89,7 +89,7 @@ public enum SteamLibrary {
 
         let vdfCandidates = [
             steamRoot.appending(path: "config").appending(path: "libraryfolders.vdf"),
-            steamRoot.appending(path: "steamapps").appending(path: "libraryfolders.vdf"),
+            steamRoot.appending(path: "steamapps").appending(path: "libraryfolders.vdf")
         ]
 
         for vdfURL in vdfCandidates {

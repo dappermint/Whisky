@@ -286,6 +286,9 @@ struct BottleView: View {
         }
     }
 
+}
+
+extension BottleView {
     private func updateStartMenu() async {
         await bottle.updateInstalledPrograms()
 

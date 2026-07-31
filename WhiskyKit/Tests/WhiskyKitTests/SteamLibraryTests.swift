@@ -144,28 +144,7 @@ struct SteamLibraryTests {
         try Data(acf(appId: 777, name: "Ghost Game", installDir: "Ghost", stateFlags: 4).utf8)
             .write(to: steamApps.appending(path: "appmanifest_777.acf"))
 
-        // Second library on D:, reached through the dosdevices symlink
-        let secondLibrary = tempRoot.appending(path: "second-library")
-        let secondApps = secondLibrary.appending(path: "steamapps")
-        try fileManager.createDirectory(
-            at: secondApps.appending(path: "common").appending(path: "ELDEN RING"),
-            withIntermediateDirectories: true
-        )
-        try Data(acf(appId: 1_245_620, name: "ELDEN RING", installDir: "ELDEN RING", stateFlags: 4).utf8)
-            .write(to: secondApps.appending(path: "appmanifest_1245620.acf"))
-
-        // Duplicate App ID in the second library: first discovery wins
-        try Data(acf(
-            appId: 4_576_510, name: "Casualties Duplicate",
-            installDir: "ELDEN RING", stateFlags: 4
-        ).utf8).write(to: secondApps.appending(path: "appmanifest_dup.acf"))
-
-        let dosDevices = bottle.appending(path: "dosdevices")
-        try fileManager.createDirectory(at: dosDevices, withIntermediateDirectories: true)
-        try fileManager.createSymbolicLink(
-            at: dosDevices.appending(path: "d:"),
-            withDestinationURL: secondLibrary
-        )
+        try makeSecondLibrary(tempRoot: tempRoot, bottle: bottle)
 
         let config = steamRoot.appending(path: "config")
         try fileManager.createDirectory(at: config, withIntermediateDirectories: true)
@@ -185,6 +164,32 @@ struct SteamLibraryTests {
         try Data(vdf.utf8).write(to: config.appending(path: "libraryfolders.vdf"))
 
         return (bottle, tempRoot)
+    }
+
+    /// A second library on D: reached through the dosdevices symlink, holding
+    /// another installed game plus a duplicate of the first library's App ID.
+    private func makeSecondLibrary(tempRoot: URL, bottle: URL) throws {
+        let fileManager = FileManager.default
+        let secondLibrary = tempRoot.appending(path: "second-library")
+        let secondApps = secondLibrary.appending(path: "steamapps")
+        try fileManager.createDirectory(
+            at: secondApps.appending(path: "common").appending(path: "ELDEN RING"),
+            withIntermediateDirectories: true
+        )
+        try Data(acf(appId: 1_245_620, name: "ELDEN RING", installDir: "ELDEN RING", stateFlags: 4).utf8)
+            .write(to: secondApps.appending(path: "appmanifest_1245620.acf"))
+
+        try Data(acf(
+            appId: 4_576_510, name: "Casualties Duplicate",
+            installDir: "ELDEN RING", stateFlags: 4
+        ).utf8).write(to: secondApps.appending(path: "appmanifest_dup.acf"))
+
+        let dosDevices = bottle.appending(path: "dosdevices")
+        try fileManager.createDirectory(at: dosDevices, withIntermediateDirectories: true)
+        try fileManager.createSymbolicLink(
+            at: dosDevices.appending(path: "d:"),
+            withDestinationURL: secondLibrary
+        )
     }
 
     @Test("Detects a Steam install")
