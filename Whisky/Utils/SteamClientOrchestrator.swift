@@ -118,7 +118,7 @@ final class SteamClientOrchestrator: ObservableObject {
         trackingTask?.cancel()
         for game in games where executableNamesByAppId[game.appId] == nil {
             let installURL = game.installURL
-            executableNamesByAppId[game.appId] = Self.executableNames(under: installURL)
+            executableNamesByAppId[game.appId] = SteamLibrary.executableNames(under: installURL)
         }
         trackingTask = Task { [weak self] in
             while !Task.isCancelled {
@@ -132,7 +132,7 @@ final class SteamClientOrchestrator: ObservableObject {
     /// Asks the game's processes to close, then refreshes the running state.
     func stop(_ game: SteamGame) async {
         let names = executableNamesByAppId[game.appId]
-            ?? Self.executableNames(under: game.installURL)
+            ?? SteamLibrary.executableNames(under: game.installURL)
         guard let output = try? await Wine.runWine(["tasklist.exe", "/FO", "CSV"], bottle: bottle) else {
             return
         }
@@ -198,7 +198,7 @@ final class SteamClientOrchestrator: ObservableObject {
     /// Returns `true` when the game shows up (or when no candidate exe names
     /// could be determined, in which case there is nothing to watch for).
     private func waitForGameProcess(installURL: URL) async -> Bool {
-        let candidates = Self.executableNames(under: installURL)
+        let candidates = SteamLibrary.executableNames(under: installURL)
         guard !candidates.isEmpty else { return true }
 
         let deadline = Date(timeIntervalSinceNow: launchGrace)
@@ -221,32 +221,5 @@ final class SteamClientOrchestrator: ObservableObject {
             return []
         }
         return Set(Wine.parseTasklistOutput(output).map { $0.imageName.lowercased() })
-    }
-
-    /// Lowercased executable names at the install root and one directory deep.
-    static func executableNames(under installURL: URL) -> Set<String> {
-        let fileManager = FileManager.default
-        var names: Set<String> = []
-        var subdirectories: [URL] = []
-
-        let top = (try? fileManager.contentsOfDirectory(
-            at: installURL, includingPropertiesForKeys: [.isDirectoryKey]
-        )) ?? []
-        for item in top {
-            if item.pathExtension.lowercased() == "exe" {
-                names.insert(item.lastPathComponent.lowercased())
-            } else if (try? item.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true {
-                subdirectories.append(item)
-            }
-        }
-        for directory in subdirectories {
-            let items = (try? fileManager.contentsOfDirectory(
-                at: directory, includingPropertiesForKeys: nil
-            )) ?? []
-            for item in items where item.pathExtension.lowercased() == "exe" {
-                names.insert(item.lastPathComponent.lowercased())
-            }
-        }
-        return names
     }
 }

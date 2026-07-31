@@ -228,6 +228,24 @@ struct SteamLibraryTests {
         #expect(!games.contains { $0.appId == 999 || $0.appId == 777 })
     }
 
+    @Test("Collects executable names at root and one level deep")
+    func collectsExecutableNames() throws {
+        let tempDir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+        let bin = tempDir.appending(path: "bin")
+        let deep = tempDir.appending(path: "bin").appending(path: "too-deep")
+        try FileManager.default.createDirectory(at: deep, withIntermediateDirectories: true)
+
+        try Data().write(to: tempDir.appending(path: "Game.exe"))
+        try Data().write(to: tempDir.appending(path: "readme.txt"))
+        try Data().write(to: bin.appending(path: "Helper.EXE"))
+        try Data().write(to: deep.appending(path: "ignored.exe"))
+
+        let names = SteamLibrary.executableNames(under: tempDir)
+
+        #expect(names == ["game.exe", "helper.exe"])
+    }
+
     @Test("Maps Windows paths through the prefix")
     func mapsWindowsPaths() {
         let bottle = URL(fileURLWithPath: "/tmp/bottle")

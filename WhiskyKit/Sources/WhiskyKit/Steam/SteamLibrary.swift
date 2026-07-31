@@ -173,4 +173,32 @@ public enum SteamLibrary {
         }
         return found
     }
+
+    /// Lowercased executable names at the install root and one directory
+    /// deep. Used to match a game's processes in the bottle's task list.
+    public static func executableNames(under installURL: URL) -> Set<String> {
+        let fileManager = FileManager.default
+        var names: Set<String> = []
+        var subdirectories: [URL] = []
+
+        let top = (try? fileManager.contentsOfDirectory(
+            at: installURL, includingPropertiesForKeys: [.isDirectoryKey]
+        )) ?? []
+        for item in top {
+            if item.pathExtension.lowercased() == "exe" {
+                names.insert(item.lastPathComponent.lowercased())
+            } else if (try? item.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true {
+                subdirectories.append(item)
+            }
+        }
+        for directory in subdirectories {
+            let items = (try? fileManager.contentsOfDirectory(
+                at: directory, includingPropertiesForKeys: nil
+            )) ?? []
+            for item in items where item.pathExtension.lowercased() == "exe" {
+                names.insert(item.lastPathComponent.lowercased())
+            }
+        }
+        return names
+    }
 }
