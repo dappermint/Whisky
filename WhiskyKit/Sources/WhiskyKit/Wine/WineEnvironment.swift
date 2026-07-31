@@ -45,7 +45,8 @@ extension Wine {
         for bottle: Bottle,
         environment: [String: String] = [:],
         programOverrides: ProgramOverrides? = nil,
-        programSettings: ProgramSettings? = nil
+        programSettings: ProgramSettings? = nil,
+        gameProfileEnvironment: [String: String] = [:]
     ) -> [String: String] {
         var builder = EnvironmentBuilder()
         var dllResolver = DLLOverrideResolver(managed: [], bottleCustom: [], programCustom: [])
@@ -90,9 +91,19 @@ extension Wine {
         // Input compatibility (bottleManaged layer -- input settings are bottle-managed toggles)
         bottle.settings.populateInputCompatibilityLayer(builder: &builder)
 
-        // Layer 5: Bottle user (empty for now -- no bottle-level custom env vars UI yet)
+        // Layer 5: Game profile -- GameDB variant environment for this launch.
+        // Beats bottle/launcher defaults, loses to anything the user set.
+        for (key, value) in gameProfileEnvironment {
+            if isValidEnvKey(key) {
+                builder.set(key, value, layer: .gameProfile, reason: "GameDB profile")
+            } else {
+                envLogger.debug("Skipping invalid game profile key '\(key)' in constructWineEnvironment")
+            }
+        }
 
-        // Layer 6: Program user (caller-provided environment dict, typically from Program.generateEnvironment())
+        // Layer 6: Bottle user (empty for now -- no bottle-level custom env vars UI yet)
+
+        // Layer 7: Program user (caller-provided environment dict, typically from Program.generateEnvironment())
         if !environment.isEmpty {
             for (key, value) in environment {
                 if isValidEnvKey(key) {
@@ -108,12 +119,12 @@ extension Wine {
             applyProgramOverrides(overrides, builder: &builder, dllResolver: &dllResolver)
         }
 
-        // Layer 7: featureRuntime -- diagnostic WINEDEBUG preset override
+        // Layer 8: featureRuntime -- diagnostic WINEDEBUG preset override
         if let preset = programSettings?.activeWineDebugPreset, preset != .normal {
             builder.set("WINEDEBUG", preset.winedebugValue, layer: .featureRuntime)
         }
 
-        // Layer 8: callsiteOverride is left empty (populated by direct callers)
+        // Layer 9: callsiteOverride is left empty (populated by direct callers)
 
         // Collect bottle custom DLL overrides for the resolver
         dllResolver.bottleCustom = bottle.settings.dllOverrides
@@ -322,6 +333,7 @@ extension Wine {
             case .platform: "platform"
             case .bottleManaged: "bottleManaged"
             case .launcherManaged: "launcherManaged"
+            case .gameProfile: "gameProfile"
             case .bottleUser: "bottleUser"
             case .programUser: "programUser"
             case .featureRuntime: "featureRuntime"
