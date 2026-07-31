@@ -189,21 +189,25 @@ public enum VDFParser {
                 return result
 
             case let .string(key):
-                guard let valueToken = try scanner.nextToken() else {
-                    throw VDFParseError.unexpectedEnd
-                }
-                switch valueToken {
-                case let .string(value):
-                    result[key.lowercased()] = .string(value)
-                case .openBrace:
-                    result[key.lowercased()] = try .object(parseObjectBody(&scanner, isTopLevel: false))
-                case .closeBrace:
-                    throw VDFParseError.unexpectedToken(line: scanner.line)
-                }
+                result[key.lowercased()] = try parseValue(&scanner)
 
             case .openBrace:
                 throw VDFParseError.unexpectedToken(line: scanner.line)
             }
+        }
+    }
+
+    private static func parseValue(_ scanner: inout Scanner) throws -> VDFValue {
+        guard let token = try scanner.nextToken() else {
+            throw VDFParseError.unexpectedEnd
+        }
+        switch token {
+        case let .string(value):
+            return .string(value)
+        case .openBrace:
+            return try .object(parseObjectBody(&scanner, isTopLevel: false))
+        case .closeBrace:
+            throw VDFParseError.unexpectedToken(line: scanner.line)
         }
     }
 }
