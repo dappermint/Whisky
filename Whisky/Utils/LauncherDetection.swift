@@ -20,7 +20,6 @@ import Foundation
 import os.log
 import WhiskyKit
 
-// swiftlint:disable file_length
 // Comprehensive launcher detection and configuration requires extensive logic
 
 private let detectionLogger = Logger(
