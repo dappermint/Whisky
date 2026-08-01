@@ -84,17 +84,21 @@ public struct GPTKStoreRecord: Codable, Equatable, Sendable {
 public enum GPTKImporter {
     static let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "GPTKImporter")
 
-    /// The PE forwarders Apple ships (GPTK 4 has no d3d9 forwarder).
-    static let forwarderDLLNames = [
-        "d3d10.dll", "d3d11.dll", "d3d12.dll", "dxgi.dll", "nvapi64.dll", "nvngx-on-metalfx.dll"
-    ]
+    /// The D3D forwarders Apple ships, and the only ones deployed. GPTK 4 has
+    /// no d3d9 forwarder.
+    static let forwarderDLLNames = ["d3d10.dll", "d3d11.dll", "d3d12.dll", "dxgi.dll"]
+
+    /// Apple's NVIDIA bridges, which back the experimental DLSS-to-MetalFX
+    /// path. Kept in the store but never deployed: a stock runtime ships no
+    /// `nvapi64` at all, so placing Apple's makes every process that probes for
+    /// an NVIDIA GPU load D3DMetal — Chromium does exactly that, which takes
+    /// Steam's helper process down with it. Opt-in territory, not a default.
+    static let nvidiaBridgeDLLNames = ["nvapi64.dll", "nvngx-on-metalfx.dll"]
 
     /// The unix-side bridge names; each is a symlink to
     /// `../../external/libd3dshared.dylib`, whose `@loader_path` rpath then
     /// finds the framework beside it.
-    static let unixLibraryNames = [
-        "d3d10.so", "d3d11.so", "d3d12.so", "dxgi.so", "nvapi64.so", "nvngx-on-metalfx.so"
-    ]
+    static let unixLibraryNames = ["d3d10.so", "d3d11.so", "d3d12.so", "dxgi.so"]
 
     /// The symlink target for every unix bridge name, relative to
     /// `wine/x86_64-unix/`.
