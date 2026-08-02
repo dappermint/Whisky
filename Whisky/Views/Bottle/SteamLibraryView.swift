@@ -90,7 +90,7 @@ struct SteamLibraryView: View {
                 } label: {
                     Image(systemName: "play.fill")
                 }
-                .disabled(orchestrator.phase != .idle)
+                .disabled(orchestrator.phases[game.appId] != nil)
                 .accessibilityIdentifier("steamLibrary.play.\(game.appId)")
                 .help("steam.button.play")
             }
@@ -106,15 +106,15 @@ struct SteamLibraryView: View {
                 .imageScale(.small)
                 .foregroundStyle(.green)
         } else {
-            switch orchestrator.phase {
+            switch orchestrator.phases[game.appId] {
             case .startingClient:
                 Text("steam.status.starting")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-            case let .launching(appId) where appId == game.appId:
+            case .launching:
                 ProgressView()
                     .controlSize(.small)
-            default:
+            case nil:
                 if case .confirmedStall = orchestrator.downloadStatus {
                     Image(systemName: "exclamationmark.arrow.circlepath")
                         .foregroundStyle(.orange)

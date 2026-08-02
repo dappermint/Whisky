@@ -262,4 +262,61 @@ struct SteamLibraryTests {
         #expect(SteamLibrary.mapWindowsPath("not a path", bottleURL: bottle) == nil)
         #expect(SteamLibrary.mapWindowsPath("", bottleURL: bottle) == nil)
     }
+
+    @Test("Library paths that would escape the prefix are rejected")
+    func rejectsTraversingLibraryPaths() {
+        let bottle = URL(fileURLWithPath: "/tmp/bottle")
+
+        #expect(SteamLibrary.mapWindowsPath(#"D:\..\..\..\etc"#, bottleURL: bottle) == nil)
+        #expect(SteamLibrary.mapWindowsPath(#"C:\Steam\..\..\Library"#, bottleURL: bottle) == nil)
+        #expect(SteamLibrary.mapWindowsPath(#"D:\Games\."#, bottleURL: bottle) == nil)
+    }
+
+    @Test("A manifest whose installdir escapes the library is skipped")
+    func rejectsTraversingInstallDir() throws {
+        let tempDir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let steamRoot = tempDir.appending(path: "drive_c").appending(path: "Program Files (x86)")
+            .appending(path: "Steam")
+        let steamApps = steamRoot.appending(path: "steamapps")
+        try FileManager.default.createDirectory(at: steamApps, withIntermediateDirectories: true)
+        try Data().write(to: steamRoot.appending(path: "steam.exe"))
+
+        // The escape target exists, so only the component check can reject this.
+        let outside = tempDir.appending(path: "outside")
+        try FileManager.default.createDirectory(at: outside, withIntermediateDirectories: true)
+
+        try Data(acf(
+            appId: 4_576_510, name: "Escaper", installDir: "../../../outside", stateFlags: 4
+        ).utf8).write(to: steamApps.appending(path: "appmanifest_4576510.acf"))
+
+        #expect(SteamLibrary.enumerate(bottleURL: tempDir).isEmpty)
+    }
+
+    @Test("Preferred overrides come from the shallowest executable that has any")
+    func picksPreferredOverrides() {
+        var deep = ProgramOverrides()
+        deep.dxvk = true
+        var shallow = ProgramOverrides()
+        shallow.forceD3D11 = true
+
+        let candidates = [
+            ProgramOverrideCandidate(url: URL(fileURLWithPath: "/g/bin/Helper.exe"), overrides: deep),
+            ProgramOverrideCandidate(url: URL(fileURLWithPath: "/g/Game.exe"), overrides: shallow),
+            ProgramOverrideCandidate(url: URL(fileURLWithPath: "/g/Aardvark.exe"), overrides: ProgramOverrides())
+        ]
+
+        #expect(SteamLibrary.preferredOverrides(among: candidates) == shallow)
+    }
+
+    @Test("Preferred overrides are nil when no executable carries any")
+    func picksNoOverrides() {
+        let candidates = [
+            ProgramOverrideCandidate(url: URL(fileURLWithPath: "/g/Game.exe"), overrides: ProgramOverrides())
+        ]
+
+        #expect(SteamLibrary.preferredOverrides(among: candidates) == nil)
+        #expect(SteamLibrary.preferredOverrides(among: []) == nil)
+    }
 }

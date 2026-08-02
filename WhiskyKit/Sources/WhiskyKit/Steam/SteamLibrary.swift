@@ -120,9 +120,23 @@ public enum SteamLibrary {
         return roots
     }
 
+    /// Whether `component` is a plain name safe to join onto a trusted root.
+    ///
+    /// Manifest and VDF contents are not trusted input (spoofed
+    /// `appmanifest_*.acf` files are common in the repack ecosystem) and
+    /// `URL.appending(path:)` does not collapse `..`, so an unchecked component
+    /// escapes the library and reaches the games list, the running-state
+    /// matcher, and the executable set handed to taskkill.
+    static func isSafePathComponent(_ component: String) -> Bool {
+        guard !component.isEmpty, component != ".", component != ".." else { return false }
+        return !component.contains("/") && !component.contains("\\") && !component.contains("\0")
+    }
+
     /// Maps a Windows path from a VDF file (`D:\\SteamLibrary`) to its
     /// location inside the prefix: `drive_c` for the C drive, the
     /// `dosdevices/<letter>:` symlink for everything else.
+    ///
+    /// Returns `nil` when any component would escape the prefix.
     static func mapWindowsPath(_ windowsPath: String, bottleURL: URL) -> URL? {
         let normalized = windowsPath.replacingOccurrences(of: "\\", with: "/")
         guard normalized.count >= 2 else { return nil }
@@ -133,6 +147,8 @@ public enum SteamLibrary {
         else { return nil }
 
         let rest = String(normalized.dropFirst(2)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let components = rest.split(separator: "/").map(String.init)
+        guard components.allSatisfy(isSafePathComponent) else { return nil }
 
         let base: URL = if driveLetter == "c" {
             bottleURL.appending(path: "drive_c")
@@ -140,7 +156,7 @@ public enum SteamLibrary {
             bottleURL.appending(path: "dosdevices").appending(path: "\(driveLetter):")
         }
 
-        return rest.isEmpty ? base : base.appending(path: rest)
+        return components.reduce(base) { $0.appending(path: $1) }
     }
 
     /// Fully installed games in one library root whose install directory exists.
@@ -154,7 +170,8 @@ public enum SteamLibrary {
         var found: [SteamGame] = []
         for filename in contents where filename.hasPrefix("appmanifest_") && filename.hasSuffix(".acf") {
             guard let manifest = SteamAppManifest(contentsOf: steamApps.appending(path: filename)),
-                  manifest.isFullyInstalled
+                  manifest.isFullyInstalled,
+                  isSafePathComponent(manifest.installDir)
             else { continue }
 
             let installURL = steamApps.appending(path: "common").appending(path: manifest.installDir)
@@ -174,11 +191,10 @@ public enum SteamLibrary {
         return found
     }
 
-    /// Lowercased executable names at the install root and one directory
-    /// deep. Used to match a game's processes in the bottle's task list.
-    public static func executableNames(under installURL: URL) -> Set<String> {
+    /// Executables at the install root and one directory deep.
+    public static func executableURLs(under installURL: URL) -> [URL] {
         let fileManager = FileManager.default
-        var names: Set<String> = []
+        var executables: [URL] = []
         var subdirectories: [URL] = []
 
         let top = (try? fileManager.contentsOfDirectory(
@@ -186,7 +202,7 @@ public enum SteamLibrary {
         )) ?? []
         for item in top {
             if item.pathExtension.lowercased() == "exe" {
-                names.insert(item.lastPathComponent.lowercased())
+                executables.append(item)
             } else if (try? item.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true {
                 subdirectories.append(item)
             }
@@ -195,10 +211,44 @@ public enum SteamLibrary {
             let items = (try? fileManager.contentsOfDirectory(
                 at: directory, includingPropertiesForKeys: nil
             )) ?? []
-            for item in items where item.pathExtension.lowercased() == "exe" {
-                names.insert(item.lastPathComponent.lowercased())
-            }
+            executables.append(contentsOf: items.filter { $0.pathExtension.lowercased() == "exe" })
         }
-        return names
+        return executables
+    }
+
+    /// Lowercased executable names at the install root and one directory
+    /// deep. Used to match a game's processes in the bottle's task list.
+    public static func executableNames(under installURL: URL) -> Set<String> {
+        Set(executableURLs(under: installURL).map { $0.lastPathComponent.lowercased() })
+    }
+
+    /// Picks the overrides a library launch should carry from the game's
+    /// executables' persisted settings: the shallowest one that has any, ties
+    /// broken by name so the pick does not move between scans.
+    ///
+    /// Steam games surface as ordinary Programs, so a user can tune one in the
+    /// Programs tab, and those settings have to survive the Play button.
+    public static func preferredOverrides(among candidates: [ProgramOverrideCandidate]) -> ProgramOverrides? {
+        candidates
+            .filter { !$0.overrides.isEmpty }
+            .min { lhs, rhs in
+                let left = lhs.url.pathComponents.count
+                let right = rhs.url.pathComponents.count
+                guard left == right else { return left < right }
+                return lhs.url.lastPathComponent
+                    .localizedCaseInsensitiveCompare(rhs.url.lastPathComponent) == .orderedAscending
+            }?
+            .overrides
+    }
+}
+
+/// One executable's persisted overrides, for ``SteamLibrary/preferredOverrides(among:)``.
+public struct ProgramOverrideCandidate: Equatable, Sendable {
+    public let url: URL
+    public let overrides: ProgramOverrides
+
+    public init(url: URL, overrides: ProgramOverrides) {
+        self.url = url
+        self.overrides = overrides
     }
 }

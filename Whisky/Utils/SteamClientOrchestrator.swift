@@ -42,12 +42,14 @@ enum SteamOrchestratorError: LocalizedError {
 @MainActor
 final class SteamClientOrchestrator: ObservableObject {
     enum Phase: Equatable {
-        case idle
         case startingClient
-        case launching(appId: Int)
+        case launching
     }
 
-    @Published private(set) var phase: Phase = .idle
+    /// Where each in-flight launch is, keyed by App ID. Per-game rather than
+    /// global: the grace period below runs for up to two minutes, and starting
+    /// a second game while the first precompiles shaders is normal.
+    @Published private(set) var phases: [Int: Phase] = [:]
     @Published private(set) var downloadStatus: StallStatus = .noDownloads
     /// App IDs whose executables are currently in the bottle's process list.
     @Published private(set) var runningAppIds: Set<Int> = []
@@ -58,6 +60,9 @@ final class SteamClientOrchestrator: ObservableObject {
     private var cancellables: Set<AnyCancellable> = []
     private var trackingTask: Task<Void, Never>?
     private var executableNamesByAppId: [Int: Set<String>] = [:]
+    /// The in-flight client startup, so concurrent launches await one attempt
+    /// instead of each racing to start their own client.
+    private var clientStartup: Task<Void, Error>?
 
     private lazy var watch = SteamProcessWatch(pollInterval: .seconds(2)) { [weak self] in
         await self?.runningImageNames() ?? []
@@ -79,9 +84,9 @@ final class SteamClientOrchestrator: ObservableObject {
 
     /// Launches a game via `-applaunch`, bringing the client up first if needed.
     func launch(_ game: SteamGame) async {
-        guard phase == .idle else { return }
-        phase = .startingClient
-        defer { phase = .idle }
+        guard phases[game.appId] == nil else { return }
+        phases[game.appId] = .startingClient
+        defer { phases[game.appId] = nil }
 
         guard let steamRoot = SteamLibrary.detectInstall(bottleURL: bottle.url) else {
             launchError = SteamOrchestratorError.steamNotInstalled.errorDescription
@@ -96,8 +101,11 @@ final class SteamClientOrchestrator: ObservableObject {
             return
         }
 
-        phase = .launching(appId: game.appId)
-        let plan = LaunchResolver.plan(steamAppId: game.appId)
+        phases[game.appId] = .launching
+        let plan = LaunchResolver.plan(
+            steamAppId: game.appId,
+            userOverrides: userOverrides(for: game)
+        )
         let bottle = self.bottle
         let appId = game.appId
         // With the client already up this invocation just forwards and exits,
@@ -160,7 +168,36 @@ final class SteamClientOrchestrator: ObservableObject {
         downloadMonitor.stopMonitoring()
     }
 
+    /// The user's persisted overrides for this game's executables, so settings
+    /// tuned in the Programs tab survive a launch from the library.
+    private func userOverrides(for game: SteamGame) -> ProgramOverrides? {
+        let scanned = Dictionary(
+            bottle.programs.compactMap { program in
+                program.settings.overrides.map { (program.url.standardizedFileURL, $0) }
+            },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let candidates = SteamLibrary.executableURLs(under: game.installURL).map { url in
+            // Falls back to a direct load for executables the bottle scan has
+            // not reached, so Play works before the Programs tab is opened.
+            let overrides = scanned[url.standardizedFileURL]
+                ?? Program(url: url, bottle: bottle, peFile: nil).settings.overrides
+            return ProgramOverrideCandidate(url: url, overrides: overrides ?? ProgramOverrides())
+        }
+        return SteamLibrary.preferredOverrides(among: candidates)
+    }
+
     private func ensureClientRunning(steamExe: URL) async throws {
+        if let clientStartup {
+            return try await clientStartup.value
+        }
+        let startup = Task { try await startClient(steamExe: steamExe) }
+        clientStartup = startup
+        defer { clientStartup = nil }
+        try await startup.value
+    }
+
+    private func startClient(steamExe: URL) async throws {
         if await isClientRunning() {
             startDownloadMonitoringIfNeeded()
             return
