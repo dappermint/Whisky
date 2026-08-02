@@ -86,7 +86,7 @@ struct SteamLibraryView: View {
                 .help("steam.button.stop")
             } else {
                 Button {
-                    Task { await orchestrator.launch(game) }
+                    orchestrator.launch(game)
                 } label: {
                     Image(systemName: "play.fill")
                 }

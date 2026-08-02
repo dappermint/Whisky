@@ -63,6 +63,12 @@ final class SteamClientOrchestrator: ObservableObject {
     /// The in-flight client startup, so concurrent launches await one attempt
     /// instead of each racing to start their own client.
     private var clientStartup: Task<Void, Error>?
+    private var launchTasks: [Int: Task<Void, Never>] = [:]
+    /// The launch watch polls every 2s and the status poller every 10s; sharing
+    /// one short-lived snapshot stops them each running their own tasklist.exe.
+    private var processSnapshot: (processes: [WineProcess], taken: Date)?
+    private var snapshotRead: Task<[WineProcess], Never>?
+    private let snapshotLifetime: TimeInterval = 1
 
     private lazy var watch = SteamProcessWatch(pollInterval: .seconds(2)) { [weak self] in
         await self?.runningImageNames() ?? []
@@ -83,10 +89,20 @@ final class SteamClientOrchestrator: ObservableObject {
     }
 
     /// Launches a game via `-applaunch`, bringing the client up first if needed.
-    func launch(_ game: SteamGame) async {
+    ///
+    /// Owns the task rather than the caller so ``stop()`` can cancel a launch
+    /// still inside its grace period.
+    func launch(_ game: SteamGame) {
         guard phases[game.appId] == nil else { return }
         phases[game.appId] = .startingClient
-        defer { phases[game.appId] = nil }
+        launchTasks[game.appId] = Task { await performLaunch(game) }
+    }
+
+    private func performLaunch(_ game: SteamGame) async {
+        defer {
+            phases[game.appId] = nil
+            launchTasks[game.appId] = nil
+        }
 
         guard let steamRoot = SteamLibrary.detectInstall(bottleURL: bottle.url) else {
             launchError = SteamOrchestratorError.steamNotInstalled.errorDescription
@@ -135,7 +151,6 @@ final class SteamClientOrchestrator: ObservableObject {
         trackingTask = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.refreshRunningState()
-                guard !Task.isCancelled else { return }
                 try? await Task.sleep(for: .seconds(10))
             }
         }
@@ -145,14 +160,12 @@ final class SteamClientOrchestrator: ObservableObject {
     func stop(_ game: SteamGame) async {
         let names = executableNamesByAppId[game.appId]
             ?? SteamLibrary.executableNames(under: game.installURL)
-        guard let output = try? await Wine.runWine(["tasklist.exe", "/FO", "CSV"], bottle: bottle) else {
-            return
-        }
 
-        for process in Wine.parseTasklistOutput(output)
+        for process in await runningProcesses()
             where names.contains(process.imageName.lowercased()) {
             await Wine.gracefulKillProcess(winePID: process.winePID, bottle: bottle)
         }
+        processSnapshot = nil
         await refreshRunningState()
     }
 
@@ -165,6 +178,12 @@ final class SteamClientOrchestrator: ObservableObject {
     func stop() {
         trackingTask?.cancel()
         trackingTask = nil
+        for task in launchTasks.values {
+            task.cancel()
+        }
+        launchTasks.removeAll()
+        clientStartup?.cancel()
+        clientStartup = nil
         downloadMonitor.stopMonitoring()
     }
 
@@ -203,12 +222,7 @@ final class SteamClientOrchestrator: ObservableObject {
             return
         }
 
-        // The launcherManaged env recipe (UTF-8 locale, CEF sandbox flags) is
-        // what keeps steamwebhelper alive; make sure it applies to this launch.
-        if bottle.settings.detectedLauncher == nil {
-            bottle.settings.detectedLauncher = .steam
-        }
-        bottle.settings.launcherCompatibilityMode = true
+        applySteamLauncherFixes()
 
         let bottle = self.bottle
         // steam.exe -silent runs for the whole session -- never await it.
@@ -221,6 +235,20 @@ final class SteamClientOrchestrator: ObservableObject {
             return
         }
         throw SteamOrchestratorError.clientTimeout
+    }
+
+    /// Applies Steam's launcher fixes through the shared path, which carries the
+    /// locale, DXVK and GPU-spoofing settings steamwebhelper needs and not just
+    /// the compat flag.
+    ///
+    /// Skipped in manual mode: the user picked that launcher and that compat
+    /// setting, and Play must not quietly overrule either.
+    private func applySteamLauncherFixes() {
+        guard bottle.settings.launcherMode == .auto else { return }
+        guard !(bottle.settings.launcherCompatibilityMode
+            && bottle.settings.detectedLauncher == .steam)
+        else { return }
+        LauncherDetection.applyLauncherFixes(for: bottle, launcher: .steam)
     }
 
     private func isClientRunning() async -> Bool {
@@ -242,9 +270,29 @@ final class SteamClientOrchestrator: ObservableObject {
     }
 
     private func runningImageNames() async -> Set<String> {
+        await Set(runningProcesses().map { $0.imageName.lowercased() })
+    }
+
+    private func runningProcesses() async -> [WineProcess] {
+        if let processSnapshot, Date().timeIntervalSince(processSnapshot.taken) < snapshotLifetime {
+            return processSnapshot.processes
+        }
+        if let snapshotRead {
+            return await snapshotRead.value
+        }
+
+        let read = Task { await readProcessList() }
+        snapshotRead = read
+        let processes = await read.value
+        snapshotRead = nil
+        processSnapshot = (processes, Date())
+        return processes
+    }
+
+    private func readProcessList() async -> [WineProcess] {
         guard let output = try? await Wine.runWine(["tasklist.exe", "/FO", "CSV"], bottle: bottle) else {
             return []
         }
-        return Set(Wine.parseTasklistOutput(output).map { $0.imageName.lowercased() })
+        return Wine.parseTasklistOutput(output)
     }
 }

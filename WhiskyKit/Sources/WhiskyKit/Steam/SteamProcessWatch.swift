@@ -43,7 +43,8 @@ public struct SteamProcessWatch: Sendable {
     ///
     /// Always checks at least once, so a zero timeout still observes the
     /// current state. An empty `names` set reports `true` immediately: there
-    /// is nothing to wait for.
+    /// is nothing to wait for. Returns `false` on cancellation rather than
+    /// running the timeout out, since `Task.sleep` throwing is swallowed here.
     public func waitForAny(of names: Set<String>, timeout: TimeInterval) async -> Bool {
         guard !names.isEmpty else { return true }
 
@@ -53,6 +54,7 @@ public struct SteamProcessWatch: Sendable {
                 return true
             }
             try? await Task.sleep(for: pollInterval)
+            guard !Task.isCancelled else { return false }
         } while Date() < deadline
         return false
     }

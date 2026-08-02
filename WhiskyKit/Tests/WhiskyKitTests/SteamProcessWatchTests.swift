@@ -78,6 +78,19 @@ struct SteamProcessWatchTests {
         #expect(await watch.waitForAny(of: ["game.exe"], timeout: 0))
     }
 
+    @Test("Cancellation ends the wait instead of running the timeout out")
+    func cancellationEndsTheWait() async {
+        let watch = makeWatch(responses: [["svchost.exe"]], pollInterval: .milliseconds(20))
+
+        let started = Date()
+        let task = Task { await watch.waitForAny(of: ["game.exe"], timeout: 30) }
+        try? await Task.sleep(for: .milliseconds(50))
+        task.cancel()
+
+        #expect(await task.value == false)
+        #expect(Date().timeIntervalSince(started) < 5)
+    }
+
     @Test("Maps running processes back to their keys")
     func mapsRunningKeys() async {
         let watch = makeWatch(responses: [["casualtiesunknown.exe", "steam.exe"]])
