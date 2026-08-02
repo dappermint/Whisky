@@ -66,7 +66,7 @@ struct GPTKSettingsSection: View {
         }
         .task {
             await Task.detached(priority: .utility) {
-                GPTKImporter.deployStoredPayloadIfCapable()
+                _ = GPTKImporter.deployStoredPayloadEverywhereCapable()
             }.value
             refresh()
         }
@@ -92,7 +92,10 @@ struct GPTKSettingsSection: View {
 
     private func refresh() {
         storedRecord = GPTKImporter.storedRecord()
-        runtimeCapable = GPTKImporter.isRuntimeGPTKCapable()
+        // Any installed runtime being capable is enough: the payload deploys
+        // into each one that can execute it, and bottles pick which to use.
+        runtimeCapable = WhiskyWineInstaller.installedRuntimes()
+            .contains { GPTKImporter.isRuntimeGPTKCapable(for: $0.runtime) }
     }
 
     private func importPayload(from url: URL) {
@@ -114,9 +117,7 @@ struct GPTKSettingsSection: View {
                 // Deployment into the Wine tree is gated: on an engine build
                 // without GPTK exception-unwind support the payload would
                 // crash every process that touches it.
-                if GPTKImporter.isRuntimeGPTKCapable() {
-                    try GPTKImporter.deployStoredPayload()
-                }
+                GPTKImporter.deployStoredPayloadEverywhereCapable()
                 for mount in mounts.reversed() {
                     GPTKDiskImage.detach(mount)
                 }
@@ -143,7 +144,7 @@ struct GPTKSettingsSection: View {
             // a half-finished deploy looks undeployed while forwarders are
             // already swapped, and skipping cleanup would delete originals/ with
             // the store. The removal is idempotent per file.
-            try GPTKImporter.removeDeployedPayload()
+            try GPTKImporter.removeDeployedPayloadEverywhere()
             try GPTKImporter.removeStore()
         } catch {
             importError = error.localizedDescription

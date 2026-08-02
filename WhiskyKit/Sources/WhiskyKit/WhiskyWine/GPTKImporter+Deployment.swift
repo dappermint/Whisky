@@ -37,14 +37,24 @@ extension GPTKImporter {
     /// no. This is a build property (exception-unwind support), not something
     /// the payload or the app can add.
     public static func isRuntimeGPTKCapable() -> Bool {
-        WhiskyWineInstaller.whiskyWineInfo()?.gptkCapable == true
+        isRuntimeGPTKCapable(for: nil)
+    }
+
+    /// Whether `runtime`'s Wine build can execute GPTK payloads.
+    public static func isRuntimeGPTKCapable(for runtime: String?) -> Bool {
+        WhiskyWineInstaller.whiskyWineInfo(for: runtime)?.gptkCapable == true
     }
 
     // MARK: - Deployment
 
-    /// Whether the payload is deployed into the runtime tree.
+    /// Whether the payload is deployed into the default runtime's tree.
     public static func isDeployed() -> Bool {
-        isDeployed(inLibraryFolder: WhiskyWineInstaller.libraryFolder)
+        isDeployed(for: nil)
+    }
+
+    /// Whether the payload is deployed into `runtime`'s tree.
+    public static func isDeployed(for runtime: String?) -> Bool {
+        isDeployed(inLibraryFolder: WhiskyWineInstaller.libraryFolder(for: runtime))
     }
 
     /// Testable seam for ``isDeployed()``: the unix bridge for dxgi and the
@@ -65,7 +75,16 @@ extension GPTKImporter {
     /// Callers gate this on ``isRuntimeGPTKCapable()`` — deploying to an
     /// incapable runtime turns every D3DMetal launch into a crash.
     public static func deployStoredPayload() throws {
-        try deploy(fromStore: storeFolder, intoLibraryFolder: WhiskyWineInstaller.libraryFolder)
+        try deployStoredPayload(for: nil)
+    }
+
+    /// Deploys the stored payload into `runtime`'s tree.
+    public static func deployStoredPayload(for runtime: String?) throws {
+        try deploy(
+            fromStore: storeFolder,
+            intoLibraryFolder: WhiskyWineInstaller.libraryFolder(for: runtime),
+            originalsKey: originalsKey(for: runtime)
+        )
     }
 
     /// Deploys the stored payload if there is one and the runtime can execute
@@ -75,14 +94,33 @@ extension GPTKImporter {
     /// every install has to re-evaluate. Idempotent and safe to call anywhere.
     @discardableResult
     public static func deployStoredPayloadIfCapable() -> Bool {
-        guard storedRecord() != nil, isRuntimeGPTKCapable() else { return false }
+        deployStoredPayloadIfCapable(for: nil)
+    }
+
+    /// ``deployStoredPayloadIfCapable()`` against a specific runtime.
+    @discardableResult
+    public static func deployStoredPayloadIfCapable(for runtime: String?) -> Bool {
+        guard storedRecord() != nil, isRuntimeGPTKCapable(for: runtime) else { return false }
         do {
-            try deployStoredPayload()
+            try deployStoredPayload(for: runtime)
             return true
         } catch {
             logger.error("Deploying the stored GPTK payload failed: \(error.localizedDescription)")
             return false
         }
+    }
+
+    /// Deploys the stored payload into every installed runtime that can execute
+    /// it, returning the identifiers it reached.
+    ///
+    /// Callers that used to deploy "into the runtime" now have several to
+    /// choose from, and the useful default is all of the capable ones: an
+    /// incapable runtime is skipped rather than broken.
+    @discardableResult
+    public static func deployStoredPayloadEverywhereCapable() -> [String?] {
+        WhiskyWineInstaller.installedRuntimes()
+            .map(\.runtime)
+            .filter { deployStoredPayloadIfCapable(for: $0) }
     }
 
     /// The runtime version under `folder`, or `nil` if none is readable.
@@ -92,26 +130,64 @@ extension GPTKImporter {
         return "\(info.version.major).\(info.version.minor).\(info.version.patch)"
     }
 
-    static func originalsRecordURL(inStore store: URL) -> URL {
-        store.appending(path: "originals").appending(path: "OriginalsVersion.plist")
+    /// The store key a runtime's backups live under. The default runtime has no
+    /// identifier of its own, so it gets a reserved one.
+    static func originalsKey(for runtime: String?) -> String {
+        runtime ?? "default"
     }
 
-    static func originalsRecord(inStore store: URL) -> GPTKOriginalsRecord? {
-        guard let data = try? Data(contentsOf: originalsRecordURL(inStore: store)) else { return nil }
+    /// Where `key`'s backed-up Wine originals live.
+    ///
+    /// Keyed per runtime, not shared: several runtimes can hold the payload at
+    /// once, and a single backup set means deploying into one destroys the
+    /// originals of another, leaving nothing to restore.
+    static func originalsFolder(inStore store: URL, key: String) -> URL {
+        store.appending(path: "originals").appending(path: key)
+    }
+
+    static func originalsRecordURL(inStore store: URL, key: String) -> URL {
+        originalsFolder(inStore: store, key: key).appending(path: "OriginalsVersion.plist")
+    }
+
+    static func originalsRecord(inStore store: URL, key: String) -> GPTKOriginalsRecord? {
+        guard let data = try? Data(contentsOf: originalsRecordURL(inStore: store, key: key)) else { return nil }
         return try? PropertyListDecoder().decode(GPTKOriginalsRecord.self, from: data)
     }
 
-    /// Readies the `originals/` folder for a deploy against `folder`, dropping
+    /// Moves a flat `originals/` set, written when the store only ever backed up
+    /// one runtime, under the default runtime's key. Without this the backups of
+    /// an already-deployed default runtime are orphaned and its real Wine DLLs
+    /// can never be restored.
+    static func migrateFlatOriginals(inStore store: URL) throws {
+        let fileManager = FileManager.default
+        let originals = store.appending(path: "originals")
+        let flatRecord = originals.appending(path: "OriginalsVersion.plist")
+        guard fileManager.fileExists(atPath: flatRecord.path(percentEncoded: false)) else { return }
+
+        let destination = originalsFolder(inStore: store, key: originalsKey(for: nil))
+        if fileManager.fileExists(atPath: destination.path(percentEncoded: false)) {
+            try fileManager.removeItem(at: destination)
+        }
+        try fileManager.createDirectory(at: destination, withIntermediateDirectories: true)
+
+        for entry in try fileManager.contentsOfDirectory(atPath: originals.path(percentEncoded: false))
+            where entry != destination.lastPathComponent {
+            try fileManager.moveItem(at: originals.appending(path: entry), to: destination.appending(path: entry))
+        }
+        logger.info("Migrated flat GPTK originals under the default runtime's key")
+    }
+
+    /// Readies `key`'s originals folder for a deploy against `folder`, dropping
     /// backups left by a previous engine: restoring those would put that
     /// engine's DLLs into this one's tree. The stamp is written before the first
     /// backup so an interrupted deploy still leaves originals remove will
     /// recognise and restore.
-    private static func prepareOriginals(inStore store: URL, forLibraryFolder folder: URL) throws {
+    private static func prepareOriginals(inStore store: URL, forLibraryFolder folder: URL, key: String) throws {
         let fileManager = FileManager.default
-        let originals = store.appending(path: "originals")
+        let originals = originalsFolder(inStore: store, key: key)
         let runtimeStamp = runtimeVersionStamp(inLibraryFolder: folder)
 
-        if originalsRecord(inStore: store)?.runtimeVersion != runtimeStamp {
+        if originalsRecord(inStore: store, key: key)?.runtimeVersion != runtimeStamp {
             try? fileManager.removeItem(at: originals)
         }
         try fileManager.createDirectory(at: originals, withIntermediateDirectories: true)
@@ -120,11 +196,12 @@ extension GPTKImporter {
         let encoder = PropertyListEncoder()
         encoder.outputFormat = .xml
         try encoder.encode(GPTKOriginalsRecord(runtimeVersion: runtimeStamp))
-            .write(to: originalsRecordURL(inStore: store))
+            .write(to: originalsRecordURL(inStore: store, key: key))
     }
 
     /// Testable seam for ``deployStoredPayload()``.
-    static func deploy(fromStore store: URL, intoLibraryFolder folder: URL) throws {
+    static func deploy(fromStore store: URL, intoLibraryFolder folder: URL, originalsKey key: String = "default")
+        throws {
         guard storedRecord(inStore: store) != nil else {
             throw GPTKImportError.storeEmpty
         }
@@ -133,8 +210,9 @@ extension GPTKImporter {
         let wineLib = folder.appending(path: "Wine").appending(path: "lib")
         let peDir = wineLib.appending(path: "wine").appending(path: "x86_64-windows")
         let unixDir = wineLib.appending(path: "wine").appending(path: "x86_64-unix")
-        let originals = store.appending(path: "originals")
-        try prepareOriginals(inStore: store, forLibraryFolder: folder)
+        let originals = originalsFolder(inStore: store, key: key)
+        try migrateFlatOriginals(inStore: store)
+        try prepareOriginals(inStore: store, forLibraryFolder: folder, key: key)
 
         for name in forwarderDLLNames {
             let target = peDir.appending(path: name)
@@ -188,19 +266,37 @@ extension GPTKImporter {
     /// Removes the payload from the runtime tree and restores the backed-up
     /// Wine originals.
     public static func removeDeployedPayload() throws {
-        try remove(fromLibraryFolder: WhiskyWineInstaller.libraryFolder, usingStore: storeFolder)
+        try removeDeployedPayload(for: nil)
+    }
+
+    /// Removes the payload from `runtime`'s tree and restores its originals.
+    public static func removeDeployedPayload(for runtime: String?) throws {
+        try remove(
+            fromLibraryFolder: WhiskyWineInstaller.libraryFolder(for: runtime),
+            usingStore: storeFolder,
+            originalsKey: originalsKey(for: runtime)
+        )
+    }
+
+    /// Removes the payload from every installed runtime.
+    public static func removeDeployedPayloadEverywhere() throws {
+        for runtime in WhiskyWineInstaller.installedRuntimes().map(\.runtime) {
+            try removeDeployedPayload(for: runtime)
+        }
     }
 
     /// Testable seam for ``removeDeployedPayload()``.
-    static func remove(fromLibraryFolder folder: URL, usingStore store: URL) throws {
+    static func remove(fromLibraryFolder folder: URL, usingStore store: URL, originalsKey key: String = "default")
+        throws {
         let fileManager = FileManager.default
         let wineLib = folder.appending(path: "Wine").appending(path: "lib")
         let peDir = wineLib.appending(path: "wine").appending(path: "x86_64-windows")
         let unixDir = wineLib.appending(path: "wine").appending(path: "x86_64-unix")
-        let originals = store.appending(path: "originals")
+        try migrateFlatOriginals(inStore: store)
+        let originals = originalsFolder(inStore: store, key: key)
         let storeLib = store.appending(path: "lib")
 
-        let originalsAreCurrent = originalsRecord(inStore: store)?.runtimeVersion
+        let originalsAreCurrent = originalsRecord(inStore: store, key: key)?.runtimeVersion
             == runtimeVersionStamp(inLibraryFolder: folder)
 
         for name in forwarderDLLNames {

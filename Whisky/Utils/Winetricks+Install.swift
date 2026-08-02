@@ -96,6 +96,7 @@ extension Winetricks {
     private static func configureInstallProcess(
         verb: String,
         bottleURL: URL,
+        runtime: String?,
         resourcesURL: URL
     ) -> Process {
         let process = Process()
@@ -106,7 +107,7 @@ extension Winetricks {
             "WINEPREFIX": bottleURL.path(percentEncoded: false),
             "WINE": "wine64",
             "PATH": [
-                WhiskyWineInstaller.binFolder.path(percentEncoded: false),
+                WhiskyWineInstaller.binFolder(for: runtime).path(percentEncoded: false),
                 resourcesURL.path(percentEncoded: false),
                 "/usr/bin",
                 "/bin"
@@ -144,7 +145,7 @@ extension Winetricks {
     ) async {
         continuation.yield(.preparing)
 
-        let bottleURL = await MainActor.run { bottle.url }
+        let (bottleURL, runtime) = await MainActor.run { (bottle.url, bottle.settings.runtime) }
 
         guard let resourcesURL = Bundle.main.url(
             forResource: "cabextract",
@@ -157,7 +158,9 @@ extension Winetricks {
             return
         }
 
-        let process = configureInstallProcess(verb: verb, bottleURL: bottleURL, resourcesURL: resourcesURL)
+        let process = configureInstallProcess(
+            verb: verb, bottleURL: bottleURL, runtime: runtime, resourcesURL: resourcesURL
+        )
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()
         process.standardOutput = stdoutPipe

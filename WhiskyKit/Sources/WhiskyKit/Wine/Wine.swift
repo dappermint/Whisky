@@ -85,13 +85,41 @@ public class Wine {
     /// URL to the installed DXMT payload containing Direct3D-11-to-Metal translation libraries.
     /// Absent on runtimes older than Wine Libraries 3.1.0.
     private static let dxmtFolder: URL = WhiskyWineInstaller.libraryFolder.appending(path: "DXMT")
-    /// The URL to the `wine64` binary executable.
+
+    /// The DXVK payload belonging to `runtime`.
+    ///
+    /// Translation payloads ship inside a runtime and are built against it, so
+    /// a bottle on another runtime must use that runtime's copy or none. A
+    /// runtime that ships neither (a GPTK build without Vulkan, say) simply has
+    /// those backends unavailable, which is the honest answer.
+    static func dxvkFolder(for runtime: String?) -> URL {
+        WhiskyWineInstaller.libraryFolder(for: runtime).appending(path: "DXVK")
+    }
+
+    /// The DXMT payload belonging to `runtime`.
+    static func dxmtFolder(for runtime: String?) -> URL {
+        WhiskyWineInstaller.libraryFolder(for: runtime).appending(path: "DXMT")
+    }
+    /// The URL to the default runtime's `wine64` binary executable.
     ///
     /// This is the main Wine binary used to execute Windows applications.
-    /// The binary is located within the WhiskyWine installation directory.
+    /// Anything running in the context of a bottle should use
+    /// ``wineBinary(for:)`` instead, since a bottle may select another runtime.
     public static let wineBinary: URL = WhiskyWineInstaller.binFolder.appending(path: "wine64")
-    /// URL to the `wineserver` binary for Wine server management.
+    /// URL to the default runtime's `wineserver` binary.
     private static let wineserverBinary: URL = WhiskyWineInstaller.binFolder.appending(path: "wineserver")
+
+    /// The `wine64` binary of the runtime `bottle` is configured to use.
+    @MainActor
+    public static func wineBinary(for bottle: Bottle) -> URL {
+        WhiskyWineInstaller.binFolder(for: bottle.settings.runtime).appending(path: "wine64")
+    }
+
+    /// The `wineserver` binary of the runtime `bottle` is configured to use.
+    @MainActor
+    public static func wineserverBinary(for bottle: Bottle) -> URL {
+        WhiskyWineInstaller.binFolder(for: bottle.settings.runtime).appending(path: "wineserver")
+    }
 
     /// Run a process on a executable file given by the `executableURL`
     private static func runProcess(
@@ -113,10 +141,11 @@ public class Wine {
     /// Run a `wine` process with the given arguments and environment variables returning a stream of output
     private static func runWineProcess(
         name: String? = nil, args: [String], environment: [String: String] = [:],
-        fileHandle: FileHandle?
+        runtime: String? = nil, fileHandle: FileHandle?
     ) throws -> AsyncStream<ProcessOutput> {
         try runProcess(
-            name: name, args: args, environment: environment, executableURL: wineBinary,
+            name: name, args: args, environment: environment,
+            executableURL: WhiskyWineInstaller.binFolder(for: runtime).appending(path: "wine64"),
             fileHandle: fileHandle
         )
     }
@@ -155,7 +184,7 @@ public class Wine {
         let wineEnvironment = constructWineEnvironment(for: bottle, environment: environment)
 
         return try runProcess(
-            name: name, args: args, environment: wineEnvironment, executableURL: wineBinary,
+            name: name, args: args, environment: wineEnvironment, executableURL: wineBinary(for: bottle),
             fileHandle: fileHandle
         )
     }
@@ -183,7 +212,8 @@ public class Wine {
         let wineserverEnvironment = constructWineEnvironment(for: bottle, environment: environment)
 
         return try runProcess(
-            name: name, args: args, environment: wineserverEnvironment, executableURL: wineserverBinary,
+            name: name, args: args, environment: wineserverEnvironment,
+            executableURL: wineserverBinary(for: bottle),
             fileHandle: fileHandle
         )
     }
@@ -251,7 +281,7 @@ public class Wine {
         // the matching WINEDLLOVERRIDES come from the environment layers.
         let effectiveBackendChoice = programOverrides?.graphicsBackend ?? bottle.settings.graphicsBackend
         let effectiveBackend = effectiveBackendChoice == .recommended
-            ? GraphicsBackendResolver.resolve()
+            ? GraphicsBackendResolver.resolve(for: bottle.settings.runtime)
             : effectiveBackendChoice
 
         // DXMT first: if launcher auto-DXVK also fires below (e.g. Rockstar),
@@ -354,7 +384,7 @@ public class Wine {
         for await output in try runProcess(
             name: programName,
             args: launchArgs,
-            environment: wineEnvironment, executableURL: wineBinary,
+            environment: wineEnvironment, executableURL: wineBinary(for: bottle),
             fileHandle: fileHandle
         ) {
             if case let .terminated(code) = output {
@@ -414,7 +444,7 @@ public class Wine {
     ) -> String {
         // Escape args and environment values to prevent shell injection from user-editable settings
         let escapedArgs = preEscaped ? args : args.esc
-        var wineCmd = "\(wineBinary.esc) start /unix \(url.esc) \(escapedArgs)"
+        var wineCmd = "\(wineBinary(for: bottle).esc) start /unix \(url.esc) \(escapedArgs)"
         let wineEnv = constructWineEnvironment(for: bottle, environment: environment)
         for envVar in wineEnv {
             if isValidEnvKey(envVar.key) {
@@ -450,7 +480,7 @@ public class Wine {
     @MainActor
     public static func generateTerminalEnvironmentCommand(bottle: Bottle) -> String {
         var cmd = """
-        export PATH=\"\(WhiskyWineInstaller.binFolder.path.esc):$PATH\"
+        export PATH=\"\(WhiskyWineInstaller.binFolder(for: bottle.settings.runtime).path.esc):$PATH\"
         export WINE=\"wine64\"
         alias wine=\"wine64\"
         alias winecfg=\"wine64 winecfg\"
@@ -534,7 +564,9 @@ public class Wine {
         fileHandle.writeInfo(for: bottle)
         let wineEnvironment = constructWineEnvironment(for: bottle, environment: environment)
 
-        for await output in try runWineProcess(args: args, environment: wineEnvironment, fileHandle: fileHandle) {
+        for await output in try runWineProcess(
+            args: args, environment: wineEnvironment, runtime: bottle.settings.runtime, fileHandle: fileHandle
+        ) {
             switch output {
             case .started, .terminated:
                 break
@@ -648,13 +680,14 @@ public class Wine {
     ///   when DXVK is enabled in the bottle settings.
     @MainActor
     public static func enableDXVK(bottle: Bottle) throws {
+        let dxvk = Wine.dxvkFolder(for: bottle.settings.runtime)
         try FileManager.default.replaceDLLs(
             in: bottle.url.appending(path: "drive_c").appending(path: "windows").appending(path: "system32"),
-            withContentsIn: Wine.dxvkFolder.appending(path: "x64")
+            withContentsIn: dxvk.appending(path: "x64")
         )
         try FileManager.default.replaceDLLs(
             in: bottle.url.appending(path: "drive_c").appending(path: "windows").appending(path: "syswow64"),
-            withContentsIn: Wine.dxvkFolder.appending(path: "x32")
+            withContentsIn: dxvk.appending(path: "x32")
         )
     }
 
@@ -695,6 +728,11 @@ public class Wine {
     /// trio.
     public static func isDXMTRuntimeNative() -> Bool {
         isDXMTRuntimeNative(payloadRoot: dxmtFolder)
+    }
+
+    /// ``isDXMTRuntimeNative()`` against the payload belonging to `runtime`.
+    public static func isDXMTRuntimeNative(for runtime: String?) -> Bool {
+        isDXMTRuntimeNative(payloadRoot: dxmtFolder(for: runtime))
     }
 
     /// Capability check against an explicit payload root. Factored out so the
@@ -743,7 +781,7 @@ public class Wine {
     ///   graphics backend is `.dxmt`.
     @MainActor
     public static func enableDXMT(bottle: Bottle) throws {
-        try enableDXMT(payloadRoot: Wine.dxmtFolder, prefixRoot: bottle.url)
+        try enableDXMT(payloadRoot: Wine.dxmtFolder(for: bottle.settings.runtime), prefixRoot: bottle.url)
     }
 
     /// Performs the DXMT installation against explicit roots. Factored out of
@@ -818,6 +856,21 @@ extension Wine {
     public static func repairPrefix(bottle: Bottle) async throws -> String {
         logger.info("Repairing Wine prefix for bottle '\(bottle.settings.name)'")
         return try await runWine(["wineboot", "--init"], bottle: bottle)
+    }
+
+    /// Refreshes a prefix's `system32` against the runtime it now points at.
+    ///
+    /// A prefix records which builtin DLLs it was populated with, so a bottle
+    /// moved to another runtime keeps the previous one's copies until this runs
+    /// — which mixes two Wine trees in one prefix.
+    ///
+    /// - Parameter bottle: The ``Bottle`` whose prefix should be refreshed.
+    /// - Throws: An error if wineboot fails.
+    @discardableResult
+    @MainActor
+    public static func updatePrefix(bottle: Bottle) async throws -> String {
+        logger.info("Updating Wine prefix for bottle '\(bottle.settings.name)'")
+        return try await runWine(["wineboot", "-u"], bottle: bottle)
     }
 
     /// Checks if an environment variable key is a valid POSIX shell identifier.

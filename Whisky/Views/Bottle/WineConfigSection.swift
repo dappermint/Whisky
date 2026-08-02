@@ -42,6 +42,7 @@ struct WineConfigSection: View {
 
     var body: some View {
         Section("config.title.wine", isExpanded: $isExpanded) {
+            RuntimePickerView(bottle: bottle)
             SettingItemView(
                 title: "config.winVersion",
                 description: "config.winVersion.info",

@@ -38,7 +38,7 @@ struct GPTKDeploymentTests {
 
         try GPTKImporter.deploy(fromStore: store, intoLibraryFolder: runtime)
 
-        let backup = store.appending(path: "originals").appending(path: "d3d11.dll")
+        let backup = GPTKImporter.originalsFolder(inStore: store, key: "default").appending(path: "d3d11.dll")
         let backupData = try Data(contentsOf: backup)
         #expect(backupData.suffix(13) == Data("wine original".utf8))
 
@@ -65,7 +65,7 @@ struct GPTKDeploymentTests {
         try GPTKImporter.deploy(fromStore: store, intoLibraryFolder: runtime)
         try GPTKImporter.deploy(fromStore: store, intoLibraryFolder: runtime)
 
-        let backup = store.appending(path: "originals").appending(path: "d3d11.dll")
+        let backup = GPTKImporter.originalsFolder(inStore: store, key: "default").appending(path: "d3d11.dll")
         let backupData = try Data(contentsOf: backup)
         #expect(backupData.suffix(13) == Data("wine original".utf8))
     }
@@ -120,7 +120,7 @@ struct GPTKDeploymentTests {
         try WhiskyWineInstaller.install(tarball: tarball, into: appSupport)
 
         #expect(GPTKImporter.storedRecord(inStore: store)?.gptkVersion == "4.0b2")
-        let backup = store.appending(path: "originals").appending(path: "d3d11.dll")
+        let backup = GPTKImporter.originalsFolder(inStore: store, key: "default").appending(path: "d3d11.dll")
         #expect(FileManager.default.fileExists(atPath: backup.path(percentEncoded: false)))
     }
 
@@ -136,7 +136,7 @@ struct GPTKDeploymentTests {
         try writeRuntimeVersion(at: runtime, 5, 0, 0)
         try GPTKImporter.deploy(fromStore: store, intoLibraryFolder: runtime)
 
-        let backup = store.appending(path: "originals").appending(path: "d3d11.dll")
+        let backup = GPTKImporter.originalsFolder(inStore: store, key: "default").appending(path: "d3d11.dll")
         let backupData = try Data(contentsOf: backup)
         #expect(backupData.suffix(16) == Data("wine 11 original".utf8))
     }
@@ -160,7 +160,7 @@ struct GPTKDeploymentTests {
         let currentData = try Data(contentsOf: current)
         #expect(currentData.suffix(16) == Data("wine 11 original".utf8))
 
-        let backup = store.appending(path: "originals").appending(path: "d3d11.dll")
+        let backup = GPTKImporter.originalsFolder(inStore: store, key: "default").appending(path: "d3d11.dll")
         #expect(!FileManager.default.fileExists(atPath: backup.path(percentEncoded: false)))
     }
 

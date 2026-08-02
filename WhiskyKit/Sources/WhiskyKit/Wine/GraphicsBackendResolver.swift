@@ -55,6 +55,20 @@ public enum GraphicsBackendResolver {
         return .dxvk
     }
 
+    /// ``resolve(macOSVersion:runtimeInfo:d3dMetalInstalled:)`` against a
+    /// specific runtime.
+    ///
+    /// D3DMetal is deployed per runtime, so "recommended" is a different answer
+    /// on a GPTK runtime than on Whisky's own — resolving against the singleton
+    /// would recommend D3DMetal to a bottle whose runtime does not carry it.
+    public static func resolve(for runtime: String?, macOSVersion: MacOSVersion = .current) -> GraphicsBackend {
+        resolve(
+            macOSVersion: macOSVersion,
+            runtimeInfo: WhiskyWineInstaller.whiskyWineInfo(for: runtime),
+            d3dMetalInstalled: WhiskyWineInstaller.isD3DMetalInstalled(for: runtime)
+        )
+    }
+
     /// Returns a localized explanation for the recommended backend choice.
     ///
     /// Suitable for display in a detail label or tooltip next to the "Recommended" option.

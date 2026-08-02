@@ -30,10 +30,16 @@ public enum WhiskyWineInstallError: LocalizedError, Equatable {
     /// OS purged the temporary download before installation ran.
     case tarballNotFound
 
+    /// The archive extracted, but what came out is not a usable runtime — no
+    /// version plist, or no `wine64` beside it.
+    case runtimeIncomplete
+
     public var errorDescription: String? {
         switch self {
         case .tarballNotFound:
             String(localized: "setup.whiskywine.error.tarballMissing")
+        case .runtimeIncomplete:
+            String(localized: "setup.whiskywine.error.runtimeIncomplete")
         }
     }
 }
@@ -78,6 +84,9 @@ public enum WhiskyWineInstallError: LocalizedError, Equatable {
 /// - ``applicationFolder``
 /// - ``libraryFolder``
 /// - ``binFolder``
+/// - ``runtimesFolder``
+/// - ``libraryFolder(for:)``
+/// - ``binFolder(for:)``
 ///
 /// ### Installation Status
 /// - ``isWhiskyWineInstalled()``
@@ -104,6 +113,42 @@ public class WhiskyWineInstaller {
     ///
     /// This folder contains `wine64`, `wineserver`, and other Wine executables.
     public static let binFolder: URL = libraryFolder.appending(path: "Wine").appending(path: "bin")
+
+    /// The folder holding runtimes other than the default one.
+    ///
+    /// A sibling of `Libraries/`, not a child, because ``install(tarball:into:)``
+    /// deletes the whole `Libraries` folder before untarring — anything stored
+    /// inside it is destroyed on every engine update.
+    public static let runtimesFolder = applicationFolder.appending(path: "Runtimes")
+
+    /// The library folder for `runtime`, or the default one when `runtime` is
+    /// `nil`.
+    ///
+    /// Bottles name their runtime by folder name; `nil` (the value every bottle
+    /// predating runtime selection decodes to) means ``libraryFolder``.
+    public static func libraryFolder(for runtime: String?) -> URL {
+        guard let runtime, isValidRuntimeIdentifier(runtime) else { return libraryFolder }
+        return runtimesFolder.appending(path: runtime)
+    }
+
+    /// The Wine binary directory for `runtime`, or the default one when
+    /// `runtime` is `nil`.
+    public static func binFolder(for runtime: String?) -> URL {
+        libraryFolder(for: runtime).appending(path: "Wine").appending(path: "bin")
+    }
+
+    /// Whether `identifier` names a runtime folder rather than a path.
+    ///
+    /// Bottle metadata is a user-editable plist, so an identifier reaches this
+    /// as untrusted text and `appending(path:)` would happily resolve `..` out
+    /// of the runtimes folder. Anything that isn't a plain folder name falls
+    /// back to the default runtime rather than resolving somewhere unexpected.
+    static func isValidRuntimeIdentifier(_ identifier: String) -> Bool {
+        !identifier.isEmpty &&
+            !identifier.hasPrefix(".") &&
+            !identifier.contains("/") &&
+            !identifier.contains("\0")
+    }
 
     /// Checks whether WhiskyWine is currently installed and usable.
     ///

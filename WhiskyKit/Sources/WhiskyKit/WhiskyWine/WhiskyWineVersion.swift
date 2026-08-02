@@ -62,12 +62,19 @@ public struct WhiskyWineVersion: Codable {
     /// advertises `true` here.
     public var gptkCapable: Bool?
 
+    /// What this runtime calls itself, e.g. `"winecx-gptk"`. Used to name the
+    /// folder it installs into and to label it in the picker, so two runtimes
+    /// of the same Wine version stay distinguishable. Absent on Whisky's own
+    /// runtime, which is the default one and needs no name.
+    public var name: String?
+
     enum CodingKeys: String, CodingKey {
         case version
         case dxvkVersion
         case dxmtVersion
         case sha256
         case gptkCapable
+        case name
     }
 
     public init(
@@ -75,13 +82,15 @@ public struct WhiskyWineVersion: Codable {
         dxvkVersion: String? = nil,
         dxmtVersion: String? = nil,
         sha256: String? = nil,
-        gptkCapable: Bool? = nil
+        gptkCapable: Bool? = nil,
+        name: String? = nil
     ) {
         self.version = version
         self.dxvkVersion = Self.normalized(dxvkVersion)
         self.dxmtVersion = Self.normalized(dxmtVersion)
         self.sha256 = Self.normalizedDigest(sha256)
         self.gptkCapable = gptkCapable
+        self.name = Self.normalized(name)
     }
 
     public init(from decoder: Decoder) throws {
@@ -95,6 +104,7 @@ public struct WhiskyWineVersion: Codable {
         dxmtVersion = try Self.normalized(container.decodeIfPresent(String.self, forKey: .dxmtVersion))
         sha256 = try Self.normalizedDigest(container.decodeIfPresent(String.self, forKey: .sha256))
         gptkCapable = try container.decodeIfPresent(Bool.self, forKey: .gptkCapable)
+        name = try Self.normalized(container.decodeIfPresent(String.self, forKey: .name))
     }
 
     /// Collapses an empty string to `nil` so "absent" and "blank" map to the
@@ -133,6 +143,7 @@ public struct WhiskyWineVersion: Codable {
         try container.encodeIfPresent(dxmtVersion, forKey: .dxmtVersion)
         try container.encodeIfPresent(sha256, forKey: .sha256)
         try container.encodeIfPresent(gptkCapable, forKey: .gptkCapable)
+        try container.encodeIfPresent(name, forKey: .name)
     }
 
     private enum VersionKeys: String, CodingKey {

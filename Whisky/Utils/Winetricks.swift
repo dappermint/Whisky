@@ -80,8 +80,9 @@ class Winetricks {
         // Winetricks ships in the app bundle Resources alongside cabextract. Invoke it via
         // `bash` (matching the headless install paths) so no executable bit is relied upon.
         let winetricksPath = resourcesURL.appending(path: "winetricks").path(percentEncoded: false)
+        let binPath = WhiskyWineInstaller.binFolder(for: bottle.settings.runtime).path
         // swiftlint:disable:next line_length
-        let winetricksCmd = #"PATH=\"\#(WhiskyWineInstaller.binFolder.path):\#(resourcesURL.path(percentEncoded: false)):$PATH\" WINE=wine64 WINEPREFIX=\"\#(bottle.url.path)\" bash \"\#(winetricksPath)\" \#(command)"#
+        let winetricksCmd = #"PATH=\"\#(binPath):\#(resourcesURL.path(percentEncoded: false)):$PATH\" WINE=wine64 WINEPREFIX=\"\#(bottle.url.path)\" bash \"\#(winetricksPath)\" \#(command)"#
 
         let script = """
         tell application "Terminal"

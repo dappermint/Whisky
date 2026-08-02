@@ -55,6 +55,10 @@ public struct BottleWineConfig: Codable, Equatable {
     var windowsVersion: WinVersion = .win10
     var enhancedSync: EnhancedSync = .msync
     var avxEnabled: Bool = false
+    /// Which installed runtime this bottle runs on, by folder name under
+    /// ``WhiskyWineInstaller/runtimesFolder``. `nil` is the default runtime,
+    /// which is what every bottle written before runtime selection decodes to.
+    var runtime: String?
 
     public init() {}
 
@@ -65,5 +69,6 @@ public struct BottleWineConfig: Codable, Equatable {
         self.windowsVersion = container.decodeLenientIfPresent(WinVersion.self, forKey: .windowsVersion) ?? .win10
         self.enhancedSync = try container.decodeIfPresent(EnhancedSync.self, forKey: .enhancedSync) ?? .msync
         self.avxEnabled = try container.decodeIfPresent(Bool.self, forKey: .avxEnabled) ?? false
+        self.runtime = try container.decodeIfPresent(String.self, forKey: .runtime)
     }
 }

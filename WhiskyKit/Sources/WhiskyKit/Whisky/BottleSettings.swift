@@ -249,6 +249,14 @@ public struct BottleSettings: Codable, Equatable {
         set { wineConfig.wineVersion = newValue }
     }
 
+    /// Which installed runtime this bottle runs on.
+    ///
+    /// `nil` means the default runtime at ``WhiskyWineInstaller/libraryFolder``.
+    public var runtime: String? {
+        get { wineConfig.runtime }
+        set { wineConfig.runtime = newValue }
+    }
+
     /// The Windows version that Wine emulates for this bottle.
     ///
     /// Different Windows versions may provide better compatibility
@@ -803,7 +811,7 @@ public struct BottleSettings: Codable, Equatable {
 
         // Resolve the graphics backend (`.recommended` -> concrete backend)
         let resolvedBackend = if graphicsBackend == .recommended {
-            resolvedBackend ?? GraphicsBackendResolver.resolve()
+            resolvedBackend ?? GraphicsBackendResolver.resolve(for: runtime)
         } else {
             graphicsBackend
         }

@@ -195,11 +195,7 @@ struct BottleView: View {
             .disabled(!bottle.isAvailable)
             .navigationTitle(bottle.settings.name)
             .navigationSubtitle(
-                bottle.settings.graphicsBackend == .recommended
-                    ? String(
-                        localized: "bottle.subtitle.autoBackend \(GraphicsBackendResolver.resolve().displayName)"
-                    )
-                    : ""
+                bottle.settings.graphicsBackend == .recommended ? autoBackendSubtitle : ""
             )
             .accessibilityIdentifier("bottleDetail")
             .toast($toast)
@@ -288,6 +284,13 @@ struct BottleView: View {
 }
 
 extension BottleView {
+    /// Resolved against the bottle's own runtime: D3DMetal is deployed per
+    /// runtime, so "recommended" is a different backend on each.
+    var autoBackendSubtitle: String {
+        let backend = GraphicsBackendResolver.resolve(for: bottle.settings.runtime)
+        return String(localized: "bottle.subtitle.autoBackend \(backend.displayName)")
+    }
+
     private func updateStartMenu() async {
         await bottle.updateInstalledPrograms()
 

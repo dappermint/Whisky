@@ -37951,6 +37951,61 @@
         }
       }
     },
+    "config.runtime" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Runtime"
+          }
+        }
+      }
+    },
+    "config.runtime.changeFailed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not update the prefix for the new runtime."
+          }
+        }
+      }
+    },
+    "config.runtime.changing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Updating the prefix for the new runtime…"
+          }
+        }
+      }
+    },
+    "config.runtime.gptk" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D3DMetal"
+          }
+        }
+      }
+    },
+    "config.runtime.info" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Which Wine build this bottle runs on. Takes effect next launch."
+          }
+        }
+      }
+    },
     "config.sequoiaCompat" : {
       "localizations" : {
         "ar" : {
@@ -69904,6 +69959,94 @@
         }
       }
     },
+    "settings.runtimes.add" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Runtime…"
+          }
+        }
+      }
+    },
+    "settings.runtimes.gptkCapable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Runs D3DMetal"
+          }
+        }
+      }
+    },
+    "settings.runtimes.inUse" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In use by %lld bottle(s)"
+          }
+        }
+      }
+    },
+    "settings.runtimes.info" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extra Wine builds bottles can select. Whisky's own runtime is always available."
+          }
+        }
+      }
+    },
+    "settings.runtimes.installFailed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not install that runtime."
+          }
+        }
+      }
+    },
+    "settings.runtimes.installing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installing…"
+          }
+        }
+      }
+    },
+    "settings.runtimes.remove" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove"
+          }
+        }
+      }
+    },
+    "settings.runtimes.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Runtimes"
+          }
+        }
+      }
+    },
     "settings.terminal" : {
       "localizations" : {
         "ar" : {
@@ -75591,6 +75734,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已超出請求次數限制。請稍後再試。"
+          }
+        }
+      }
+    },
+    "setup.whiskywine.error.runtimeIncomplete" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The archive did not contain a usable Wine runtime."
           }
         }
       }

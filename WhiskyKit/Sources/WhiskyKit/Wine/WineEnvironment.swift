@@ -116,7 +116,9 @@ extension Wine {
 
         // Apply per-program overrides to the programUser layer
         if let overrides = programOverrides {
-            applyProgramOverrides(overrides, builder: &builder, dllResolver: &dllResolver)
+            applyProgramOverrides(
+                overrides, runtime: bottle.settings.runtime, builder: &builder, dllResolver: &dllResolver
+            )
         }
 
         // Layer 8: featureRuntime -- diagnostic WINEDEBUG preset override
@@ -163,13 +165,14 @@ extension Wine {
     /// bottleManaged and launcherManaged layers.
     static func applyProgramOverrides(
         _ overrides: ProgramOverrides,
+        runtime: String? = nil,
         builder: inout EnvironmentBuilder,
         dllResolver: inout DLLOverrideResolver
     ) {
         // Graphics backend override: replaces bottle-level backend entirely
         if let backend = overrides.graphicsBackend {
             let resolved = if backend == .recommended {
-                GraphicsBackendResolver.resolve()
+                GraphicsBackendResolver.resolve(for: runtime)
             } else {
                 backend
             }

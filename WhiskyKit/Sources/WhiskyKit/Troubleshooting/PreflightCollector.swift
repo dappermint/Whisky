@@ -49,7 +49,7 @@ public enum PreflightCollector {
         let processCount = ProcessRegistry.shared.getProcessCount(for: bottle)
 
         let resolvedBackend: GraphicsBackend = if bottle.settings.graphicsBackend == .recommended {
-            GraphicsBackendResolver.resolve()
+            GraphicsBackendResolver.resolve(for: bottle.settings.runtime)
         } else {
             bottle.settings.graphicsBackend
         }
