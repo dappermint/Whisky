@@ -314,6 +314,10 @@ public class WhiskyWineInstaller {
             }
         }
 
+        // The GPTK store sits outside Libraries so it survives engine updates;
+        // a full uninstall is the one case where it should not.
+        try? FileManager.default.removeItem(at: GPTKImporter.storeFolder)
+
         // BottleData.plist registers bottle paths; remove it so a reinstall
         // starts with no orphaned entries pointing at deleted directories.
         let bottleData = applicationFolder.appending(path: "BottleData.plist")

@@ -74,9 +74,9 @@ public struct GPTKStoreRecord: Codable, Equatable, Sendable {
 /// PE forwarder DLLs, and six unix-side names that all resolve to
 /// `libd3dshared.dylib`.
 ///
-/// Importing copies the payload verbatim into a pristine store
-/// (`Libraries/D3DMetal/`), surviving runtime reinstalls. Deployment — placing
-/// the payload into the Wine tree the way Apple documents — is a separate,
+/// Importing copies the payload verbatim into a pristine store (`D3DMetal/`,
+/// a sibling of `Libraries/`), surviving runtime reinstalls. Deployment, placing
+/// the payload into the Wine tree the way Apple documents, is a separate,
 /// gated step: the payload's DLLs are C++ with exception handling, and a Wine
 /// build without personality-routine support for builtin modules kills every
 /// process that runs D3DMetal code. Only runtimes that advertise
@@ -95,6 +95,9 @@ public enum GPTKImporter {
     /// Steam's helper process down with it. Opt-in territory, not a default.
     static let nvidiaBridgeDLLNames = ["nvapi64.dll", "nvngx-on-metalfx.dll"]
 
+    /// Enough bytes to hold the winebuild marker at offset 0x40.
+    static let builtinMarkerMinimumLength = 0x50
+
     /// The unix-side bridge names; each is a symlink to
     /// `../../external/libd3dshared.dylib`, whose `@loader_path` rpath then
     /// finds the framework beside it.
@@ -104,9 +107,18 @@ public enum GPTKImporter {
     /// `wine/x86_64-unix/`.
     static let unixLinkDestination = "../../external/libd3dshared.dylib"
 
-    /// The pristine payload store: `Libraries/D3DMetal/`.
+    /// The pristine payload store: `D3DMetal/`, a sibling of `Libraries/`.
+    ///
+    /// Outside `Libraries/` because ``WhiskyWineInstaller/install(from:)``
+    /// removes that whole folder before untarring, which would destroy the
+    /// store and its `originals/` backups on every engine update.
     public static var storeFolder: URL {
-        WhiskyWineInstaller.libraryFolder.appending(path: "D3DMetal")
+        storeFolder(inApplicationFolder: WhiskyWineInstaller.applicationFolder)
+    }
+
+    /// Testable seam for ``storeFolder``.
+    static func storeFolder(inApplicationFolder folder: URL) -> URL {
+        folder.appending(path: "D3DMetal")
     }
 
     // MARK: - Locating
@@ -132,6 +144,15 @@ public enum GPTKImporter {
         let dxgi = url.appending(path: "wine").appending(path: "x86_64-windows").appending(path: "dxgi.dll")
         return fileManager.fileExists(atPath: dylib.path(percentEncoded: false)) &&
             fileManager.fileExists(atPath: dxgi.path(percentEncoded: false))
+    }
+
+    /// Whether `url` is readable and long enough for the marker check.
+    static func canHoldBuiltinMarker(_ url: URL) -> Bool {
+        let path = url.path(percentEncoded: false)
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: path),
+              let size = attributes[.size] as? Int
+        else { return false }
+        return size >= builtinMarkerMinimumLength
     }
 
     // MARK: - Validation
@@ -161,10 +182,12 @@ public enum GPTKImporter {
 
         // Apple's forwarders are winebuild builtins; a native-marked file here
         // means this is not a GPTK payload (or a corrupted one). The inverse of
-        // the DXMT gate, which requires native PEs.
+        // the DXMT gate, which requires native PEs. isNativePE fails closed to
+        // false for a file too short to hold the marker, and false is the
+        // passing answer here, so check the length or a 3-byte DLL validates.
         for name in forwarderDLLNames {
             let dll = peDir.appending(path: name)
-            guard (try? Wine.isNativePE(dll)) == false else {
+            guard canHoldBuiltinMarker(dll), (try? Wine.isNativePE(dll)) == false else {
                 throw GPTKImportError.forwarderNotBuiltin(name)
             }
         }

@@ -64,7 +64,12 @@ struct GPTKSettingsSection: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .task { refresh() }
+        .task {
+            await Task.detached(priority: .utility) {
+                GPTKImporter.deployStoredPayloadIfCapable()
+            }.value
+            refresh()
+        }
         .fileImporter(
             isPresented: $showImporter,
             allowedContentTypes: [.diskImage, .folder]
@@ -134,9 +139,11 @@ struct GPTKSettingsSection: View {
 
     private func removePayload() {
         do {
-            if GPTKImporter.isDeployed() {
-                try GPTKImporter.removeDeployedPayload()
-            }
+            // Unconditional: isDeployed() reads files written late in deploy, so
+            // a half-finished deploy looks undeployed while forwarders are
+            // already swapped, and skipping cleanup would delete originals/ with
+            // the store. The removal is idempotent per file.
+            try GPTKImporter.removeDeployedPayload()
             try GPTKImporter.removeStore()
         } catch {
             importError = error.localizedDescription

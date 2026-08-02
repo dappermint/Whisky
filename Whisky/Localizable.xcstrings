@@ -9368,6 +9368,7 @@
       }
     },
     "gptk.error.forwarderNotBuiltin" : {
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9378,6 +9379,7 @@
       }
     },
     "gptk.error.payloadIncomplete" : {
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9388,6 +9390,7 @@
       }
     },
     "gptk.error.payloadNotFound" : {
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9398,6 +9401,7 @@
       }
     },
     "gptk.error.storeEmpty" : {
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9408,6 +9412,7 @@
       }
     },
     "gptk.error.versionUnreadable" : {
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {

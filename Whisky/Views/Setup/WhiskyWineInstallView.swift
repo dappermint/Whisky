@@ -216,6 +216,9 @@ struct WhiskyWineInstallView: View {
                     // Extraction reported success but the runtime isn't usable.
                     return .failure(reason: .runtimeIncomplete, message: nil)
                 }
+                // The install replaced Libraries, so any deployed GPTK payload
+                // went with it; the store outlives it and redeploys here.
+                GPTKImporter.deployStoredPayloadIfCapable()
                 return .success
             } catch {
                 let reason: Telemetry.InstallFailureReason =
