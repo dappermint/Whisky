@@ -28,9 +28,9 @@ public enum SteamLaunchError: LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .steamNotInstalled:
-            "This bottle doesn't have Steam installed."
+            String(localized: "steam.launch.error.noClient")
         case let .gameNotFound(appId):
-            "No bottle has App ID \(appId) installed."
+            String(localized: "steam.launch.error.gameNotFound \(appId)")
         }
     }
 }

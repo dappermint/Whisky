@@ -19851,6 +19851,28 @@
         }
       }
     },
+    "steam.launch.error.gameNotFound %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No bottle has App ID %lld installed."
+          }
+        }
+      }
+    },
+    "steam.launch.error.noClient" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        }
+      }
+    },
     "steam.launch.failed" : {
       "localizations" : {
         "en" : {
