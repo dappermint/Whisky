@@ -31,7 +31,8 @@ import Foundation
 ///
 /// ```swift
 /// let appURL = URL(filePath: "~/Applications/MyGame.app")
-/// let script = program.generateTerminalCommand()
+/// let target = ShortcutCreator.liveTarget(for: program.url, bottle: program.bottle)
+/// let script = ShortcutCreator.liveLaunchScript(for: target)
 /// try ShortcutCreator.createShortcutBundle(at: appURL, launchScript: script, name: "MyGame")
 /// ```
 public enum ShortcutCreator {
@@ -101,6 +102,12 @@ public extension ShortcutCreator {
     enum LiveTarget: Equatable {
         /// A Steam game, launched by App ID through the client so DRM and
         /// GameDB profiles apply.
+        ///
+        /// Deliberately not pinned to a bottle: the App ID is Steam's own
+        /// identity for the game, and resolving it at launch means the
+        /// shortcut follows the copy that is actually installed rather than
+        /// breaking when its bottle moves or is deleted. A game installed in
+        /// two bottles launches from whichever was played most recently.
         case steamGame(appId: Int)
         /// A program addressed by bottle name and Windows path. The Windows
         /// path is bottle-relative by construction, so the shortcut survives
