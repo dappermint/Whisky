@@ -164,6 +164,23 @@ struct GPTKDeploymentTests {
         #expect(!FileManager.default.fileExists(atPath: backup.path(percentEncoded: false)))
     }
 
+    @Test("Remove spares Wine builtins an interrupted deploy never swapped")
+    func removeSparesUntouchedBuiltins() throws {
+        let store = try makeImportedStore(in: tempDir)
+        let runtime = tempDir.appending(path: "Libraries")
+        try makeRuntime(at: runtime)
+        try writeRuntimeVersion(at: runtime, 4, 0, 0)
+        let peDir = try makePartialDeploy(store: store, runtime: runtime, runtimeVersion: "4.0.0")
+
+        try GPTKImporter.remove(fromLibraryFolder: runtime, usingStore: store)
+
+        // Swapped, backed up only, and never touched all end as Wine's own.
+        for name in ["d3d10.dll", "d3d11.dll", "d3d12.dll"] {
+            let data = try Data(contentsOf: peDir.appending(path: name))
+            #expect(data.suffix(13) == Data("wine original".utf8))
+        }
+    }
+
     // MARK: - Runtime capability flag
 
     @Test("gptkCapable decodes when present and stays nil when absent")

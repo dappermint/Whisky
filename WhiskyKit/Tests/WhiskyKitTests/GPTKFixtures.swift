@@ -124,6 +124,34 @@ func makeGPTKTempDir() throws -> URL {
     return url
 }
 
+/// Hand-builds what an interrupted same-version deploy leaves behind, and
+/// returns the runtime's PE directory: `d3d10.dll` swapped with its original
+/// backed up, `d3d12.dll` backed up before its forwarder was copied in, and
+/// `d3d11.dll` never reached, so still Wine's own with no backup.
+@discardableResult
+func makePartialDeploy(store: URL, runtime: URL, runtimeVersion: String) throws -> URL {
+    let fileManager = FileManager.default
+    let peDir = runtime.appending(path: "Wine").appending(path: "lib")
+        .appending(path: "wine").appending(path: "x86_64-windows")
+    let storePE = store.appending(path: "lib")
+        .appending(path: "wine").appending(path: "x86_64-windows")
+    let originals = store.appending(path: "originals")
+    try fileManager.createDirectory(at: originals, withIntermediateDirectories: true)
+
+    let encoder = PropertyListEncoder()
+    encoder.outputFormat = .xml
+    try encoder.encode(GPTKOriginalsRecord(runtimeVersion: runtimeVersion))
+        .write(to: GPTKImporter.originalsRecordURL(inStore: store))
+
+    for name in ["d3d10.dll", "d3d12.dll"] {
+        try fileManager.moveItem(at: peDir.appending(path: name), to: originals.appending(path: name))
+    }
+    try fileManager.copyItem(
+        at: storePE.appending(path: "d3d10.dll"), to: peDir.appending(path: "d3d10.dll")
+    )
+    return peDir
+}
+
 /// A store holding a freshly imported payload, under `tempDir`.
 func makeImportedStore(in tempDir: URL) throws -> URL {
     let lib = tempDir.appending(path: "payload")

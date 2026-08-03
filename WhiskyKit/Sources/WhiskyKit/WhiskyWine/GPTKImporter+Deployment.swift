@@ -174,8 +174,8 @@ extension GPTKImporter {
     }
 
     /// Whether `dll` is byte-identical to the store's forwarder of the same
-    /// name — used so redeploys never mistake an already-deployed Apple DLL
-    /// for a Wine original worth backing up.
+    /// name, so deploy never mistakes an already-deployed Apple DLL for a Wine
+    /// original worth backing up and remove only deletes what it put there.
     private static func isGPTKForwarder(_ dll: URL, matching storeLib: URL) -> Bool {
         let storeDLL = storeLib.appending(path: "wine").appending(path: "x86_64-windows")
             .appending(path: dll.lastPathComponent)
@@ -198,6 +198,7 @@ extension GPTKImporter {
         let peDir = wineLib.appending(path: "wine").appending(path: "x86_64-windows")
         let unixDir = wineLib.appending(path: "wine").appending(path: "x86_64-unix")
         let originals = store.appending(path: "originals")
+        let storeLib = store.appending(path: "lib")
 
         let originalsAreCurrent = originalsRecord(inStore: store)?.runtimeVersion
             == runtimeVersionStamp(inLibraryFolder: folder)
@@ -213,8 +214,12 @@ extension GPTKImporter {
                 continue
             }
 
+            // An interrupted deploy leaves some names still holding Wine's own
+            // DLL, never backed up; deleting one loses a builtin with nothing
+            // to put back. Only what byte-matches the store came from here.
             let deployed = peDir.appending(path: name)
             if fileManager.fileExists(atPath: deployed.path(percentEncoded: false)) {
+                guard isGPTKForwarder(deployed, matching: storeLib) else { continue }
                 try fileManager.removeItem(at: deployed)
             }
             if hasBackup {
