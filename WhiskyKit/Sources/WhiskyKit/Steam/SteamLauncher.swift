@@ -109,15 +109,18 @@ public enum SteamLauncher {
     /// - Parameters:
     ///   - appId: The Steam App ID to locate.
     ///   - bottles: The bottles to search.
+    ///   - routing: The route store to consult.
     /// - Returns: The bottle holding the game.
     /// - Throws: ``SteamLaunchError/gameNotFound(appId:)`` when no bottle has it.
     @MainActor
-    public static func resolveBottle(appId: Int, in bottles: [Bottle]) throws -> Bottle {
+    public static func resolveBottle(
+        appId: Int, in bottles: [Bottle], routing: GameRouting = GameRouting()
+    ) throws -> Bottle {
         let installs: (Bottle) -> Bool = { bottle in
             SteamLibrary.enumerate(bottleURL: bottle.url).contains { $0.appId == appId }
         }
 
-        if let routed = GameRouting().bottleURL(forAppId: appId),
+        if let routed = routing.bottleURL(forAppId: appId),
            let bottle = bottles.first(where: { $0.url.standardizedFileURL == routed.standardizedFileURL }),
            installs(bottle) {
             return bottle
