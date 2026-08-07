@@ -297,7 +297,8 @@ public class Wine {
         // overrides set. Pin the decision as a program-level override so the
         // two halves agree.
         var programOverrides = programOverrides
-        if effectiveBackendChoice == .recommended, effectiveBackend != GraphicsBackendResolver.resolve() {
+        if effectiveBackendChoice == .recommended,
+           effectiveBackend != GraphicsBackendResolver.resolve(for: bottle.settings.runtime) {
             var pinned = programOverrides ?? ProgramOverrides()
             pinned.graphicsBackend = effectiveBackend
             programOverrides = pinned
