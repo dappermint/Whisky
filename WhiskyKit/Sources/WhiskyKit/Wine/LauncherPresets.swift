@@ -266,6 +266,32 @@ public enum LauncherType: String, Codable, CaseIterable, Sendable, Identifiable 
         }
     }
 
+    /// Executables this launcher spawns that must share its DLL overrides.
+    ///
+    /// Wine keys `AppDefaults` on the executable name and a child process does
+    /// not inherit its parent's entry, so a launcher's helpers need entries of
+    /// their own or they silently fall back to the bottle default. Steam draws
+    /// its entire client in `steamwebhelper.exe`, so a DXVK override on
+    /// `steam.exe` alone leaves the window blank.
+    ///
+    /// Deliberately only the launcher's *own* helpers. Games a launcher starts
+    /// are not listed: those should take the bottle default, or an override of
+    /// their own, which is the whole point of scoping these per executable.
+    public var helperExecutables: [String] {
+        switch self {
+        case .steam:
+            ["steamwebhelper.exe", "steamservice.exe"]
+        case .epicGames:
+            ["EpicWebHelper.exe"]
+        case .eaApp:
+            ["EABackgroundService.exe"]
+        case .battleNet:
+            ["Battle.net Helper.exe"]
+        case .rockstar, .ubisoft, .paradox:
+            []
+        }
+    }
+
     /// The recommended locale for this launcher.
     ///
     /// Most launchers work best with US English locale to avoid

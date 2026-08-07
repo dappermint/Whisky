@@ -342,9 +342,15 @@ public class Wine {
         let bottleOverrides = constructWineEnvironment(for: bottle)["WINEDLLOVERRIDES"] ?? ""
         let programOverrideString = wineEnvironment.removeValue(forKey: "WINEDLLOVERRIDES") ?? ""
         try await syncDLLOverrides(bottle: bottle, scope: .bottle, overrides: bottleOverrides)
-        try await syncDLLOverrides(
-            bottle: bottle, scope: .program(url.lastPathComponent), overrides: programOverrideString
-        )
+        // The launcher's own helpers get the same entry. AppDefaults is keyed
+        // per executable and a child does not inherit its parent's, so without
+        // this a DXVK override on steam.exe leaves steamwebhelper.exe, which
+        // draws the entire client, on the bottle default.
+        for executable in [url.lastPathComponent] + helperExecutables(for: url) {
+            try await syncDLLOverrides(
+                bottle: bottle, scope: .program(executable), overrides: programOverrideString
+            )
+        }
 
         // Create a run log entry to track this session
         let programName = url.lastPathComponent
