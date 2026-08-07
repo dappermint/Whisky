@@ -152,6 +152,10 @@ final class BottleVM: ObservableObject {
                 throw BottleCreationError.locationUnsuitable(
                     message: String(format: String(localized: "bottle.creation.preflight.notWritable"), path)
                 )
+            case let .accessDenied(path):
+                throw BottleCreationError.locationUnsuitable(
+                    message: String(format: String(localized: "bottle.creation.preflight.accessDenied"), path)
+                )
             case let .insufficientSpace(availableBytes, requiredBytes):
                 throw BottleCreationError.locationUnsuitable(
                     message: String(

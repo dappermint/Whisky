@@ -81,6 +81,47 @@ final class BottleLocationValidationTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(available, 0)
     }
 
+    // MARK: - Permission-shaped refusals
+
+    /// The privacy pointer must only appear for a refusal privacy can explain.
+    /// An unwritable folder on the internal disk is the same errno with a
+    /// different fix, so it stays `.notWritable`.
+    func testUnwritableInternalDirectoryIsNotReportedAsAccessDenied() throws {
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: tempDir.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: tempDir.path) }
+
+        guard case .notWritable = BottleLocationValidation.validate(at: tempDir, minimumFreeBytes: 0) else {
+            return XCTFail("an internal volume can never be a consent problem")
+        }
+    }
+
+    func testProbeReportsDeniedForAPermissionRefusal() throws {
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: tempDir.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: tempDir.path) }
+
+        XCTAssertEqual(BottleLocationValidation.probeWrite(in: tempDir, fileManager: .default), .denied)
+    }
+
+    func testProbeSucceedsOnAWritableDirectory() {
+        XCTAssertEqual(BottleLocationValidation.probeWrite(in: tempDir, fileManager: .default), .ok)
+    }
+
+    func testProbeLeavesNothingBehind() throws {
+        XCTAssertEqual(BottleLocationValidation.probeWrite(in: tempDir, fileManager: .default), .ok)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: tempDir.path), [])
+    }
+
+    func testProbeReportsFailedWhenTheTargetIsNotADirectory() throws {
+        let file = tempDir.appendingPathComponent("a-file")
+        try Data("x".utf8).write(to: file)
+        // ENOTDIR, not a permission problem, so it must not read as a refusal.
+        XCTAssertEqual(BottleLocationValidation.probeWrite(in: file, fileManager: .default), .failed)
+    }
+
+    func testInternalVolumeIsNotConsentGated() {
+        XCTAssertFalse(BottleLocationValidation.isConsentGatedVolume(tempDir))
+    }
+
     func testNearestExistingDirectoryWalksUpToFirstExistingParent() {
         let deep = tempDir.appendingPathComponent("a/b/c")
         let nearest = BottleLocationValidation.nearestExistingDirectory(for: deep, fileManager: .default)
