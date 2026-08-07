@@ -84,4 +84,90 @@ final class DLLOverrideRegistryTests: XCTestCase {
         let parsed = Wine.parseDLLOverrides("d3d11=n,b;d3d11=b")
         XCTAssertEqual(parsed["d3d11"], "b")
     }
+
+    // MARK: - reg query output
+
+    func testParsesRegQueryOutput() {
+        let output = """
+        HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides
+            d3d11    REG_SZ    n,b
+            dxgi    REG_SZ    n,b
+        """
+        let parsed = Wine.parseRegistryQueryOutput(output)
+        XCTAssertEqual(parsed, ["d3d11": "n,b", "dxgi": "n,b"])
+    }
+
+    /// A disabled override has no value column at all, and must come back as
+    /// an empty string rather than being dropped.
+    func testParsesValuelessEntryAsDisabled() {
+        let parsed = Wine.parseRegistryQueryOutput("    mscoree    REG_SZ")
+        XCTAssertEqual(parsed, ["mscoree": ""])
+    }
+
+    func testIgnoresHeaderAndBlankLines() {
+        let output = """
+
+        HKEY_CURRENT_USER\\Software\\Wine\\AppDefaults\\steam.exe\\DllOverrides
+
+            d3d11    REG_SZ    n,b
+
+        """
+        XCTAssertEqual(Wine.parseRegistryQueryOutput(output), ["d3d11": "n,b"])
+    }
+
+    func testEmptyQueryOutputYieldsNothing() {
+        XCTAssertTrue(Wine.parseRegistryQueryOutput("").isEmpty)
+    }
+
+    // MARK: - Sync plan
+
+    func testWritesEverythingWhenTheKeyIsEmpty() {
+        let plan = Wine.syncPlan(existing: [:], wanted: ["d3d11": "n,b", "dxgi": "n,b"])
+        XCTAssertEqual(plan.writes.map(\.dll), ["d3d11", "dxgi"])
+        XCTAssertTrue(plan.deletes.isEmpty)
+        XCTAssertFalse(plan.isEmpty)
+    }
+
+    /// Launches are frequent and the overrides rarely change, so an unchanged
+    /// key must produce no wine processes at all.
+    func testNoWorkWhenAlreadyCorrect() {
+        let same = ["d3d11": "n,b", "dxgi": "n,b"]
+        XCTAssertTrue(Wine.syncPlan(existing: same, wanted: same).isEmpty)
+    }
+
+    func testWritesOnlyWhatChanged() {
+        let plan = Wine.syncPlan(
+            existing: ["d3d11": "n,b", "dxgi": "n,b"],
+            wanted: ["d3d11": "n,b", "dxgi": "b"]
+        )
+        XCTAssertEqual(plan.writes.map(\.dll), ["dxgi"])
+        XCTAssertEqual(plan.writes.map(\.mode), ["b"])
+        XCTAssertTrue(plan.deletes.isEmpty)
+    }
+
+    /// Switching DXVK to DXMT: DXMT's preset does not mention d3d9, so DXVK's
+    /// entry has to be removed rather than left behind.
+    func testPrunesEntriesTheNewBackendDoesNotWant() {
+        let plan = Wine.syncPlan(
+            existing: ["d3d11": "n,b", "d3d9": "n,b", "d3d10core": "n,b", "dxgi": "n,b"],
+            wanted: ["d3d11": "n,b", "d3d10core": "n,b", "dxgi": "n,b", "winemetal": "b"]
+        )
+        XCTAssertEqual(plan.deletes, ["d3d9"])
+        XCTAssertEqual(plan.writes.map(\.dll), ["winemetal"])
+    }
+
+    func testClearingWantedRemovesEverything() {
+        let plan = Wine.syncPlan(existing: ["d3d11": "n,b", "dxgi": "n,b"], wanted: [:])
+        XCTAssertEqual(plan.deletes, ["d3d11", "dxgi"])
+        XCTAssertTrue(plan.writes.isEmpty)
+    }
+
+    func testPlanIsDeterministicallyOrdered() {
+        let plan = Wine.syncPlan(
+            existing: ["zzz": "b", "aaa": "b"],
+            wanted: ["dxgi": "n,b", "d3d11": "n,b", "d3d9": "n,b"]
+        )
+        XCTAssertEqual(plan.writes.map(\.dll), ["d3d11", "d3d9", "dxgi"])
+        XCTAssertEqual(plan.deletes, ["aaa", "zzz"])
+    }
 }

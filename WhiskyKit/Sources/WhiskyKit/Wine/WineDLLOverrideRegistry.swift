@@ -68,27 +68,60 @@ public extension Wine {
     static func syncDLLOverrides(
         bottle: Bottle, scope: DLLOverrideScope, overrides: String
     ) async throws {
-        let wanted = parseDLLOverrides(overrides)
         let key = scope.registryKey
         let existing = await (try? queryDLLOverrides(bottle: bottle, key: key)) ?? [:]
+        let plan = syncPlan(existing: existing, wanted: parseDLLOverrides(overrides))
 
-        guard existing != wanted else {
+        guard !plan.isEmpty else {
             dllOverrideLogger.debug("DLL overrides at \(key) already match, nothing to write")
             return
         }
 
-        // Every write is a wine process, so only touch what actually differs.
-        // Launches are frequent and the overrides rarely change between them.
-        for (dll, mode) in wanted.sorted(by: { $0.key < $1.key }) where existing[dll] != mode {
+        for (dll, mode) in plan.writes {
             try await addRegistryKey(bottle: bottle, key: key, name: dll, data: mode, type: .string)
         }
-
-        let stale = existing.keys.filter { wanted[$0] == nil }
-        for name in stale.sorted() {
+        for name in plan.deletes {
             try? await runWine(["reg", "delete", key, "-v", name, "-f"], bottle: bottle)
         }
 
-        dllOverrideLogger.debug("Synced \(wanted.count) DLL override(s) to \(key), pruned \(stale.count)")
+        dllOverrideLogger.debug(
+            "Synced \(plan.writes.count) DLL override(s) to \(key), pruned \(plan.deletes.count)"
+        )
+    }
+
+    /// What ``syncDLLOverrides(bottle:scope:overrides:)`` has to do to turn
+    /// `existing` into `wanted`.
+    struct DLLOverrideSyncPlan: Equatable, Sendable {
+        /// DLL name and load order to write, sorted by name.
+        public let writes: [(dll: String, mode: String)]
+        /// Value names to remove, sorted.
+        public let deletes: [String]
+
+        public var isEmpty: Bool { writes.isEmpty && deletes.isEmpty }
+
+        public static func == (lhs: Self, rhs: Self) -> Bool {
+            lhs.deletes == rhs.deletes && lhs.writes.map(\.dll) == rhs.writes.map(\.dll)
+                && lhs.writes.map(\.mode) == rhs.writes.map(\.mode)
+        }
+    }
+
+    /// The minimal set of registry operations that turns `existing` into
+    /// `wanted`.
+    ///
+    /// Every write is a wine process, and launches are frequent while the
+    /// overrides rarely change between them, so anything already correct is
+    /// left alone. Deletes are what an environment variable never needed:
+    /// registry state persists, so switching a bottle from DXVK to D3DMetal has
+    /// to clear the `d3d9` entry DXVK's preset wrote or it lingers forever.
+    static func syncPlan(
+        existing: [String: String], wanted: [String: String]
+    ) -> DLLOverrideSyncPlan {
+        DLLOverrideSyncPlan(
+            writes: wanted.sorted { $0.key < $1.key }
+                .filter { existing[$0.key] != $0.value }
+                .map { (dll: $0.key, mode: $0.value) },
+            deletes: existing.keys.filter { wanted[$0] == nil }.sorted()
+        )
     }
 
     /// Parses a `WINEDLLOVERRIDES` string into DLL name to load-order pairs.
@@ -112,12 +145,17 @@ public extension Wine {
     /// when the key does not exist.
     @MainActor
     static func queryDLLOverrides(bottle: Bottle, key: String) async throws -> [String: String] {
-        let output = try await runWine(["reg", "query", key], bottle: bottle)
+        try await parseRegistryQueryOutput(runWine(["reg", "query", key], bottle: bottle))
+    }
+
+    /// Parses `reg query` output into DLL name to load-order pairs.
+    ///
+    /// Lines look like `    d3d11    REG_SZ    n,b`: name, type, then the value,
+    /// which is absent for a disabled override. The key's own header line
+    /// carries no `REG_` type and is skipped, as is the blank line around it.
+    static func parseRegistryQueryOutput(_ output: String) -> [String: String] {
         var result: [String: String] = [:]
         for line in output.split(whereSeparator: \.isNewline) {
-            // "    d3d11    REG_SZ    n,b" -- name, type, then the value, which
-            // is absent for a disabled override. The key's own header line has
-            // no REG_ type and is skipped.
             let fields = line.split(whereSeparator: \.isWhitespace)
             guard fields.count >= 2, fields[1].hasPrefix("REG_") else { continue }
             result[String(fields[0])] = fields.count > 2 ? String(fields[2]) : ""
