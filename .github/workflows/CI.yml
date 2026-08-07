@@ -142,11 +142,17 @@ jobs:
       # at runtime but the build stays green — so assert on the built artifact.
       - name: Verify bundled app resources
         run: |
-          # Matched by shape, not by name: this fork's PRODUCT_NAME is "Whisky Preview".
-          app=$(find ~/Library/Developer/Xcode/DerivedData -type d \
-            -path '*/Build/Products/Debug/*.app' -name '*Whisky*' | head -1)
-          if [ -z "$app" ]; then
-            echo "::error::no Whisky app bundle in DerivedData after build"
+          # Ask for the exact product path rather than globbing: this fork's
+          # PRODUCT_NAME is "Whisky Preview", and a glob loose enough to catch that
+          # also catches WhiskyUITests-Runner.app.
+          app=$(xcodebuild -project Whisky.xcodeproj -scheme Whisky -configuration Debug \
+            -showBuildSettings 2>/dev/null \
+            | awk -F' = ' '
+                /^ *BUILT_PRODUCTS_DIR = /  { dir = $2 }
+                /^ *FULL_PRODUCT_NAME = /   { name = $2 }
+                END { if (dir != "" && name != "") print dir "/" name }')
+          if [ -z "$app" ] || [ ! -d "$app" ]; then
+            echo "::error::app bundle not found after build (resolved to '${app:-<empty>}')"
             exit 1
           fi
           echo "Checking $app"
