@@ -142,12 +142,14 @@ jobs:
       # at runtime but the build stays green — so assert on the built artifact.
       - name: Verify bundled app resources
         run: |
+          # Matched by shape, not by name: this fork's PRODUCT_NAME is "Whisky Preview".
           app=$(find ~/Library/Developer/Xcode/DerivedData -type d \
-            -path '*/Build/Products/Debug/Whisky.app' | head -1)
+            -path '*/Build/Products/Debug/*.app' -name '*Whisky*' | head -1)
           if [ -z "$app" ]; then
-            echo "::error::Whisky.app not found in DerivedData after build"
+            echo "::error::no Whisky app bundle in DerivedData after build"
             exit 1
           fi
+          echo "Checking $app"
           missing=0
           for res in winetricks verbs.txt cabextract; do
             if [ ! -f "$app/Contents/Resources/$res" ]; then

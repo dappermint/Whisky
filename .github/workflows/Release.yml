@@ -133,3 +133,24 @@ jobs:
             gh release create "$TAG" --title "Whisky Preview ${TAG#app-v}" --notes "$notes"
           fi
           gh release upload "$TAG" "$DMG" --clobber
+
+      # Kept in this workflow rather than its own: `release`-triggered workflows run
+      # the file from the default branch, and ours is `main`, which tracks upstream.
+      # A tag push runs the tag's own file, so this is the only trigger that reaches
+      # our definition.
+      - name: Bump the Homebrew cask
+        env:
+          BREW_TOKEN: ${{ secrets.BREW_TOKEN }}
+          VERSION: ${{ steps.tag.outputs.version }}
+          SHA: ${{ steps.dmg.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BREW_TOKEN:-}" ]; then
+            {
+              echo "Cask not bumped: no BREW_TOKEN secret."
+              echo ""
+              echo '`scripts/bump-cask.sh '"${VERSION} ${SHA}"'`'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          scripts/bump-cask.sh "$VERSION" "$SHA"
