@@ -239,7 +239,8 @@ public class Wine {
     public static func runProgram(
         at url: URL, args: [String] = [], bottle: Bottle, environment: [String: String] = [:],
         programOverrides: ProgramOverrides? = nil, programSettings: ProgramSettings? = nil,
-        gameProfileEnvironment: [String: String] = [:]
+        gameProfileEnvironment: [String: String] = [:],
+        overridesApplyToDescendants: Bool = false
     ) async throws -> ProgramRunResult {
         // Note: Launcher detection and fix application happen before this method
         // is called, via LauncherFixes.detectAndApply from the app's run paths
@@ -310,16 +311,31 @@ public class Wine {
         // entry of its own still gets them, and this program's resolved set is
         // written against its executable name alone.
         let bottleOverrides = constructWineEnvironment(for: bottle)["WINEDLLOVERRIDES"] ?? ""
-        let programOverrideString = wineEnvironment.removeValue(forKey: "WINEDLLOVERRIDES") ?? ""
         try await syncDLLOverrides(bottle: bottle, scope: .bottle, overrides: bottleOverrides)
-        // The launcher's own helpers get the same entry. AppDefaults is keyed
-        // per executable and a child does not inherit its parent's, so without
-        // this a DXVK override on steam.exe leaves steamwebhelper.exe, which
-        // draws the entire client, on the bottle default.
-        for executable in [url.lastPathComponent] + helperExecutables(for: url) {
-            try await syncDLLOverrides(
-                bottle: bottle, scope: .program(executable), overrides: programOverrideString
-            )
+
+        if overridesApplyToDescendants {
+            // The overrides describe something this process will spawn, not
+            // this process: `steam.exe -applaunch <id>` is Steam's launcher
+            // carrying a game's settings. AppDefaults cannot express that,
+            // because it is keyed on the executable and the target's name is
+            // not known here, so the variable stays, which is the one
+            // mechanism that reaches a descendant.
+            //
+            // Writing the game's settings against steam.exe instead would put
+            // them on the launcher and leave the game with the bottle default,
+            // which is exactly backwards.
+        } else {
+            let programOverrideString = wineEnvironment.removeValue(forKey: "WINEDLLOVERRIDES") ?? ""
+            // The launcher's own helpers get the same entry. AppDefaults is
+            // keyed per executable and a child does not inherit its parent's,
+            // so without this a DXVK override on steam.exe leaves
+            // steamwebhelper.exe, which draws the entire client, on the bottle
+            // default.
+            for executable in [url.lastPathComponent] + helperExecutables(for: url) {
+                try await syncDLLOverrides(
+                    bottle: bottle, scope: .program(executable), overrides: programOverrideString
+                )
+            }
         }
 
         // Create a run log entry to track this session
