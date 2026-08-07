@@ -291,6 +291,18 @@ public class Wine {
             )
             : effectiveBackendChoice
 
+        // The bottle composes its DLL overrides from its own resolution, which
+        // knows nothing about what is being launched, so a launcher steered
+        // onto DXVK above would have had DXVK's files deployed and none of its
+        // overrides set. Pin the decision as a program-level override so the
+        // two halves agree.
+        var programOverrides = programOverrides
+        if effectiveBackendChoice == .recommended, effectiveBackend != GraphicsBackendResolver.resolve() {
+            var pinned = programOverrides ?? ProgramOverrides()
+            pinned.graphicsBackend = effectiveBackend
+            programOverrides = pinned
+        }
+
         // DXMT first: if launcher auto-DXVK also fires below (e.g. Rockstar),
         // DXVK's file copy deterministically wins, matching the override-layer
         // order where launcher-managed entries land after bottle-managed ones.
