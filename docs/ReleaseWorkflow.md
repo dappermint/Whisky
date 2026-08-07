@@ -7,7 +7,7 @@ and is where upstream contributions are prepared; it is never released from.
 
 Two parallel artifact streams live on GitHub Releases:
 
-- **App releases** (`app-vYYYY.M.N`) — `Whisky-Preview-YYYY.M.N.dmg`, ad-hoc signed.
+- **App releases** (`app-vYYYY.M.N`) — `Whisky-Preview-YYYY.M.N.dmg`, self-signed (see below).
 - **Wine Libraries releases** (`vX.Y.Z`) — `Libraries.tar.gz`, the Wine runtime the app downloads on first launch.
 
 Static metadata (`WhiskyWineVersion.plist`) is served from GitHub Pages, deployed by
