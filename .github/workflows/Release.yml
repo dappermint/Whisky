@@ -123,10 +123,13 @@ jobs:
           SHA: ${{ steps.dmg.outputs.sha }}
         run: |
           set -euo pipefail
-          if ! gh release view "$TAG" >/dev/null 2>&1; then
-            gh release create "$TAG" --title "Whisky Preview ${TAG#app-v}" --notes "Ad-hoc signed, not notarized. Install with the cask: \`brew install --cask dappermint/tap/whisky-preview\`"
+          notes="$(printf '%s\n\n%s\n' \
+            'Ad-hoc signed, not notarized. Install with the cask:' \
+            '`brew install --cask dappermint/tap/whisky-preview`')"
+          notes="$(printf '%s\nsha256 `%s`\n' "$notes" "$SHA")"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --notes "$notes"
+          else
+            gh release create "$TAG" --title "Whisky Preview ${TAG#app-v}" --notes "$notes"
           fi
           gh release upload "$TAG" "$DMG" --clobber
-          gh release edit "$TAG" --notes "$(gh release view "$TAG" --json body --jq .body)
-
-sha256 \`${SHA}\`"
