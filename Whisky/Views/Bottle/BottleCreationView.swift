@@ -27,8 +27,10 @@ struct BottleCreationView: View {
     @State private var newBottleURL: URL = UserDefaults.standard.url(forKey: "defaultBottleLocation")
         ?? BottleData.defaultBottleDir
     @State private var nameValid: Bool = false
+    @State private var accessIssue: ExternalVolumeAccess.Access?
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         NavigationStack {
@@ -59,8 +61,14 @@ struct BottleCreationView: View {
                     panel.begin { result in
                         if result == .OK, let url = panel.urls.first {
                             newBottleURL = url
+                            // Probe here so the consent prompt appears while the user is choosing.
+                            accessIssue = ExternalVolumeAccess.requestAccess(to: url).nilIfGranted
                         }
                     }
+                }
+
+                if let accessIssue {
+                    accessWarning(accessIssue)
                 }
             }
             .formStyle(.grouped)
@@ -78,7 +86,7 @@ struct BottleCreationView: View {
                         submit()
                     }
                     .keyboardShortcut(.defaultAction)
-                    .disabled(!nameValid)
+                    .disabled(!nameValid || accessIssue != nil)
                     .accessibilityIdentifier("create.createButton")
                 }
             }
@@ -90,7 +98,69 @@ struct BottleCreationView: View {
         .frame(width: ViewWidth.small)
     }
 
+    @ViewBuilder
+    private func accessWarning(_ issue: ExternalVolumeAccess.Access) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(title, systemImage: symbol)
+                .font(.headline)
+                .foregroundStyle(.orange)
+            Text(explanation(for: issue))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack {
+                if case let .denied(kind) = issue, kind.requiresConsent,
+                   let settings = ExternalVolumeAccess.privacySettingsURL {
+                    Button("Open Privacy Settings…") { openURL(settings) }
+                }
+                Button("Check Again") {
+                    accessIssue = ExternalVolumeAccess.requestAccess(to: newBottleURL).nilIfGranted
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var title: String {
+        if case .volumeUnavailable = accessIssue { return "That drive isn't connected" }
+        return "Whisky can't write to that location"
+    }
+
+    private var symbol: String {
+        if case .volumeUnavailable = accessIssue { return "externaldrive.badge.xmark" }
+        return "lock.fill"
+    }
+
+    private func explanation(for issue: ExternalVolumeAccess.Access) -> String {
+        switch issue {
+        case .granted:
+            ""
+        case .denied(.removable):
+            """
+            macOS is withholding access to removable drives. Grant Whisky access under \
+            Privacy & Security → Files and Folders, then check again.
+            """
+        case .denied(.network):
+            """
+            macOS is withholding access to network volumes. Grant Whisky access under \
+            Privacy & Security → Files and Folders, then check again.
+            """
+        case .denied(.internalDisk):
+            "The folder isn't writable. Pick another location, or fix its permissions in Finder."
+        case .volumeUnavailable:
+            "Reconnect the drive and check again, or pick a location on this Mac."
+        case let .failed(reason):
+            reason
+        }
+    }
+
     func submit() {
+        // The default location never passes through the panel, so probe again here.
+        let access = ExternalVolumeAccess.requestAccess(to: newBottleURL)
+        guard access.isGranted else {
+            accessIssue = access
+            return
+        }
         newlyCreatedBottleURL = BottleVM.shared.createNewBottle(
             bottleName: newBottleName,
             winVersion: newBottleVersion,
