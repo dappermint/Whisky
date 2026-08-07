@@ -24,7 +24,12 @@ import WhiskyKit
 // MARK: - Bottle Creation Errors
 
 enum BottleCreationError: LocalizedError, Equatable {
-    case directoryCreationFailed
+    /// Carries the underlying failure: without it the cause of a creation
+    /// failure is unrecoverable from a log after the fact.
+    case directoryCreationFailed(reason: String)
+    /// `createDirectory` reported success but the directory was not on disk
+    /// afterwards, even on re-check.
+    case directoryNotVisible(path: String)
     case metadataCreationFailed
     case wineVersionChangeFailed
     case persistenceSaveFailed
@@ -38,8 +43,13 @@ enum BottleCreationError: LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
-        case .directoryCreationFailed:
-            String(localized: "bottle.creation.error.directoryCreationFailed")
+        case let .directoryCreationFailed(reason):
+            "\(String(localized: "bottle.creation.error.directoryCreationFailed")) (\(reason))"
+        case let .directoryNotVisible(path):
+            String(localized: """
+            The bottle folder was created without error but is not on disk: \(path). \
+            The drive may have been disconnected, or its filesystem may be inconsistent.
+            """)
         case .metadataCreationFailed:
             String(localized: "bottle.creation.error.metadataCreationFailed")
         case .wineVersionChangeFailed:
@@ -152,6 +162,10 @@ final class BottleVM: ObservableObject {
                 throw BottleCreationError.locationUnsuitable(
                     message: String(format: String(localized: "bottle.creation.preflight.notWritable"), path)
                 )
+            case let .missingCapability(capability, path):
+                throw BottleCreationError.locationUnsuitable(
+                    message: Self.capabilityMessage(capability, path: path)
+                )
             case let .insufficientSpace(availableBytes, requiredBytes):
                 throw BottleCreationError.locationUnsuitable(
                     message: String(
@@ -162,7 +176,7 @@ final class BottleVM: ObservableObject {
                 )
             }
 
-            try createBottleDirectory(at: request.newBottleDir)
+            try await createBottleDirectory(at: request.newBottleDir)
 
             // Create bottle on main actor (since Bottle is @MainActor)
             let createdBottle = Bottle(bottleUrl: request.newBottleDir, inFlight: true)
@@ -192,16 +206,46 @@ final class BottleVM: ObservableObject {
         }
     }
 
-    private func createBottleDirectory(at url: URL) throws {
-        let fileManager = FileManager.default
-        try fileManager.createDirectory(
-            at: url,
-            withIntermediateDirectories: true,
-            attributes: nil
-        )
-        guard fileManager.fileExists(atPath: url.path(percentEncoded: false)) else {
-            throw BottleCreationError.directoryCreationFailed
+    static func capabilityMessage(_ capability: BottleLocationValidation.Capability, path: String) -> String {
+        switch capability {
+        case .directory:
+            String(
+                localized: "\(path) refused to create a folder, so a bottle can't be set up there. Pick another location."
+            )
+        case .symlink:
+            String(
+                localized: "\(path) doesn't support symbolic links, which Wine needs to map its drives. Pick a location on another drive, or reformat this one as APFS."
+            )
+        case .driveLetterName:
+            String(
+                localized: "\(path) doesn't allow colons in filenames, which Wine needs for drive letters. Pick a location on another drive, or reformat this one as APFS."
+            )
+        case .posixPermissions:
+            String(
+                localized: "\(path) doesn't support file permissions, which Wine needs to set up its prefix. Pick a location on another drive, or reformat this one as APFS."
+            )
         }
+    }
+
+    private func createBottleDirectory(at url: URL) async throws {
+        let fileManager = FileManager.default
+        do {
+            try fileManager.createDirectory(at: url, withIntermediateDirectories: true, attributes: nil)
+        } catch {
+            let nsError = error as NSError
+            throw BottleCreationError.directoryCreationFailed(
+                reason: "\(nsError.domain) \(nsError.code): \(nsError.localizedDescription)"
+            )
+        }
+
+        // An external volume has been seen reporting the directory absent
+        // immediately after a successful create, so re-check before giving up.
+        let path = url.path(percentEncoded: false)
+        for attempt in 0 ..< 3 {
+            if fileManager.fileExists(atPath: path) { return }
+            if attempt < 2 { try? await Task.sleep(for: .milliseconds(50)) }
+        }
+        throw BottleCreationError.directoryNotVisible(path: path)
     }
 
     private func persistBottleCreation(request: BottleCreationRequest) throws {

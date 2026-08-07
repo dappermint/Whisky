@@ -24,12 +24,12 @@ import Foundation
 /// initializes the prefix, so an unusable location surfaces a clear, actionable
 /// error up front instead of a cryptic late Wine failure (issue #61).
 ///
-/// Only the two checks that confidently and directly predict failure are
-/// enforced: whether the location can be written to (a probe write), and
-/// whether the volume has enough free space. Ownership is intentionally *not*
-/// checked — the bottle prefix is a freshly created subdirectory owned by the
-/// current user regardless of the parent's owner, so the probe write is the
-/// accurate predictor of whether creation will succeed.
+/// Every check performs the operation it is checking rather than inferring it
+/// from the filesystem type: whether the location can be written to, whether it
+/// can do what a prefix needs (see ``Capability``), and whether the volume has
+/// enough free space. Ownership is intentionally *not* checked — the prefix is a
+/// freshly created subdirectory owned by the current user regardless of the
+/// parent's owner, so the probes are the accurate predictor.
 public enum BottleLocationValidation {
     /// The outcome of validating a prospective bottle location.
     public enum ValidationResult: Equatable, Sendable {
@@ -37,8 +37,27 @@ public enum BottleLocationValidation {
         case valid
         /// Neither the location nor its nearest existing parent can be written to.
         case notWritable(path: String)
+        /// The volume cannot do something a Wine prefix requires.
+        case missingCapability(Capability, path: String)
         /// The volume does not have enough free space to create a bottle.
         case insufficientSpace(availableBytes: Int64, requiredBytes: Int64)
+    }
+
+    /// An operation a Wine prefix performs on its own directory.
+    ///
+    /// Checked by performing it, not by inferring it from the filesystem type —
+    /// exFAT, for one, supports all of these on macOS despite the format itself
+    /// having no notion of symlinks or permission bits.
+    public enum Capability: Equatable, Sendable {
+        /// Creating a subdirectory that is then visible.
+        case directory
+        /// Symlinks: `dosdevices/c:` points at `../drive_c`, so a prefix without
+        /// them has no drives at all.
+        case symlink
+        /// Colons in filenames, which every entry in `dosdevices` uses.
+        case driveLetterName
+        /// POSIX permission bits, which Wine sets across the prefix.
+        case posixPermissions
     }
 
     /// Minimum free space required to create a bottle. A bare prefix is well
@@ -64,6 +83,10 @@ public enum BottleLocationValidation {
 
         guard isWritable(ancestor, fileManager: fileManager) else {
             return .notWritable(path: url.path(percentEncoded: false))
+        }
+
+        if let missing = missingCapability(in: ancestor, fileManager: fileManager) {
+            return .missingCapability(missing, path: url.path(percentEncoded: false))
         }
 
         // Skip the space check (fail open) if capacity can't be read, rather
@@ -104,6 +127,58 @@ public enum BottleLocationValidation {
             path.removeLast()
         }
         return fileManager.fileExists(atPath: path)
+    }
+
+    /// Whether macOS gates this location behind Files and Folders consent, where an
+    /// unwritable result most likely means a declined prompt rather than a bad folder.
+    /// Whisky is not sandboxed, so choosing the folder in an open panel grants nothing.
+    public static func isConsentGatedVolume(_ url: URL) -> Bool {
+        guard let volume = try? url.resourceValues(forKeys: [.volumeURLKey]).volume,
+              let values = try? volume.resourceValues(forKeys: [.volumeIsInternalKey, .volumeIsLocalKey])
+        else { return false }
+        return values.volumeIsLocal == false || values.volumeIsInternal == false
+    }
+
+    /// Deep link to **Full Disk Access**, not Files and Folders.
+    ///
+    /// Files and Folders only lists apps that have already asked, and has no way to
+    /// add one; Full Disk Access has a `+` button, so it is the only pane where a
+    /// user can grant access to an app macOS never prompted for. That case is
+    /// routine here: this build is ad-hoc signed, so its designated requirement is a
+    /// bare cdhash and every update looks like a different app to TCC.
+    public static let privacySettingsURL = URL(
+        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
+    )
+
+    /// Performs each prefix operation in a scratch directory and reports the first
+    /// one the location refuses, or `nil` if it can host a prefix.
+    static func missingCapability(in directory: URL, fileManager: FileManager) -> Capability? {
+        let root = directory.appending(path: ".whisky-capability-probe-\(UUID().uuidString)")
+        guard (try? fileManager.createDirectory(at: root, withIntermediateDirectories: false)) != nil,
+              fileManager.fileExists(atPath: root.path(percentEncoded: false))
+        else { return .directory }
+        defer { try? fileManager.removeItem(at: root) }
+
+        let target = root.appending(path: "drive_c")
+        guard (try? fileManager.createDirectory(at: target, withIntermediateDirectories: false)) != nil
+        else { return .directory }
+
+        let link = root.appending(path: "link")
+        guard (try? fileManager.createSymbolicLink(at: link, withDestinationURL: target)) != nil,
+              (try? fileManager.destinationOfSymbolicLink(atPath: link.path(percentEncoded: false))) != nil
+        else { return .symlink }
+
+        // Built by hand: a colon reads as a scheme separator to URL, and the
+        // literal name is the point of the check.
+        let driveLetter = root.path(percentEncoded: false) + "/c:"
+        guard fileManager.createFile(atPath: driveLetter, contents: nil) else { return .driveLetterName }
+
+        guard (try? fileManager.setAttributes(
+            [.posixPermissions: 0o700], ofItemAtPath: target.path(percentEncoded: false)
+        )) != nil
+        else { return .posixPermissions }
+
+        return nil
     }
 
     /// Probes writability by creating and removing a unique temp file.

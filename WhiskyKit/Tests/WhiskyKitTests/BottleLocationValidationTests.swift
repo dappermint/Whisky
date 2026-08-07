@@ -86,4 +86,70 @@ final class BottleLocationValidationTests: XCTestCase {
         let nearest = BottleLocationValidation.nearestExistingDirectory(for: deep, fileManager: .default)
         XCTAssertEqual(nearest.path, tempDir.resolvingSymlinksInPath().path)
     }
+
+    func testCapableLocationReportsNoMissingCapability() {
+        XCTAssertNil(BottleLocationValidation.missingCapability(in: tempDir, fileManager: .default))
+    }
+
+    func testCapabilityProbeLeavesNothingBehind() throws {
+        XCTAssertNil(BottleLocationValidation.missingCapability(in: tempDir, fileManager: .default))
+        let leftovers = try FileManager.default.contentsOfDirectory(atPath: tempDir.path)
+        XCTAssertEqual(leftovers, [], "the capability probe must clean up after itself")
+    }
+
+    func testProbeExercisesEveryOperationAPrefixNeeds() throws {
+        // Guards the probe itself: if it stops creating a symlink or a colon-named
+        // file, it would silently pass locations that cannot host a prefix.
+        final class RecordingManager: FileManager, @unchecked Sendable {
+            var symlinked = false
+            var createdPaths: [String] = []
+            var permissionsSet = false
+
+            override func createSymbolicLink(at url: URL, withDestinationURL destURL: URL) throws {
+                symlinked = true
+                try super.createSymbolicLink(at: url, withDestinationURL: destURL)
+            }
+
+            override func createFile(
+                atPath path: String, contents data: Data?, attributes attr: [FileAttributeKey: Any]? = nil
+            ) -> Bool {
+                createdPaths.append(path)
+                return super.createFile(atPath: path, contents: data, attributes: attr)
+            }
+
+            override func setAttributes(_ attributes: [FileAttributeKey: Any], ofItemAtPath path: String) throws {
+                if attributes[.posixPermissions] != nil { permissionsSet = true }
+                try super.setAttributes(attributes, ofItemAtPath: path)
+            }
+        }
+
+        let recorder = RecordingManager()
+        XCTAssertNil(BottleLocationValidation.missingCapability(in: tempDir, fileManager: recorder))
+        XCTAssertTrue(recorder.symlinked, "must verify symlinks: dosdevices/c: is one")
+        XCTAssertTrue(recorder.permissionsSet, "must verify posix permissions")
+        XCTAssertTrue(
+            recorder.createdPaths.contains { $0.hasSuffix("/c:") },
+            "must verify a colon-named file: every dosdevices entry has one"
+        )
+    }
+
+    func testUnwritableLocationIsReportedBeforeCapabilities() throws {
+        // notWritable is the more actionable answer, so it must win over a
+        // capability probe that would also fail on the same directory.
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: tempDir.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: tempDir.path) }
+
+        guard case .notWritable = BottleLocationValidation.validate(at: tempDir, minimumFreeBytes: 0) else {
+            return XCTFail("Expected .notWritable for a read-only directory")
+        }
+    }
+
+    func testConsentGatedVolumeIsFalseForAnInternalPath() {
+        XCTAssertFalse(BottleLocationValidation.isConsentGatedVolume(tempDir))
+    }
+
+    func testPrivacySettingsDeepLinkIsValid() throws {
+        let url = try XCTUnwrap(BottleLocationValidation.privacySettingsURL)
+        XCTAssertEqual(url.scheme, "x-apple.systempreferences")
+    }
 }

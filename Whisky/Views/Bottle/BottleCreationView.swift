@@ -27,7 +27,7 @@ struct BottleCreationView: View {
     @State private var newBottleURL: URL = UserDefaults.standard.url(forKey: "defaultBottleLocation")
         ?? BottleData.defaultBottleDir
     @State private var nameValid: Bool = false
-    @State private var accessIssue: ExternalVolumeAccess.Access?
+    @State private var locationIssue: BottleLocationValidation.ValidationResult?
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
@@ -61,14 +61,15 @@ struct BottleCreationView: View {
                     panel.begin { result in
                         if result == .OK, let url = panel.urls.first {
                             newBottleURL = url
-                            // Probe here so the consent prompt appears while the user is choosing.
-                            accessIssue = ExternalVolumeAccess.requestAccess(to: url).nilIfGranted
+                            // Probing here surfaces the consent prompt, and any capability the
+                            // location lacks, while the user is still choosing it.
+                            locationIssue = validate(url)
                         }
                     }
                 }
 
-                if let accessIssue {
-                    accessWarning(accessIssue)
+                if let locationIssue {
+                    locationWarning(locationIssue)
                 }
             }
             .formStyle(.grouped)
@@ -86,7 +87,7 @@ struct BottleCreationView: View {
                         submit()
                     }
                     .keyboardShortcut(.defaultAction)
-                    .disabled(!nameValid || accessIssue != nil)
+                    .disabled(!nameValid || locationIssue != nil)
                     .accessibilityIdentifier("create.createButton")
                 }
             }
@@ -99,9 +100,9 @@ struct BottleCreationView: View {
     }
 
     @ViewBuilder
-    private func accessWarning(_ issue: ExternalVolumeAccess.Access) -> some View {
+    private func locationWarning(_ issue: BottleLocationValidation.ValidationResult) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label(title, systemImage: symbol)
+            Label("This location can't hold a bottle", systemImage: "exclamationmark.triangle.fill")
                 .font(.headline)
                 .foregroundStyle(.orange)
             Text(explanation(for: issue))
@@ -109,64 +110,63 @@ struct BottleCreationView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
-                if case let .denied(kind) = issue, kind.requiresConsent,
-                   let settings = ExternalVolumeAccess.privacySettingsURL {
-                    Button("Open Privacy Settings…") { openURL(settings) }
+                if showsPrivacyRecovery(for: issue),
+                   let settings = BottleLocationValidation.privacySettingsURL {
+                    Button("Open Full Disk Access…") { openURL(settings) }
                 }
-                Button("Check Again") {
-                    accessIssue = ExternalVolumeAccess.requestAccess(to: newBottleURL).nilIfGranted
-                }
+                Button("Check Again") { locationIssue = validate(newBottleURL) }
             }
         }
         .padding(.vertical, 4)
     }
 
-    private var title: String {
-        if case .volumeUnavailable = accessIssue { return "That drive isn't connected" }
-        return "Whisky can't write to that location"
+    /// An unwritable consent-gated volume is most likely a declined prompt, which
+    /// only Settings can undo.
+    private func showsPrivacyRecovery(for issue: BottleLocationValidation.ValidationResult) -> Bool {
+        guard case .notWritable = issue else { return false }
+        return BottleLocationValidation.isConsentGatedVolume(newBottleURL)
     }
 
-    private var symbol: String {
-        if case .volumeUnavailable = accessIssue { return "externaldrive.badge.xmark" }
-        return "lock.fill"
-    }
-
-    private func explanation(for issue: ExternalVolumeAccess.Access) -> String {
+    private func explanation(for issue: BottleLocationValidation.ValidationResult) -> String {
         switch issue {
-        case .granted:
+        case .valid:
             ""
-        case .denied(.removable):
-            """
-            macOS is withholding access to removable drives. Grant Whisky access under \
-            Privacy & Security → Files and Folders, then check again.
-            """
-        case .denied(.network):
-            """
-            macOS is withholding access to network volumes. Grant Whisky access under \
-            Privacy & Security → Files and Folders, then check again.
-            """
-        case .denied(.internalDisk):
-            "The folder isn't writable. Pick another location, or fix its permissions in Finder."
-        case .volumeUnavailable:
-            "Reconnect the drive and check again, or pick a location on this Mac."
-        case let .failed(reason):
-            reason
+        case let .notWritable(path):
+            BottleLocationValidation.isConsentGatedVolume(newBottleURL)
+                ? String(localized: """
+                macOS is withholding access to \(path). Add Whisky Preview under \
+                Privacy & Security → Full Disk Access with the + button, then check again. \
+                It won't be listed under Files and Folders: this build is ad-hoc signed, so \
+                each update looks like a new app to macOS.
+                """)
+                : String(localized: "\(path) isn't writable. Pick another location, or fix its permissions in Finder.")
+        case let .missingCapability(capability, path):
+            BottleVM.capabilityMessage(capability, path: path)
+        case let .insufficientSpace(available, required):
+            String(localized: """
+            Not enough free space: \(ByteCountFormatter.string(fromByteCount: available, countStyle: .file)) \
+            available, \(ByteCountFormatter.string(fromByteCount: required, countStyle: .file)) needed.
+            """)
         }
+    }
+
+    private func validate(_ url: URL) -> BottleLocationValidation.ValidationResult? {
+        let result = BottleLocationValidation.validate(at: url)
+        return result == .valid ? nil : result
     }
 
     func submit() {
-        // The default location never passes through the panel, so probe again here.
-        let access = ExternalVolumeAccess.requestAccess(to: newBottleURL)
-        guard access.isGranted else {
-            accessIssue = access
+        // The default location never passes through the panel, so validate again here.
+        guard let issue = validate(newBottleURL) else {
+            newlyCreatedBottleURL = BottleVM.shared.createNewBottle(
+                bottleName: newBottleName,
+                winVersion: newBottleVersion,
+                bottleURL: newBottleURL
+            )
+            dismiss()
             return
         }
-        newlyCreatedBottleURL = BottleVM.shared.createNewBottle(
-            bottleName: newBottleName,
-            winVersion: newBottleVersion,
-            bottleURL: newBottleURL
-        )
-        dismiss()
+        locationIssue = issue
     }
 }
 
