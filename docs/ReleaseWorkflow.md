@@ -1,259 +1,116 @@
 # Release Workflow
 
-This document describes how to cut a release of the Whisky app and how to publish a new Wine Libraries archive.
+How to cut a Whisky Preview release and how to publish a new Wine Libraries archive.
 
-The fork uses two parallel artifact streams:
+Everything here happens on `preview`. `main` tracks [frankea/Whisky](https://github.com/frankea/Whisky)
+and is where upstream contributions are prepared; it is never released from.
 
-- **App releases** (`app-vX.Y.Z`) — `Whisky-X.Y.Z.dmg`, signed and notarized for direct distribution.
-- **Wine Libraries releases** (`vX.Y.Z`) — `Libraries.tar.gz` containing the Wine/DXVK runtime that the app downloads on first launch.
+Two parallel artifact streams live on GitHub Releases:
 
-Both live on GitHub Releases. Static metadata (version plist, Sparkle appcast) is served from GitHub Pages, which is **workflow-deployed** through `.github/workflows/Documentation.yml`. The `gh-pages` branch is unused; static files go in `dist/pages/`.
+- **App releases** (`app-vYYYY.M.N`) — `Whisky-Preview-YYYY.M.N.dmg`, ad-hoc signed.
+- **Wine Libraries releases** (`vX.Y.Z`) — `Libraries.tar.gz`, the Wine runtime the app downloads on first launch.
 
-## One-time setup
+Static metadata (`WhiskyWineVersion.plist`) is served from GitHub Pages, deployed by
+`.github/workflows/Documentation.yml` from `dist/pages/`. There is no `gh-pages` branch.
 
-These only need to be done once per maintainer machine.
+## Signing, and why the cask matters
 
-### Apple Developer ID Application certificate
+There is no Apple Developer ID for this fork, so builds are **ad-hoc signed and cannot be
+notarized**. Gatekeeper refuses a quarantined unnotarized app outright — on macOS 15+ the
+right-click-open escape hatch is gone, leaving only a trip through System Settings.
 
-A Developer ID Application certificate is required to ship a Gatekeeper-friendly DMG. Apple Development and Apple Distribution certs are not sufficient.
+The Homebrew cask is therefore the supported install path: it clears the quarantine flag in a
+`postflight` block, so the app just launches. A DMG downloaded straight from the releases page
+will be blocked, which is expected.
 
-1. **Xcode → Settings → Accounts** → select your Apple ID → **Manage Certificates…**
-2. Click **+** → **Developer ID Application**
-3. The cert is installed in your login keychain automatically.
+Hardened runtime is **off** (`ENABLE_HARDENED_RUNTIME = NO`) and the entitlements carry
+`com.apple.security.cs.allow-unsigned-executable-memory`. Wine maps JIT pages; without that
+entitlement every bottle fails to launch, so the release workflow asserts it survived signing
+rather than trusting the build.
 
-### notarytool credentials
+### Moving to a real Developer ID later
 
-Apple's notary service needs an app-specific password.
+If a Developer ID Application certificate is ever available:
 
-1. Generate one at <https://appleid.apple.com> → **Sign-In and Security → App-Specific Passwords**.
-2. Store it as a notarytool keychain profile:
+1. Add repo secrets for the exported `.p12`, its password, and notarytool credentials.
+2. Import the cert into a temporary keychain before the `Build` step.
+3. Replace `CODE_SIGN_IDENTITY = "-"` in `Whisky.xcodeproj` with the Developer ID, set
+   `CODE_SIGN_STYLE = Automatic`, restore `ENABLE_HARDENED_RUNTIME = YES`, and set
+   `DEVELOPMENT_TEAM`.
+4. Add `xcrun notarytool submit --wait` and `xcrun stapler staple` after `Package DMG`.
+5. Drop the `postflight` quarantine strip from the cask.
+
+## Cutting an app release
+
+Versions are calendar-based (`YYYY.M.N`) so the preview stream never collides with upstream's
+semver. `N` increments within a month.
+
+1. Bump `MARKETING_VERSION` in `Whisky.xcodeproj/project.pbxproj` (both Debug and Release
+   configurations of the `Whisky` target) and `CURRENT_PROJECT_VERSION`.
+2. Commit and push to `preview`. Wait for CI to go green.
+3. Tag and push:
    ```sh
-   xcrun notarytool store-credentials AC_PASSWORD \
-     --apple-id <your-apple-id-email> \
-     --team-id Z7JS58F8U3 \
-     --password <app-specific-password>
-   ```
-3. The release script reads this profile by name (`AC_PASSWORD`).
-
-### Sparkle EdDSA keys
-
-A keypair is needed to sign appcast entries. Sparkle's `generate_keys` tool ships with the Sparkle SPM package; after building Whisky once, find it at:
-
-```
-~/Library/Developer/Xcode/DerivedData/Whisky-*/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys
-```
-
-Run it once. The private key is stored automatically in your login keychain. The public key is printed to stdout — it is already committed in `Whisky/Info.plist` under `SUPublicEDKey`. If you regenerate keys you will invalidate the existing public key in the bundled app and need to re-release.
-
-## Credential continuity (backup & recovery)
-
-Three secrets gate the release pipeline. Losing the Sparkle key is **unrecoverable** for existing installs: `SUPublicEDKey` is baked into every shipped `Info.plist`, so a regenerated key permanently strands all installed copies off auto-update. Keep current, restore-tested backups of all three. (A fourth credential, the `BREW_TOKEN` repository secret used by the release step that publishes to [frankea/homebrew-whisky](https://github.com/frankea/homebrew-whisky), is regenerable and so needs no backup — the three-secrets focus here is on the non-regenerable ones.)
-
-| Secret | Where it lives | If lost |
-| --- | --- | --- |
-| Sparkle EdDSA private key | login keychain ("Private key for signing Sparkle updates") | Existing installs never see another auto-update |
-| Developer ID Application identity | login keychain | Re-issue from the Apple Developer portal; releases blocked until done |
-| notarytool app-specific password | appleid.apple.com; cached as keychain profile `AC_PASSWORD` | Regenerate at appleid.apple.com, re-run `store-credentials` |
-
-### Backup procedure
-
-1. Export the Sparkle private key (Keychain will prompt for access):
-
-   ```sh
-   SPARKLE_BIN=$(ls -dt ~/Library/Developer/Xcode/DerivedData/Whisky-*/SourcePackages/artifacts/sparkle/Sparkle/bin 2>/dev/null | head -1)
-   "$SPARKLE_BIN/generate_keys" -x sparkle_ed25519_private.key
+   git tag -a app-v2026.8.2 -m "whisky preview 2026.8.2"
+   git push origin app-v2026.8.2
    ```
 
-   If several `Whisky-*` DerivedData directories exist this picks the most recently modified one.
+The `Release` workflow then builds on `macos-15`, checks the tag matches `MARKETING_VERSION`,
+verifies the signature kept its entitlements, packages the DMG, and attaches it to the release
+with its sha256.
 
-2. Export the Developer ID identity: **Keychain Access → My Certificates** → right-click *Developer ID Application: …* → **Export** as `.p12` with a strong password.
-3. Encrypt both files before they leave the machine:
+> **Only a tag push runs our workflow.** GitHub runs `release`-triggered workflows from the
+> **default branch**, which here is `main` — upstream's tree. A workflow that must use our
+> definition has to be reachable from a tag push, which is why the cask bump lives inside
+> `Release.yml` rather than in its own release-triggered workflow.
 
-   ```sh
-   age -p sparkle_ed25519_private.key > sparkle_ed25519_private.key.age   # or: gpg -c <file>
-   age -p developer_id.p12 > developer_id.p12.age
-   ```
-
-   Neither `age` nor `gpg` ships with macOS; install `age` with `brew install age`.
-
-4. Store the encrypted files — plus the app-specific password itself — in **two** off-machine locations (e.g. a password-manager secure note and one offline medium). Delete the plaintext exports afterwards.
-5. Record the certificate expiry date and set reminders at T-60 and T-14 days:
-
-   ```sh
-   security find-certificate -c "Developer ID Application" -p | openssl x509 -noout -enddate
-   ```
-
-   This prints the first matching certificate only. During a renewal window, when the
-   old and new certificates coexist in the keychain, check every match with
-   `security find-certificate -a -c "Developer ID Application" -p` (each `-----BEGIN`
-   block is one certificate) — and re-run this step after the renewal so the reminder
-   tracks the new expiry, not the old one.
-
-### Restore test (do this the day the backup is made)
-
-A backup that has never been restored from is a hope, not a backup. `sign_update` can sign directly from a key file, so the test never touches the keychain:
+To rebuild an existing tag (e.g. after fixing the workflow itself), dispatch from `preview` so
+the fixed file is used against the tagged source:
 
 ```sh
-"$SPARKLE_BIN/sign_update" --ed-key-file sparkle_ed25519_private.key build/release/Whisky-X.Y.Z.dmg
+gh workflow run Release.yml --ref preview -f tag=app-v2026.8.2
 ```
 
-The printed `sparkle:edSignature` **and** the printed `length` must both exactly match that release's entry in `dist/pages/appcast.xml` — Ed25519 signatures are deterministic, so a mismatch in either means a wrong key or a non-canonical DMG: the exported key is wrong **or** the DMG you signed is not the exact published artifact (rebuilt locally, partially downloaded, wrong file). If in doubt, download the release asset from the appcast enclosure URL and sign that.
+## Updating the Homebrew cask
 
-### Recovery on a new machine
+The cask lives in [dappermint/homebrew-tap](https://github.com/dappermint/homebrew-tap) at
+`Casks/whisky-preview.rb`.
 
-0. Build Whisky once first so the Sparkle tools exist in DerivedData (see [Sparkle EdDSA keys](#sparkle-eddsa-keys) under One-time setup) — `generate_keys` ships inside the Sparkle SPM artifact, not on `PATH`. Re-declare `SPARKLE_BIN` in this fresh shell (it is only set earlier in the Backup section):
+With a `BREW_TOKEN` repo secret (a PAT with Contents:write for the tap), the release workflow
+bumps it automatically. Without one it prints the command to run and moves on — the release
+still succeeds. To bump by hand:
 
+```sh
+scripts/bump-cask.sh 2026.8.2
+```
+
+It downloads the released DMG, computes the sha256, rewrites both lines, asserts they actually
+changed, and pushes. Pass the sha as a second argument to skip the download.
+
+## Publishing a Wine Libraries release
+
+The runtime is built by [dappermint/winecx-gptk](https://github.com/dappermint/winecx-gptk),
+which produces a `whiskywine-gptk-libraries` artifact containing `Libraries.tar.gz`.
+
+1. Download the artifact from a green run:
    ```sh
-   SPARKLE_BIN=$(ls -dt ~/Library/Developer/Xcode/DerivedData/Whisky-*/SourcePackages/artifacts/sparkle/Sparkle/bin 2>/dev/null | head -1)
+   gh run download <run-id> -R dappermint/winecx-gptk -n whiskywine-gptk-libraries
    ```
-
-   If several `Whisky-*` DerivedData directories exist this picks the most recently modified one.
-1. Decrypt the backup (`age -d sparkle_ed25519_private.key.age > sparkle_ed25519_private.key`, entering the backup passphrase), then import the Sparkle key: `"$SPARKLE_BIN/generate_keys" -f sparkle_ed25519_private.key`. If an existing item named *Private key for signing Sparkle updates* is already in the login keychain, the import may fail until that item is removed via Keychain Access. Delete the decrypted plaintext key once the import succeeds.
-2. Open the `.p12` to install the Developer ID identity into the login keychain.
-3. Re-create the notary profile with `xcrun notarytool store-credentials AC_PASSWORD …` (see One-time setup).
-
-## App release
-
-### 1. Bump versions
-
-Update both fields in `Whisky.xcodeproj/project.pbxproj` (every occurrence):
-
-- `MARKETING_VERSION = X.Y.Z;` — user-visible version.
-- `CURRENT_PROJECT_VERSION = N;` — Sparkle build number, must increment monotonically.
-
-### 2. Update the changelog
-
-Move items from `[Unreleased]` to a new `[X.Y.Z] - YYYY-MM-DD (App)` section in `CHANGELOG.md`.
-
-### 3. Build, sign, notarize, package
-
-```sh
-scripts/release.sh X.Y.Z
-```
-
-The script:
-
-1. Archives the app (Apple Development signing during archive — automatic provisioning handles cert resolution).
-2. Re-signs on export with **Developer ID Application** per `scripts/exportOptions.plist`.
-3. Verifies the signature with `codesign --verify --deep --strict`.
-4. Builds a UDZO disk image with `hdiutil`.
-5. Signs the DMG with the Developer ID Application certificate.
-6. Submits the DMG to Apple's notary service and waits for the verdict (typically 5–15 minutes).
-7. Staples the notarization ticket.
-8. Verifies the stapled DMG passes `spctl --assess`.
-
-The artifact lands at `build/release/Whisky-X.Y.Z.dmg`.
-
-### 4. Sign the DMG for Sparkle
-
-```sh
-~/Library/Developer/Xcode/DerivedData/Whisky-*/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update build/release/Whisky-X.Y.Z.dmg
-```
-
-Capture the printed `sparkle:edSignature` and `length`.
-
-### 5. Add an appcast entry
-
-Edit `dist/pages/appcast.xml` and add a new `<item>` near the top of `<channel>`. Use the signature and length from the previous step:
-
-```xml
-<item>
-    <title>Whisky X.Y.Z</title>
-    <pubDate>RFC822 date here</pubDate>
-    <sparkle:version>BUILD_NUMBER</sparkle:version>
-    <sparkle:shortVersionString>X.Y.Z</sparkle:shortVersionString>
-    <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-    <description><![CDATA[<p>Release notes...</p>]]></description>
-    <enclosure
-        url="https://github.com/frankea/Whisky/releases/download/app-vX.Y.Z/Whisky-X.Y.Z.dmg"
-        sparkle:edSignature="..."
-        length="..."
-        type="application/octet-stream" />
-</item>
-```
-
-### 6. Commit, tag, and release
-
-```sh
-git add Whisky.xcodeproj/project.pbxproj CHANGELOG.md dist/pages/appcast.xml
-git commit -m "release: X.Y.Z"
-git push
-git tag -a app-vX.Y.Z -m "Whisky X.Y.Z"
-git push origin app-vX.Y.Z
-
-gh release create app-vX.Y.Z \
-  --repo frankea/Whisky \
-  --title "Whisky X.Y.Z" \
-  --notes "..." \
-  build/release/Whisky-X.Y.Z.dmg
-```
-
-The push to `main` triggers `.github/workflows/Documentation.yml`, which redeploys Pages with the updated appcast within ~1–2 minutes. Sparkle clients pick up the update on next launch.
-
-### 7. Homebrew tap (automatic)
-
-Publishing the `app-vX.Y.Z` release fires `.github/workflows/UpdateHomebrewTap.yml`,
-which downloads the DMG, computes its sha256, and bumps the
-[frankea/homebrew-whisky](https://github.com/frankea/homebrew-whisky) cask so
-`brew install --cask frankea/whisky/whisky` tracks the new version. No manual edit needed.
-
-This requires a one-time repository secret **`BREW_TOKEN`** — a personal access token
-(classic `repo`, or fine-grained with **Contents: write**) for `frankea/homebrew-whisky`;
-the default `GITHUB_TOKEN` cannot push to another repository. If the secret is missing the
-workflow fails loudly so the drift is visible. You can also re-sync any tag manually via the
-workflow's `workflow_dispatch` input.
-
-## Wine Libraries release
-
-The runtime (`Libraries.tar.gz`) is **assembled from upstream binaries, not built from source** — see
-[`DEPENDENCIES.md`](DEPENDENCIES.md) for the authoritative list of components,
-their pinned versions, and where each comes from. When the runtime needs to change:
-
-1. **Assemble `Libraries.tar.gz`** from the pinned upstream binaries. The archive unpacks to a
-   `Libraries/` tree the app expects (`Libraries/Wine/bin/…` is the Wine binary dir per
-   `WhiskyWineInstaller.binFolder`). To reproduce a build:
-   - Download the pinned **Wine** build (Gcenx `macOS_Wine_builds`) and unpack it as `Libraries/Wine/`.
-   - Add the pinned **DXVK-macOS** DLLs and **DXMT** prebuilt release into the runtime per the Gcenx
-     layout.
-   - Place **D3DMetal** as extracted from Apple's Game Porting Toolkit. ⚠️ Redistribution is governed by
-     Apple's GPTK license — confirm terms before publishing.
-   - Record the exact versions you used back into `docs/DEPENDENCIES.md`, and bump the matching
-     `*_PINNED` tags in `.github/workflows/RuntimeTrack.yml` so drift detection stays accurate.
-   - `tar -czf Libraries.tar.gz Libraries/` (mind the `Tar` pipe-drain pitfall noted below).
-2. Tag with the bare version `vX.Y.Z` (no `app-` prefix).
-3. `gh release create vX.Y.Z --title "Wine Libraries vX.Y.Z" Libraries.tar.gz`.
-4. Compute the SHA-256 of the **exact published asset** — the app verifies the download against this
-   and fails closed on a mismatch, so an incorrect value blocks every fresh install:
+2. Publish it under a bare `vX.Y.Z` tag matching the `version` inside the tarball's own
+   `WhiskyWineVersion.plist`. Keep the file byte-identical to the artifact so its sha256 is
+   traceable back to the build that produced it.
    ```sh
-   shasum -a 256 Libraries.tar.gz
+   gh release create v4.1.0 -R dappermint/Whisky --title "Wine Libraries v4.1.0" Libraries.tar.gz
    ```
-5. Update `dist/pages/WhiskyWineVersion.plist` with the version, bundled DXVK version, and the digest
-   from the previous step. Record the same digest in [`DEPENDENCIES.md`](DEPENDENCIES.md):
-   ```xml
-   <dict>
-       <key>version</key>
-       <dict>
-           <key>major</key><integer>X</integer>
-           <key>minor</key><integer>Y</integer>
-           <key>patch</key><integer>Z</integer>
-       </dict>
-       <key>dxvkVersion</key>
-       <string>1.10.3</string>
-       <key>sha256</key>
-       <string>…64-hex-digest…</string>
-   </dict>
-   ```
-6. Commit and push. The Documentation workflow republishes Pages, and existing app installs prompt to update on their next Wine version check.
+3. Update `dist/pages/WhiskyWineVersion.plist` to advertise the new version and the tarball's
+   sha256, then push to `preview`. Pages redeploys and the app offers the update.
 
-## URLs the app depends on
+Apple's GPTK/D3DMetal payload is **never** redistributed in these archives. The runtime is
+built to execute it; users supply their own disk image, which the app imports.
 
-- `https://frankea.github.io/Whisky/WhiskyWineVersion.plist` — Wine version metadata
-- `https://frankea.github.io/Whisky/appcast.xml` — Sparkle update feed
-- `https://github.com/frankea/Whisky/releases/download/vX.Y.Z/Libraries.tar.gz` — Wine binary archive
-- `https://github.com/frankea/Whisky/releases/download/app-vX.Y.Z/Whisky-X.Y.Z.dmg` — app DMG
+## Checklist
 
-## Pitfalls
-
-- **Don't override `CODE_SIGN_IDENTITY` at archive time.** The project is configured for Apple Development with automatic signing; overriding it conflicts with provisioning. The release script lets `xcodebuild archive` use the project default and re-signs on export.
-- **Don't bundle the WhiskyKit folder as Resources.** Doing so packages the package's `.build` directory (DocC plugin executables) into the app, and Apple's notary rejects the archive because those plugin executables don't have hardened runtime. The PBXResourcesBuildPhase entry for `WhiskyKit` was removed from the project for this reason; do not add it back. The PBXFileReference and PBXGroup entries must remain or Xcode's SPM workspace integration crashes on CI.
-- **Pipe deadlocks in `Tar`.** `process.waitUntilExit()` must come *after* draining the pipe, not before. The verbose tar listing for a multi-hundred-megabyte archive will overflow the OS pipe buffer. See the fix in 3.0.1.
+- [ ] `MARKETING_VERSION` bumped, CI green on `preview`
+- [ ] `app-vYYYY.M.N` tag pushed, Release workflow green
+- [ ] DMG attached to the release with its sha256 in the notes
+- [ ] Cask bumped and `brew install --cask dappermint/tap/whisky-preview` works from clean
+- [ ] If the runtime changed: `dist/pages/WhiskyWineVersion.plist` advertises the new version and hash
