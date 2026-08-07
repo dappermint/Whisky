@@ -21,18 +21,10 @@ import os.log
 
 public extension Wine {
     /// Where a set of DLL overrides lives in the prefix registry.
-    ///
-    /// `WINEDLLOVERRIDES` cannot express either of these: an environment
-    /// variable is inherited by every child process, so a launcher's overrides
-    /// silently become every game's overrides. Wine reads the variable before
-    /// the registry, so registry entries are dead while it is set.
     enum DLLOverrideScope: Equatable, Sendable {
-        /// `HKCU\Software\Wine\DllOverrides`: the prefix default, used by any
-        /// process without an entry of its own. This is what a game launched by
-        /// a launcher should fall back to.
+        /// The prefix default, used by any process without an entry of its own.
         case bottle
-        /// `HKCU\Software\Wine\AppDefaults\<exe>\DllOverrides`: this executable
-        /// only. Children do not inherit it.
+        /// This executable only. Children do not inherit it.
         case program(String)
 
         var registryKey: String {
@@ -40,9 +32,8 @@ public extension Wine {
             case .bottle:
                 #"HKCU\Software\Wine\DllOverrides"#
             case let .program(executable):
-                // \\#( is a literal backslash followed by the interpolation:
-                // \#( alone would be read as the interpolation and swallow the
-                // path separator.
+                // \\#( is a literal backslash then the interpolation; \#( alone
+                // would swallow the path separator.
                 #"HKCU\Software\Wine\AppDefaults\\#(executable)\DllOverrides"#
             }
         }
@@ -52,15 +43,11 @@ public extension Wine {
         subsystem: "com.isaacmarovitz.WhiskyKit", category: "dll-overrides"
     )
 
-    /// Replaces the DLL overrides at each scope with the ones given, in a
-    /// single registry import.
+    /// Replaces the DLL overrides at each scope, in one import.
     ///
-    /// One import, not one `reg` invocation per value: every `reg add` and
-    /// `reg delete` is a whole wine process, and a launch that syncs a bottle
-    /// scope plus a launcher and its helpers was spending twenty-odd sequential
-    /// process launches before the program it was asked to start. A `.reg` file
-    /// deletes each key and rewrites it, so nothing has to be read back first
-    /// and stale values from a previous backend cannot survive.
+    /// One import rather than a `reg` call per value: each of those is a whole
+    /// wine process, and a launch syncing a bottle plus a launcher and its
+    /// helpers spent twenty-odd of them before starting anything.
     ///
     /// - Parameters:
     ///   - bottle: The bottle whose prefix registry is written.
@@ -82,12 +69,10 @@ public extension Wine {
         dllOverrideLogger.debug("Synced DLL overrides for \(scopes.count) scope(s) in one import")
     }
 
-    /// Renders a `.reg` document that leaves each key holding exactly
-    /// `overrides` and nothing else.
+    /// Renders a `.reg` leaving each key holding exactly `overrides`.
     ///
-    /// Each key is deleted and recreated rather than edited. `.reg` processes
-    /// entries in order, so `[-Key]` followed by `[Key]` is a replace, which is
-    /// both how stale values get pruned and why no read-back is needed.
+    /// `[-Key]` then `[Key]` is a replace, since `.reg` runs in order. That is
+    /// what prunes stale values without reading the key back first.
     static func registryDocument(for scopes: [(key: String, overrides: [String: String])]) -> String {
         var lines = ["Windows Registry Editor Version 5.00", ""]
         for scope in scopes {
@@ -103,22 +88,19 @@ public extension Wine {
         return lines.joined(separator: "\r\n")
     }
 
-    /// The launcher helper executables that must share `url`'s DLL overrides,
-    /// or none when the executable is not a recognised launcher.
+    /// The launcher helpers that must share `url`'s DLL overrides.
     ///
-    /// Detection runs on the launched executable rather than the bottle's
-    /// recorded launcher, so this is right even when launcher compatibility
-    /// mode is off: the reason the helpers need the entry is how wine resolves
-    /// `AppDefaults`, not whether the user opted into launcher fixes.
+    /// Detected from the executable, not the bottle's recorded launcher: they
+    /// need the entry because of how wine resolves `AppDefaults`, not because
+    /// the user enabled launcher fixes.
     static func helperExecutables(for url: URL) -> [String] {
         LauncherType.detect(from: url)?.helperExecutables ?? []
     }
 
     /// Parses a `WINEDLLOVERRIDES` string into DLL name to load-order pairs.
     ///
-    /// Wine's registry accepts the same load-order syntax as the variable, so
-    /// the values are written through unchanged. `dll=` (disabled) is kept: an
-    /// empty value is how a DLL is disabled in both forms.
+    /// The registry takes the same syntax, so values pass through unchanged.
+    /// `dll=` is kept: an empty value is how a DLL is disabled in both forms.
     static func parseDLLOverrides(_ overrides: String) -> [String: String] {
         var result: [String: String] = [:]
         for clause in overrides.split(separator: ";") {
