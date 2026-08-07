@@ -58,6 +58,20 @@ public enum BottleLocationValidation {
         case driveLetterName
         /// POSIX permission bits, which Wine sets across the prefix.
         case posixPermissions
+
+        /// What to tell the user, naming the operation that failed.
+        public func explanation(path: String) -> String {
+            switch self {
+            case .directory:
+                String(localized: "\(path) refused to create a folder, so a bottle can't be set up there.")
+            case .symlink:
+                String(localized: "\(path) doesn't support symbolic links, which Wine needs to map its drives.")
+            case .driveLetterName:
+                String(localized: "\(path) doesn't allow colons in filenames, which Wine uses for drive letters.")
+            case .posixPermissions:
+                String(localized: "\(path) doesn't support file permissions, which Wine needs to set up a prefix.")
+            }
+        }
     }
 
     /// Minimum free space required to create a bottle. A bare prefix is well

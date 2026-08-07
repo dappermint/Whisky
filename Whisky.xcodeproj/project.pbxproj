@@ -48,6 +48,7 @@
 		D4E5F6A7B8C90113A9B0C1F4 /* GPTKSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6A7B8C90113A9B0C1F5 /* GPTKSettingsSection.swift */; };
 		D7A1E4C09B310502C2F3A4B0 /* RuntimesSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A1E4C09B310502C2F3A4B1 /* RuntimesSettingsSection.swift */; };
 		6E50D98329CD6066008C39F6 /* BottleVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E50D98229CD6066008C39F6 /* BottleVM.swift */; };
+		6E50D98529CD6066008C39F6 /* BottleVM+Diagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E50D98429CD6066008C39F6 /* BottleVM+Diagnostics.swift */; };
 		6E50D98529CDF25B008C39F6 /* BottleCreationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E50D98429CDF25B008C39F6 /* BottleCreationView.swift */; };
 		6E59676B2A9A424900D64F70 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 6E59676A2A9A424900D64F70 /* ArgumentParser */; };
 		6E5B61B62AC34E6D007B1913 /* SemanticVersion in Frameworks */ = {isa = PBXBuildFile; productRef = 6E5B61B52AC34E6D007B1913 /* SemanticVersion */; };
@@ -239,6 +240,7 @@
 		D4E5F6A7B8C90113A9B0C1F5 /* GPTKSettingsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPTKSettingsSection.swift; sourceTree = "<group>"; };
 		D7A1E4C09B310502C2F3A4B1 /* RuntimesSettingsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimesSettingsSection.swift; sourceTree = "<group>"; };
 		6E50D98229CD6066008C39F6 /* BottleVM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottleVM.swift; sourceTree = "<group>"; };
+		6E50D98429CD6066008C39F6 /* BottleVM+Diagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BottleVM+Diagnostics.swift"; sourceTree = "<group>"; };
 		6E50D98429CDF25B008C39F6 /* BottleCreationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottleCreationView.swift; sourceTree = "<group>"; };
 		6E621CEE2A5F631200C9AAB3 /* Winetricks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Winetricks.swift; sourceTree = "<group>"; };
 		6E6C0CF12A419A6800356232 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
@@ -558,6 +560,7 @@
 			isa = PBXGroup;
 			children = (
 				6E50D98229CD6066008C39F6 /* BottleVM.swift */,
+				6E50D98429CD6066008C39F6 /* BottleVM+Diagnostics.swift */,
 				B1A2C3D4E5F60302A9B0C1D2 /* ProcessesViewModel.swift */,
 			);
 			path = "View Models";
@@ -989,6 +992,7 @@
 				E1A2B3C4E5F60901A9B0C1D0 /* ConsoleRunHistoryView.swift in Sources */,
 				E1A2B3C4E5F60901A9B0C1D2 /* ConsoleLogView.swift in Sources */,
 				6E50D98329CD6066008C39F6 /* BottleVM.swift in Sources */,
+				6E50D98529CD6066008C39F6 /* BottleVM+Diagnostics.swift in Sources */,
 				B1A2C3D4E5F60302A9B0C1D3 /* ProcessesViewModel.swift in Sources */,
 				6E2B25C12B0E20F50084A67A /* PinAddView.swift in Sources */,
 				6E49E0212AECB7DB00009CAC /* SettingsView.swift in Sources */,

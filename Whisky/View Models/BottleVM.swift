@@ -164,7 +164,7 @@ final class BottleVM: ObservableObject {
                 )
             case let .missingCapability(capability, path):
                 throw BottleCreationError.locationUnsuitable(
-                    message: Self.capabilityMessage(capability, path: path)
+                    message: capability.explanation(path: path)
                 )
             case let .insufficientSpace(availableBytes, requiredBytes):
                 throw BottleCreationError.locationUnsuitable(
@@ -203,27 +203,6 @@ final class BottleVM: ObservableObject {
             Telemetry.capture(.firstBottleCreated)
         } catch {
             handleBottleCreationFailure(error, request: request, bottle: bottle)
-        }
-    }
-
-    static func capabilityMessage(_ capability: BottleLocationValidation.Capability, path: String) -> String {
-        switch capability {
-        case .directory:
-            String(
-                localized: "\(path) refused to create a folder, so a bottle can't be set up there. Pick another location."
-            )
-        case .symlink:
-            String(
-                localized: "\(path) doesn't support symbolic links, which Wine needs to map its drives. Pick a location on another drive, or reformat this one as APFS."
-            )
-        case .driveLetterName:
-            String(
-                localized: "\(path) doesn't allow colons in filenames, which Wine needs for drive letters. Pick a location on another drive, or reformat this one as APFS."
-            )
-        case .posixPermissions:
-            String(
-                localized: "\(path) doesn't support file permissions, which Wine needs to set up its prefix. Pick a location on another drive, or reformat this one as APFS."
-            )
         }
     }
 
@@ -283,139 +262,5 @@ final class BottleVM: ObservableObject {
             bottles.remove(at: index)
         }
         try? FileManager.default.removeItem(at: request.newBottleDir)
-    }
-
-    private func makeBottleCreationDiagnostics(
-        bottleName: String,
-        winVersion: WinVersion,
-        bottleURL: URL,
-        newBottleDir: URL,
-        error: Error
-    ) -> String {
-        func redactHome(_ path: String) -> String {
-            let home = FileManager.default.homeDirectoryForCurrentUser.path(percentEncoded: false)
-            return path.replacingOccurrences(of: home, with: "~")
-        }
-
-        let context = BottleCreationDiagnosticsContext(
-            bottleName: bottleName,
-            winVersion: winVersion,
-            bottleURL: bottleURL,
-            newBottleDir: newBottleDir,
-            redactHome: redactHome
-        )
-
-        let lines = makeBottleCreationDiagnosticsLines(
-            context: context,
-            whiskyVersionString: formattedWhiskyVersion(),
-            nsError: error as NSError
-        )
-
-        // Keep diagnostics bounded for copy/paste.
-        return lines.joined(separator: "\n").prefix(4_000).description
-    }
-
-    private struct BottleCreationDiagnosticsContext {
-        let bottleName: String
-        let winVersion: WinVersion
-        let bottleURL: URL
-        let newBottleDir: URL
-        let bottleURLPath: String
-        let newBottleDirPath: String
-        let bottleDataPath: String
-
-        init(
-            bottleName: String,
-            winVersion: WinVersion,
-            bottleURL: URL,
-            newBottleDir: URL,
-            redactHome: (String) -> String
-        ) {
-            self.bottleName = bottleName
-            self.winVersion = winVersion
-            self.bottleURL = bottleURL
-            self.newBottleDir = newBottleDir
-            bottleURLPath = redactHome(bottleURL.path(percentEncoded: false))
-            newBottleDirPath = redactHome(newBottleDir.path(percentEncoded: false))
-            bottleDataPath = redactHome(BottleData.bottleEntriesDir.path(percentEncoded: false))
-        }
-    }
-
-    private func formattedWhiskyVersion() -> String {
-        let whiskyVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
-        guard !whiskyVersion.isEmpty else { return "unknown" }
-        return buildNumber.isEmpty ? whiskyVersion : "\(whiskyVersion) (\(buildNumber))"
-    }
-
-    private func makeBottleCreationDiagnosticsLines(
-        context: BottleCreationDiagnosticsContext,
-        whiskyVersionString: String,
-        nsError: NSError
-    ) -> [String] {
-        var lines: [String] = []
-        lines.reserveCapacity(32)
-
-        lines.append("Whisky Bottle Creation Diagnostics (Issue #61)")
-        lines.append("Timestamp: \(Date().formatted())")
-        lines.append("")
-        appendBottleCreationInputLines(into: &lines, context: context)
-        appendBottleCreationSystemLines(into: &lines, whiskyVersionString: whiskyVersionString)
-        appendBottleCreationFilesystemLines(into: &lines, context: context)
-        appendBottleCreationErrorLines(into: &lines, nsError: nsError)
-
-        return lines
-    }
-
-    private func appendBottleCreationInputLines(
-        into lines: inout [String],
-        context: BottleCreationDiagnosticsContext
-    ) {
-        lines.append("[INPUT]")
-        lines.append("Bottle Name: \(context.bottleName)")
-        lines.append("Windows Version: \(context.winVersion)")
-        lines.append("Target Folder: \(context.bottleURLPath)")
-        lines.append("New Bottle Dir: \(context.newBottleDirPath)")
-        lines.append("")
-    }
-
-    private func appendBottleCreationSystemLines(
-        into lines: inout [String],
-        whiskyVersionString: String
-    ) {
-        lines.append("[SYSTEM]")
-        lines.append("macOS Version: \(MacOSVersion.current.description)")
-        lines.append("Whisky Version: \(whiskyVersionString)")
-        let whiskyWineInstalled = WhiskyWineInstaller.isWhiskyWineInstalled() ? "yes" : "no"
-        lines.append("WhiskyWine Installed: \(whiskyWineInstalled)")
-        if let whiskyWineVersion = WhiskyWineInstaller.whiskyWineVersion() {
-            lines.append("WhiskyWine Version: \(whiskyWineVersion)")
-        }
-        lines.append("")
-    }
-
-    private func appendBottleCreationFilesystemLines(
-        into lines: inout [String],
-        context: BottleCreationDiagnosticsContext
-    ) {
-        lines.append("[FILESYSTEM]")
-        let fileManager = FileManager.default
-        let targetFolderExists = fileManager
-            .fileExists(atPath: context.bottleURL.path(percentEncoded: false)) ? "yes" : "no"
-        let newBottleDirExists = fileManager
-            .fileExists(atPath: context.newBottleDir.path(percentEncoded: false)) ? "yes" : "no"
-        lines.append("Target folder exists: \(targetFolderExists)")
-        lines.append("New bottle dir exists: \(newBottleDirExists)")
-        lines.append("BottleData file: \(context.bottleDataPath)")
-        lines.append("")
-    }
-
-    private func appendBottleCreationErrorLines(
-        into lines: inout [String],
-        nsError: NSError
-    ) {
-        lines.append("[ERROR]")
-        lines.append("Error: \(nsError.localizedDescription)")
-        lines.append("NSError: domain=\(nsError.domain) code=\(nsError.code)")
     }
 }

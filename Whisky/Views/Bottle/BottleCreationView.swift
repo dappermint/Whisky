@@ -132,22 +132,26 @@ struct BottleCreationView: View {
         case .valid:
             ""
         case let .notWritable(path):
-            BottleLocationValidation.isConsentGatedVolume(newBottleURL)
-                ? String(localized: """
-                macOS is withholding access to \(path). Add Whisky Preview under \
-                Privacy & Security → Full Disk Access with the + button, then check again. \
-                It won't be listed under Files and Folders: this build is ad-hoc signed, so \
-                each update looks like a new app to macOS.
-                """)
-                : String(localized: "\(path) isn't writable. Pick another location, or fix its permissions in Finder.")
+            notWritableExplanation(path)
         case let .missingCapability(capability, path):
-            BottleVM.capabilityMessage(capability, path: path)
+            capability.explanation(path: path)
         case let .insufficientSpace(available, required):
             String(localized: """
             Not enough free space: \(ByteCountFormatter.string(fromByteCount: available, countStyle: .file)) \
             available, \(ByteCountFormatter.string(fromByteCount: required, countStyle: .file)) needed.
             """)
         }
+    }
+
+    private func notWritableExplanation(_ path: String) -> String {
+        guard BottleLocationValidation.isConsentGatedVolume(newBottleURL) else {
+            return String(localized: "\(path) isn't writable. Pick another location, or fix its permissions in Finder.")
+        }
+        return String(localized: """
+        macOS is withholding access to \(path). Add Whisky Preview under Privacy & Security \u{2192} \
+        Full Disk Access with the + button, then check again. It won't be listed under Files and \
+        Folders: this build is ad-hoc signed, so each update looks like a new app to macOS.
+        """)
     }
 
     private func validate(_ url: URL) -> BottleLocationValidation.ValidationResult? {
