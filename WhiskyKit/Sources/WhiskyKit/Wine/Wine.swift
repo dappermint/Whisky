@@ -347,7 +347,9 @@ public class Wine {
         // entry of its own still gets them, and this program's resolved set is
         // written against its executable name alone.
         let bottleOverrides = constructWineEnvironment(for: bottle)["WINEDLLOVERRIDES"] ?? ""
-        try await syncDLLOverrides(bottle: bottle, scope: .bottle, overrides: bottleOverrides)
+        var scopes: [(scope: DLLOverrideScope, overrides: String)] = [
+            (scope: .bottle, overrides: bottleOverrides)
+        ]
 
         if overridesApplyToDescendants {
             // The overrides describe something this process will spawn, not
@@ -368,11 +370,11 @@ public class Wine {
             // steamwebhelper.exe, which draws the entire client, on the bottle
             // default.
             for executable in [url.lastPathComponent] + helperExecutables(for: url) {
-                try await syncDLLOverrides(
-                    bottle: bottle, scope: .program(executable), overrides: programOverrideString
-                )
+                scopes.append((scope: .program(executable), overrides: programOverrideString))
             }
         }
+
+        try await syncDLLOverrides(bottle: bottle, scopes: scopes)
 
         // Create a run log entry to track this session
         let programName = url.lastPathComponent

@@ -115,89 +115,56 @@ final class DLLOverrideRegistryTests: XCTestCase {
         }
     }
 
-    // MARK: - reg query output
+    // MARK: - Registry document
 
-    func testParsesRegQueryOutput() {
-        let output = """
-        HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides
-            d3d11    REG_SZ    n,b
-            dxgi    REG_SZ    n,b
-        """
-        let parsed = Wine.parseRegistryQueryOutput(output)
-        XCTAssertEqual(parsed, ["d3d11": "n,b", "dxgi": "n,b"])
+    func testDocumentReplacesEachKey() {
+        let doc = Wine.registryDocument(for: [
+            (key: #"HKCU\Software\Wine\DllOverrides"#, overrides: ["d3d11": "n,b"])
+        ])
+        XCTAssertTrue(doc.hasPrefix("Windows Registry Editor Version 5.00"))
+        // the delete has to come before the write, or it removes what it just wrote
+        let deleteAt = doc.range(of: #"[-HKCU\Software\Wine\DllOverrides]"#)
+        let writeAt = doc.range(of: #"[HKCU\Software\Wine\DllOverrides]"#)
+        XCTAssertNotNil(deleteAt)
+        XCTAssertNotNil(writeAt)
+        if let deleteAt, let writeAt {
+            XCTAssertLessThan(deleteAt.lowerBound, writeAt.lowerBound)
+        }
+        XCTAssertTrue(doc.contains(#""d3d11"="n,b""#))
     }
 
-    /// A disabled override has no value column at all, and must come back as
-    /// an empty string rather than being dropped.
-    func testParsesValuelessEntryAsDisabled() {
-        let parsed = Wine.parseRegistryQueryOutput("    mscoree    REG_SZ")
-        XCTAssertEqual(parsed, ["mscoree": ""])
+    /// An empty scope must still be deleted, since clearing a backend has to
+    /// remove what the previous one wrote.
+    func testEmptyScopeDeletesWithoutRewriting() {
+        let doc = Wine.registryDocument(for: [(key: #"HKCU\X"#, overrides: [:])])
+        XCTAssertTrue(doc.contains(#"[-HKCU\X]"#))
+        XCTAssertFalse(doc.contains("\r\n[HKCU\\X]"))
     }
 
-    func testIgnoresHeaderAndBlankLines() {
-        let output = """
-
-        HKEY_CURRENT_USER\\Software\\Wine\\AppDefaults\\steam.exe\\DllOverrides
-
-            d3d11    REG_SZ    n,b
-
-        """
-        XCTAssertEqual(Wine.parseRegistryQueryOutput(output), ["d3d11": "n,b"])
+    func testAllScopesLandInOneDocument() {
+        let doc = Wine.registryDocument(for: [
+            (key: #"HKCU\A"#, overrides: ["d3d11": "n,b"]),
+            (key: #"HKCU\B"#, overrides: ["dxgi": "b"])
+        ])
+        XCTAssertTrue(doc.contains(#"[HKCU\A]"#))
+        XCTAssertTrue(doc.contains(#"[HKCU\B]"#))
+        XCTAssertTrue(doc.contains(#""dxgi"="b""#))
     }
 
-    func testEmptyQueryOutputYieldsNothing() {
-        XCTAssertTrue(Wine.parseRegistryQueryOutput("").isEmpty)
+    func testValuesAreOrderedDeterministically() {
+        let doc = Wine.registryDocument(for: [
+            (key: #"HKCU\A"#, overrides: ["dxgi": "b", "d3d11": "n,b", "d3d9": "n,b"])
+        ])
+        guard let d3d11 = doc.range(of: #""d3d11""#)?.lowerBound,
+              let d3d9 = doc.range(of: #""d3d9""#)?.lowerBound,
+              let dxgi = doc.range(of: #""dxgi""#)?.lowerBound
+        else { return XCTFail("document is missing one of the overrides") }
+        XCTAssertLessThan(d3d11, d3d9)
+        XCTAssertLessThan(d3d9, dxgi)
     }
 
-    // MARK: - Sync plan
-
-    func testWritesEverythingWhenTheKeyIsEmpty() {
-        let plan = Wine.syncPlan(existing: [:], wanted: ["d3d11": "n,b", "dxgi": "n,b"])
-        XCTAssertEqual(plan.writes.map(\.dll), ["d3d11", "dxgi"])
-        XCTAssertTrue(plan.deletes.isEmpty)
-        XCTAssertFalse(plan.isEmpty)
-    }
-
-    /// Launches are frequent and the overrides rarely change, so an unchanged
-    /// key must produce no wine processes at all.
-    func testNoWorkWhenAlreadyCorrect() {
-        let same = ["d3d11": "n,b", "dxgi": "n,b"]
-        XCTAssertTrue(Wine.syncPlan(existing: same, wanted: same).isEmpty)
-    }
-
-    func testWritesOnlyWhatChanged() {
-        let plan = Wine.syncPlan(
-            existing: ["d3d11": "n,b", "dxgi": "n,b"],
-            wanted: ["d3d11": "n,b", "dxgi": "b"]
-        )
-        XCTAssertEqual(plan.writes.map(\.dll), ["dxgi"])
-        XCTAssertEqual(plan.writes.map(\.mode), ["b"])
-        XCTAssertTrue(plan.deletes.isEmpty)
-    }
-
-    /// Switching DXVK to DXMT: DXMT's preset does not mention d3d9, so DXVK's
-    /// entry has to be removed rather than left behind.
-    func testPrunesEntriesTheNewBackendDoesNotWant() {
-        let plan = Wine.syncPlan(
-            existing: ["d3d11": "n,b", "d3d9": "n,b", "d3d10core": "n,b", "dxgi": "n,b"],
-            wanted: ["d3d11": "n,b", "d3d10core": "n,b", "dxgi": "n,b", "winemetal": "b"]
-        )
-        XCTAssertEqual(plan.deletes, ["d3d9"])
-        XCTAssertEqual(plan.writes.map(\.dll), ["winemetal"])
-    }
-
-    func testClearingWantedRemovesEverything() {
-        let plan = Wine.syncPlan(existing: ["d3d11": "n,b", "dxgi": "n,b"], wanted: [:])
-        XCTAssertEqual(plan.deletes, ["d3d11", "dxgi"])
-        XCTAssertTrue(plan.writes.isEmpty)
-    }
-
-    func testPlanIsDeterministicallyOrdered() {
-        let plan = Wine.syncPlan(
-            existing: ["zzz": "b", "aaa": "b"],
-            wanted: ["dxgi": "n,b", "d3d11": "n,b", "d3d9": "n,b"]
-        )
-        XCTAssertEqual(plan.writes.map(\.dll), ["d3d11", "d3d9", "dxgi"])
-        XCTAssertEqual(plan.deletes, ["aaa", "zzz"])
+    func testDocumentUsesCRLF() {
+        let doc = Wine.registryDocument(for: [(key: #"HKCU\A"#, overrides: ["d3d11": "n,b"])])
+        XCTAssertTrue(doc.contains("\r\n"))
     }
 }
