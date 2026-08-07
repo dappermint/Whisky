@@ -264,6 +264,32 @@ public class Wine {
         public let runLogEntryId: UUID
     }
 
+    /// The backend a launch actually uses, plus the program overrides that carry it.
+    ///
+    /// A program-level override wins over the bottle setting, and `.recommended`
+    /// resolves against *what is being launched*, not just the machine. The bottle
+    /// composes its own overrides without knowing the target, so when the launch
+    /// resolves differently from the bottle the decision is pinned into the program
+    /// overrides — otherwise a steered launcher gets DXVK's files and none of its
+    /// overrides.
+    @MainActor
+    private static func resolveBackend(
+        for url: URL, bottle: Bottle, programOverrides: ProgramOverrides?
+    ) -> (backend: GraphicsBackend, overrides: ProgramOverrides?) {
+        let choice = programOverrides?.graphicsBackend ?? bottle.settings.graphicsBackend
+        guard choice == .recommended else { return (choice, programOverrides) }
+
+        let resolved = GraphicsBackendResolver.resolve(
+            for: bottle.settings.runtime, launcher: LauncherType.detect(from: url)
+        )
+        guard resolved != GraphicsBackendResolver.resolve(for: bottle.settings.runtime) else {
+            return (resolved, programOverrides)
+        }
+        var pinned = programOverrides ?? ProgramOverrides()
+        pinned.graphicsBackend = resolved
+        return (resolved, pinned)
+    }
+
     // swiftlint:disable function_body_length
     @discardableResult
     @MainActor
@@ -277,29 +303,11 @@ public class Wine {
         // is called, via LauncherFixes.detectAndApply from the app's run paths
         // (FileOpenView/BottleView/ProgramMenuView).
 
-        // The effective backend for this launch: a program-level override wins
-        // over the bottle setting, and `.recommended` resolves to its concrete
-        // backend. This decides which translation layer's files are deployed;
-        // the matching WINEDLLOVERRIDES come from the environment layers.
-        // `.recommended` resolves against what is being launched, not just the
-        // machine.
-        let effectiveBackendChoice = programOverrides?.graphicsBackend ?? bottle.settings.graphicsBackend
-        let effectiveBackend = effectiveBackendChoice == .recommended
-            ? GraphicsBackendResolver.resolve(
-                for: bottle.settings.runtime, launcher: LauncherType.detect(from: url)
-            )
-            : effectiveBackendChoice
-
-        // The bottle composes its overrides from its own resolution, which does
-        // not know what is being launched, so pin the decision here or a
-        // steered launcher gets DXVK's files and none of its overrides.
-        var programOverrides = programOverrides
-        if effectiveBackendChoice == .recommended,
-           effectiveBackend != GraphicsBackendResolver.resolve(for: bottle.settings.runtime) {
-            var pinned = programOverrides ?? ProgramOverrides()
-            pinned.graphicsBackend = effectiveBackend
-            programOverrides = pinned
-        }
+        let resolution = resolveBackend(for: url, bottle: bottle, programOverrides: programOverrides)
+        let effectiveBackend = resolution.backend
+        // Must precede `legacyProgramDXVK` below, which reads whether an override
+        // set a backend and would see the pinned one as user intent.
+        let programOverrides = resolution.overrides
 
         // DXMT first: if launcher auto-DXVK also fires below (e.g. Rockstar),
         // DXVK's file copy deterministically wins, matching the override-layer
