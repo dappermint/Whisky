@@ -295,9 +295,25 @@ public class Wine {
         fileHandle.writeApplicationInfo()
         fileHandle.writeInfo(for: bottle)
 
-        let wineEnvironment = constructWineEnvironment(
+        var wineEnvironment = constructWineEnvironment(
             for: bottle, environment: environment, programOverrides: programOverrides,
             programSettings: programSettings, gameProfileEnvironment: gameProfileEnvironment
+        )
+
+        // DLL overrides go to the registry, not WINEDLLOVERRIDES. The variable
+        // is inherited by every child process, so a launcher's backend became
+        // every game's backend and the per-program override could not scope
+        // anything; wine also reads the variable before the registry, so any
+        // AppDefaults entry was dead while it was set.
+        //
+        // The bottle's own overrides stay the prefix default so a child with no
+        // entry of its own still gets them, and this program's resolved set is
+        // written against its executable name alone.
+        let bottleOverrides = constructWineEnvironment(for: bottle)["WINEDLLOVERRIDES"] ?? ""
+        let programOverrideString = wineEnvironment.removeValue(forKey: "WINEDLLOVERRIDES") ?? ""
+        try await syncDLLOverrides(bottle: bottle, scope: .bottle, overrides: bottleOverrides)
+        try await syncDLLOverrides(
+            bottle: bottle, scope: .program(url.lastPathComponent), overrides: programOverrideString
         )
 
         // Create a run log entry to track this session
