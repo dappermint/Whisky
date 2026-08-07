@@ -41,11 +41,9 @@ struct DLLOverrideConfigSection: View {
     private var computedManagedOverrides: [(entry: DLLOverrideEntry, source: String)] {
         var managed: [(entry: DLLOverrideEntry, source: String)] = []
 
-        // Follow the graphics backend, not the legacy `dxvk` flag. The launch
-        // path only honours that flag when no backend is set, so reading it
-        // here listed overrides that disagreed with what actually gets applied:
-        // a DXMT bottle showed none, and a D3DMetal bottle with a stale flag
-        // showed DXVK's four.
+        // The backend, not the legacy `dxvk` flag: the launch path only honours
+        // that flag when no backend is set, so reading it here listed
+        // overrides that were not the ones being applied.
         let backend = bottle.settings.graphicsBackend == .recommended
             ? GraphicsBackendResolver.resolve()
             : bottle.settings.graphicsBackend
