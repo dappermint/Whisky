@@ -217,12 +217,8 @@ public enum BottleLocationValidation {
             .volumeAvailableCapacityKey
         ]
         guard let values = try? directory.resourceValues(forKeys: keys) else { return nil }
-        // Largest wins: the important-usage figure is an APFS facility that reads
-        // absent or zero elsewhere, so alone it refuses a good exFAT drive.
-        let candidates = [
-            values.volumeAvailableCapacityForImportantUsage,
-            values.volumeAvailableCapacity.map(Int64.init)
-        ].compactMap(\.self).filter { $0 > 0 }
-        return candidates.max()
+        if let important = values.volumeAvailableCapacityForImportantUsage { return important }
+        if let basic = values.volumeAvailableCapacity { return Int64(basic) }
+        return nil
     }
 }
