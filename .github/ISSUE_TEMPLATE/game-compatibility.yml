@@ -10,7 +10,7 @@ body:
 
         **Before filing:**
         - Open the **Game Configurations** browser inside Whisky — your game may already have a recommended config.
-        - Search [existing issues](https://github.com/frankea/Whisky/issues?q=is%3Aissue+label%3Agame-compatibility).
+        - Search [existing issues](https://github.com/dappermint/Whisky/issues?q=is%3Aissue+label%3Agame-compatibility).
   - type: input
     id: game-name
     attributes:

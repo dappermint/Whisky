@@ -68,8 +68,12 @@ if git diff --quiet; then
     exit 0
 fi
 
-git config user.name "github-actions[bot]"
-git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+# Only claim the bot identity in CI; locally, commit as whoever is running this.
+# GitHub rejects pushes carrying a private email, so both must be noreply forms.
+if [ -n "${BREW_TOKEN:-}" ]; then
+    git config user.name "github-actions[bot]"
+    git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+fi
 git commit -qam "whisky-preview ${VERSION}"
 git push -q
 echo "==> Tap updated to whisky-preview ${VERSION}."

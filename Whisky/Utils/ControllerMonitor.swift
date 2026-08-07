@@ -138,7 +138,7 @@ class ControllerMonitor: ObservableObject {
     var recentHistory: [ControllerHistoryEntry] = []
 
     private let logger = Logger(
-        subsystem: "com.franke.Whisky",
+        subsystem: Bundle.whiskyBundleIdentifier,
         category: "ControllerMonitor"
     )
 

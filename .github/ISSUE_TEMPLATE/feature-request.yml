@@ -6,8 +6,8 @@ body:
     attributes:
       value: |
         Thanks for taking the time to suggest something. Please:
-        - Search [existing issues](https://github.com/frankea/Whisky/issues?q=is%3Aissue) to avoid duplicates.
-        - Check [docs/AUDIT.md](https://github.com/frankea/Whisky/blob/main/docs/AUDIT.md) — your feature may already be tracked.
+        - Search [existing issues](https://github.com/dappermint/Whisky/issues?q=is%3Aissue) to avoid duplicates.
+        - Check [docs/AUDIT.md](https://github.com/dappermint/Whisky/blob/preview/docs/AUDIT.md) — your feature may already be tracked.
   - type: textarea
     id: problem
     attributes:

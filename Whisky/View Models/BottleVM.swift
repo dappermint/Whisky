@@ -55,7 +55,7 @@ enum BottleCreationError: LocalizedError, Equatable {
 }
 
 private let bottleVMLogger = Logger(
-    subsystem: Bundle.main.bundleIdentifier ?? "com.franke.Whisky",
+    subsystem: Bundle.whiskyBundleIdentifier,
     category: "BottleVM"
 )
 

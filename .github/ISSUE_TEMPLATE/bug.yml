@@ -6,8 +6,8 @@ body:
     attributes:
       value: |
         Thanks for taking the time to file a bug. Before submitting, please:
-        - Search [existing issues](https://github.com/frankea/Whisky/issues?q=is%3Aissue) — your bug may already be reported.
-        - Check the [troubleshooting docs](https://github.com/frankea/Whisky/blob/main/docs/) — many common issues have known fixes.
+        - Search [existing issues](https://github.com/dappermint/Whisky/issues?q=is%3Aissue) — your bug may already be reported.
+        - Check the [troubleshooting docs](https://github.com/dappermint/Whisky/blob/preview/docs/) — many common issues have known fixes.
         - For game-specific compatibility problems, use the **Game Compatibility Report** template instead.
   - type: textarea
     id: description
