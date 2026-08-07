@@ -35,7 +35,7 @@ footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line
   <pre><code>brew tap dappermint/tap
 brew trust --cask dappermint/tap/whisky-preview
 brew install --cask whisky-preview</code></pre>
-  <p class="note">The <code>brew trust</code> step is required: Homebrew refuses casks from third-party taps until trusted, because a cask can run code on install. This one does. The app is ad-hoc signed and not notarized, so Gatekeeper blocks a plain double-click of the DMG with no way to approve it; the cask clears the quarantine flag so it launches.</p>
+  <p class="note">The <code>brew trust</code> step is required: Homebrew refuses casks from third-party taps until trusted, because a cask can run code on install. This one does. Requires macOS 26 (Tahoe) or later. The app is self-signed and not notarized, so Gatekeeper blocks a plain double-click of the DMG with no way to approve it; the cask clears the quarantine flag so it launches.</p>
 
   <h2>What's different</h2>
   <ul>

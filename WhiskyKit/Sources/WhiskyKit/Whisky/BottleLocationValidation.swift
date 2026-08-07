@@ -45,9 +45,9 @@ public enum BottleLocationValidation {
 
     /// An operation a Wine prefix performs on its own directory.
     ///
-    /// Checked by performing it, not by inferring it from the filesystem type —
-    /// exFAT, for one, supports all of these on macOS despite the format itself
-    /// having no notion of symlinks or permission bits.
+    /// Checked by performing it, not by inferring it from the filesystem type.
+    /// exFAT supports all of these on macOS despite the format itself having no
+    /// notion of symlinks or permission bits.
     public enum Capability: Equatable, Sendable {
         /// Creating a subdirectory that is then visible.
         case directory
@@ -217,8 +217,12 @@ public enum BottleLocationValidation {
             .volumeAvailableCapacityKey
         ]
         guard let values = try? directory.resourceValues(forKeys: keys) else { return nil }
-        if let important = values.volumeAvailableCapacityForImportantUsage { return important }
-        if let basic = values.volumeAvailableCapacity { return Int64(basic) }
-        return nil
+        // Largest wins: the important-usage figure is an APFS facility that reads
+        // absent or zero elsewhere, so alone it refuses a good exFAT drive.
+        let candidates = [
+            values.volumeAvailableCapacityForImportantUsage,
+            values.volumeAvailableCapacity.map(Int64.init)
+        ].compactMap(\.self).filter { $0 > 0 }
+        return candidates.max()
     }
 }

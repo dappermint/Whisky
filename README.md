@@ -74,7 +74,7 @@ Whisky provides a clean and easy-to-use graphical wrapper for Wine built in nati
 ## System Requirements
 
 - **CPU**: Apple Silicon (M-series chips)
-- **OS**: macOS Sequoia 15.0 or later
+- **OS**: macOS Tahoe 26.0 or later
 
 ## Installation
 

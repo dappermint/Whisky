@@ -80,7 +80,7 @@ jobs:
             ${{ runner.os }}-spm-
 
       # Signed with a self-signed cert, so TCC sees one stable identity instead of a
-      # fresh one per build. Gatekeeper trusts it no more than ad-hoc — the point is
+      # fresh one per build. Gatekeeper trusts it no more than ad-hoc; the point is
       # that Files and Folders consent survives an update. Without the secret the
       # build still works, just ad-hoc, and consent resets on every release.
       - name: Import the signing identity
@@ -119,7 +119,7 @@ jobs:
         run: |
           set -euo pipefail
           # CODE_SIGN_IDENTITY reaches every target, including the SPM resource
-          # bundles, and those default to automatic signing — which demands a
+          # bundles, and those default to automatic signing, which demands a
           # development team we do not have. Manual style drops that requirement.
           args=(-project Whisky.xcodeproj -scheme Whisky -configuration Release build
                 -derivedDataPath build/dd SKIP_SWIFTLINT_BUILD_PHASE=YES
