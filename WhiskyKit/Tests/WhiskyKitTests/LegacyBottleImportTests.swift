@@ -163,4 +163,49 @@ final class LegacyBottleImportTests: XCTestCase {
     func testLegacyContainerExists() {
         XCTAssertTrue(LegacyBottleImport.legacyContainerExists(at: container))
     }
+
+    func testUnionsBottlesAcrossContainers() throws {
+        let other = FileManager.default.temporaryDirectory.appending(path: "legacy_\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: other.appending(path: "Bottles"), withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: other) }
+
+        let mine = try makeBottle("a", in: bottlesDir())
+        let theirs = try makeBottle("b", in: other.appending(path: "Bottles"))
+
+        let found = LegacyBottleImport.importableBottleURLs(
+            legacyContainers: [container, other],
+            existingPaths: []
+        )
+        XCTAssertEqual(found, [mine, theirs])
+    }
+
+    func testDeduplicatesABottleRegisteredByTwoContainers() throws {
+        let other = FileManager.default.temporaryDirectory.appending(path: "legacy_\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: other, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: other) }
+
+        // Both builds reference the same bottle: one by directory scan, one by registry.
+        let shared = try makeBottle("shared", in: bottlesDir())
+        let encoder = PropertyListEncoder()
+        encoder.outputFormat = .xml
+        try encoder.encode(Registry(paths: [shared]))
+            .write(to: other.appending(path: "BottleVM").appendingPathExtension("plist"))
+
+        let found = LegacyBottleImport.importableBottleURLs(
+            legacyContainers: [container, other],
+            existingPaths: []
+        )
+        XCTAssertEqual(found, [shared])
+    }
+
+    func testDefaultContainersCoverBothKnownWhiskyBuilds() {
+        XCTAssertEqual(
+            LegacyBottleImport.legacyBundleIdentifiers,
+            ["com.franke.Whisky", "com.isaacmarovitz.Whisky"]
+        )
+        XCTAssertEqual(
+            LegacyBottleImport.legacyContainerDirectories.map(\.lastPathComponent),
+            LegacyBottleImport.legacyBundleIdentifiers
+        )
+    }
 }

@@ -19,14 +19,13 @@
 import Foundation
 import os.log
 
-/// Discovery of bottles created by the archived original Whisky app
-/// (bundle identifier `com.isaacmarovitz.Whisky`) so this fork can import them.
+/// Discovery of bottles created by other Whisky builds so this build can import them.
 ///
-/// The fork uses a different bundle identifier, so it doesn't see the original app's
-/// bottles automatically. It is not sandboxed, though, so it can read the original
-/// container directly. Discovered bottles are referenced **in place** (no copy) —
-/// the same way custom-path bottles already work — so importing is non-destructive
-/// and the original app keeps working if it's still installed.
+/// Each build keys its bottle directory on its own bundle identifier, so it doesn't see
+/// another build's bottles automatically. None of them are sandboxed, though, so the
+/// containers can be read directly. Discovered bottles are referenced **in place** (no
+/// copy) — the same way custom-path bottles already work — so importing is
+/// non-destructive and the other build keeps working if it's still installed.
 public enum LegacyBottleImport {
     private static let logger = Logger(
         subsystem: Bundle.whiskyBundleIdentifier,
@@ -36,12 +35,26 @@ public enum LegacyBottleImport {
     /// Bundle identifier of the archived original Whisky app.
     public static let legacyBundleIdentifier = "com.isaacmarovitz.Whisky"
 
+    /// Bundle identifiers whose bottles this build can adopt, most recent lineage first:
+    /// frankea's fork, then the archived original.
+    public static let legacyBundleIdentifiers = ["com.franke.Whisky", legacyBundleIdentifier]
+
     /// `~/Library/Containers/com.isaacmarovitz.Whisky`.
     public static var legacyContainerDirectory: URL {
+        containerDirectory(for: legacyBundleIdentifier)
+    }
+
+    /// Container directories for every identifier in ``legacyBundleIdentifiers``.
+    public static var legacyContainerDirectories: [URL] {
+        legacyBundleIdentifiers.map(containerDirectory(for:))
+    }
+
+    /// `~/Library/Containers/<bundleIdentifier>`.
+    public static func containerDirectory(for bundleIdentifier: String) -> URL {
         FileManager.default.homeDirectoryForCurrentUser
             .appending(path: "Library")
             .appending(path: "Containers")
-            .appending(path: legacyBundleIdentifier)
+            .appending(path: bundleIdentifier)
     }
 
     /// Minimal decode of the original app's bottle registry. Same plist shape as
@@ -68,7 +81,7 @@ public enum LegacyBottleImport {
     ///   - legacyContainer: the original app's container directory (injectable for testing).
     ///   - existingPaths: bottle paths already registered in this fork, to avoid duplicates.
     public static func importableBottleURLs(
-        legacyContainer: URL = legacyContainerDirectory,
+        legacyContainer: URL,
         existingPaths: [URL]
     ) -> [URL] {
         let existing = Set(existingPaths.map(\.standardizedFileURL))
@@ -119,10 +132,37 @@ public enum LegacyBottleImport {
     /// display name. Names are read **non-destructively** (see ``readOnlyName(at:)``) — discovery
     /// must never mutate the original app's bottles.
     public static func importableBottles(
-        legacyContainer: URL = legacyContainerDirectory,
+        legacyContainer: URL,
         existingPaths: [URL]
     ) -> [DiscoveredBottle] {
         importableBottleURLs(legacyContainer: legacyContainer, existingPaths: existingPaths).map { url in
+            DiscoveredBottle(url: url, name: readOnlyName(at: url) ?? url.lastPathComponent)
+        }
+    }
+
+    /// ``importableBottleURLs(legacyContainer:existingPaths:)`` across several containers,
+    /// de-duplicated. A bottle registered by two builds is offered once.
+    public static func importableBottleURLs(
+        legacyContainers: [URL] = legacyContainerDirectories,
+        existingPaths: [URL]
+    ) -> [URL] {
+        var seen = Set<URL>()
+        var result: [URL] = []
+        for container in legacyContainers {
+            for url in importableBottleURLs(legacyContainer: container, existingPaths: existingPaths)
+                where seen.insert(url).inserted {
+                result.append(url)
+            }
+        }
+        return result.sorted { $0.lastPathComponent < $1.lastPathComponent }
+    }
+
+    /// ``importableBottles(legacyContainer:existingPaths:)`` across several containers.
+    public static func importableBottles(
+        legacyContainers: [URL] = legacyContainerDirectories,
+        existingPaths: [URL]
+    ) -> [DiscoveredBottle] {
+        importableBottleURLs(legacyContainers: legacyContainers, existingPaths: existingPaths).map { url in
             DiscoveredBottle(url: url, name: readOnlyName(at: url) ?? url.lastPathComponent)
         }
     }
