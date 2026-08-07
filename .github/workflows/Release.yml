@@ -93,8 +93,9 @@ jobs:
           [ -d "$app" ] || { echo "::error::$app not found"; exit 1; }
           codesign --verify --strict --verbose=2 "$app"
           # Wine maps JIT pages; without this entitlement every bottle fails to launch.
+          # The dots in the key are keypath separators to plutil, hence the escaping.
           codesign -d --entitlements - --xml "$app" \
-            | plutil -extract com.apple.security.cs.allow-unsigned-executable-memory raw - \
+            | plutil -extract 'com\.apple\.security\.cs\.allow-unsigned-executable-memory' raw - \
             | grep -qx 'true'
 
       - name: Package DMG
