@@ -100,6 +100,7 @@ public class Wine {
     static func dxmtFolder(for runtime: String?) -> URL {
         WhiskyWineInstaller.libraryFolder(for: runtime).appending(path: "DXMT")
     }
+
     /// The URL to the default runtime's `wine64` binary executable.
     ///
     /// This is the main Wine binary used to execute Windows applications.

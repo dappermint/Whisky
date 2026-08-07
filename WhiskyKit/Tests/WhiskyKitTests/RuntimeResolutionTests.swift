@@ -101,7 +101,7 @@ struct RuntimeResolutionTests {
 
         let encoder = PropertyListEncoder()
         encoder.outputFormat = .xml
-        let decoded = try PropertyListDecoder().decode(BottleWineConfig.self, from: try encoder.encode(config))
+        let decoded = try PropertyListDecoder().decode(BottleWineConfig.self, from: encoder.encode(config))
 
         #expect(decoded.runtime == "winecx-gptk-4.0.0")
         #expect(decoded == config)
