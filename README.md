@@ -22,12 +22,18 @@
 ## Install
 
 ```sh
-brew install --cask dappermint/tap/whisky-preview
+brew tap dappermint/tap
+brew trust --cask dappermint/tap/whisky-preview
+brew install --cask whisky-preview
 ```
 
+The `brew trust` step is required: Homebrew refuses to load a cask from a third-party tap
+until you trust it, because a cask can run code on install. This one does — see below.
+
 Builds are ad-hoc signed and not notarized, so Gatekeeper blocks a plain double-click of the
-DMG. The cask clears the quarantine flag on install, which is why it is the supported path.
-There is no in-app updater; upgrade with `brew upgrade --cask whisky-preview`.
+DMG with no way to approve it. The cask clears the quarantine flag in a `postflight` block,
+which is why it is the supported path. There is no in-app updater; upgrade with
+`brew upgrade --cask whisky-preview`.
 
 On first launch the bottle list is empty, since this app has its own bundle identifier.
 **File → Import Bottles from Another Whisky…** adopts bottles from frankea's build or from the
@@ -58,7 +64,7 @@ Whisky provides a clean and easy-to-use graphical wrapper for Wine built in nati
 
 ## Key Features
 
-- **Wine 11.0** - Latest stable Wine with improved compatibility and networking
+- **Wine 10.0 (CrossOver 25)** - GPTK-capable build that executes Apple's D3DMetal payload, with GStreamer and FFmpeg
 - **DXMT & DXVK Graphics** - DirectX 11 through native Metal translation (DXMT) out of the box, with DXVK over MoltenVK as the universal fallback
 - **Launcher Compatibility** - Built-in support for Steam, Epic, EA App, Rockstar, Battle.net, and more
 - **Controller Support** - SDL environment variable controls for gamepad detection and mapping issues
@@ -72,72 +78,63 @@ Whisky provides a clean and easy-to-use graphical wrapper for Wine built in nati
 
 ## Installation
 
-### Homebrew (recommended)
+See [Install](#install) at the top. In short: tap, trust, `brew install --cask whisky-preview`.
 
-```sh
-brew install --cask frankea/whisky/whisky
-```
+### Bringing bottles over
 
-This taps [frankea/homebrew-whisky](https://github.com/frankea/homebrew-whisky) and installs the latest signed/notarized DMG. `brew upgrade --cask` picks up new releases.
+This app has its own bundle identifier, so it does not see another Whisky's bottles
+automatically. **File → Import Bottles from Another Whisky…** scans both known containers:
 
-> The default `brew install --cask whisky` still installs the **archived original** (last release April 2025) and always will until that cask is updated. Use the qualified `frankea/whisky/whisky` form to get this fork.
+- `~/Library/Containers/com.franke.Whisky/` — frankea's fork
+- `~/Library/Containers/com.isaacmarovitz.Whisky/` — the archived original
 
-### Manual
-
-1. Download the latest **[Whisky-X.Y.Z.dmg](https://github.com/frankea/Whisky/releases/latest)** (signed and notarized — Gatekeeper-approved).
-2. Open the DMG and drag **Whisky.app** to **/Applications**.
-3. Launch Whisky. On first run it downloads the Wine runtime (~330 MB) and sets up your default bottle.
-
-In-app updates are delivered through Sparkle from `https://frankea.github.io/Whisky/appcast.xml`.
-
-### Migrating from the original Whisky
-
-The original [whisky-app/whisky](https://github.com/whisky-app/whisky) was archived on **April 9, 2025** with a final maintenance notice. If you're running it today, you're on a stale build with no path forward for new fixes. This fork picks up where the upstream left off — version `3.0.1` shipped 54 requirements covering the 10 categories of upstream issue tracking (#40–#50).
-
-To switch:
-
-1. Install this fork: `brew install --cask frankea/whisky/whisky` or follow the manual steps above.
-2. Open it and choose **File → Migrate from the Original Whisky**. It finds the bottles the original app left in `~/Library/Containers/com.isaacmarovitz.Whisky/` and imports the ones you pick. Bottles are referenced **in place** — nothing is moved or copied — so the original app keeps working if you'd like to keep it around.
-3. *(Optional)* Once you're happy, remove the original app: drag **/Applications/Whisky.app** to the Trash, or `brew uninstall --cask whisky` if you installed it via Homebrew. Your bottles stay put.
-
-The original app uses a different bundle identifier (`com.franke.Whisky` here vs. `com.isaacmarovitz.Whisky`), which is why bottles aren't shared automatically. The old **Bottle → Export** / **File → Import Bottle** route still works if you'd rather move bottles by hand or onto another Mac. With no critical bottles, you can skip migration entirely — the new app creates a fresh bottle on first launch.
+Pick the bottles you want. They are referenced **in place** — nothing is moved or copied — so
+whichever build owns them keeps working. A bottle registered by both is offered once. The
+**Bottle → Export** / **File → Import Bottle** route still works if you'd rather move bottles by
+hand or onto another Mac; with no bottles worth keeping, skip the import and let this app create
+a fresh one.
 
 ## Uninstalling
 
-Dragging **Whisky.app** to the Trash (or `brew uninstall --cask frankea/whisky/whisky`) removes the app but leaves the Wine runtime, your bottles, and app data behind — by design, so reinstalling doesn't re-download ~330 MB or lose your bottles.
+`brew uninstall --cask whisky-preview` removes the app but leaves the Wine runtime, your bottles
+and app data behind — by design, so reinstalling doesn't re-download the runtime or lose bottles.
 
-> ⚠️ **Back up your bottles first if you want to keep them.** Removing the container below deletes every bottle stored in its default location. Bottles you created in a custom folder live wherever you put them — check **Bottle → Reveal in Finder** before deleting anything.
+> ⚠️ **Back up your bottles first if you want to keep them.** The container below holds every
+> bottle in the default location. Bottles you created in a custom folder live wherever you put
+> them — check **Bottle → Reveal in Finder** before deleting anything.
 
-To remove Whisky **completely**, delete the app and then these paths (all under `~/Library`):
+To remove everything, including bottles:
 
 ```sh
-# 1. The app itself
-rm -rf "/Applications/Whisky.app"          # or: brew uninstall --cask frankea/whisky/whisky
-
-# 2. Bottles + bottle list (default bottle location is inside this container)
-rm -rf ~/Library/Containers/com.franke.Whisky
-rm -rf ~/Library/Containers/com.franke.Whisky.WhiskyThumbnail
-
-# 3. The Wine runtime (~330 MB) and other app support
-rm -rf ~/Library/Application\ Support/com.franke.Whisky
-
-# 4. Caches, logs, preferences, and saved state
-rm -rf ~/Library/Caches/com.franke.Whisky
-rm -rf ~/Library/Logs/com.franke.Whisky
-rm -rf ~/Library/HTTPStorages/com.franke.Whisky
-rm -f  ~/Library/Preferences/com.franke.Whisky.plist
+brew uninstall --zap --cask whisky-preview
 ```
 
-If you also installed bottles in a **custom location**, delete those folders too. Migrated bottles that still belong to the original app live under `~/Library/Containers/com.isaacmarovitz.Whisky` and are left untouched by the steps above.
+The `zap` moves these to the Trash rather than deleting them outright:
 
-## Telemetry (opt-in)
+```
+~/Library/Containers/com.dappermint.WhiskyPreview          # bottles + bottle list
+~/Library/Application Support/com.dappermint.WhiskyPreview # the Wine runtime
+~/Library/Caches/com.dappermint.WhiskyPreview
+~/Library/HTTPStorages/com.dappermint.WhiskyPreview
+~/Library/Preferences/com.dappermint.WhiskyPreview.plist
+~/Library/Saved Application State/com.dappermint.WhiskyPreview.savedState
+```
 
-Whisky sends **no data by default**. During first-run setup you can opt in to
-anonymous usage telemetry — a checkbox that is **off** unless you tick it, and a
-toggle you can change anytime in **Settings → Privacy**.
+Bottles imported from another Whisky live in *that* build's container and are left untouched.
+So are bottles in a custom location — delete those folders yourself if you want them gone.
 
-When (and only when) enabled, Whisky sends five events covering the first-run
-funnel, so the maintainer can see where new installs fail:
+## Telemetry (disabled in this build)
+
+**Whisky Preview sends nothing, ever.** Upstream ships an opt-in analytics token;
+this fork ships an empty one, so the code path is inert even if you tick the
+consent box. Reporting into someone else's analytics project would be wrong, and
+this fork has no project of its own.
+
+The rest of this section describes the mechanism as it exists upstream, for
+anyone reading the shared code. It does not run here.
+
+When enabled and given a token, Whisky sends five events covering the first-run
+funnel:
 
 | Event | Properties |
 | --- | --- |
