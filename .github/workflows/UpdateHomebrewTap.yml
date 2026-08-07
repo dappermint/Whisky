@@ -1,12 +1,12 @@
 name: Update Homebrew Tap
 
-# When an app release (app-vX.Y.Z) is published, bump the frankea/homebrew-whisky
-# cask to the new version + DMG sha256 so `brew install --cask frankea/whisky/whisky`
-# always tracks the latest release without a manual edit.
+# Bumps the whisky-preview cask in dappermint/homebrew-tap to the version and DMG
+# sha256 of a published app release, so `brew upgrade --cask whisky-preview` picks
+# it up without a manual edit.
 #
-# Requires a repository secret BREW_TOKEN: a personal access token (classic `repo`,
-# or fine-grained with Contents: write) for frankea/homebrew-whisky. The default
-# GITHUB_TOKEN cannot push to a different repository.
+# Requires a repository secret BREW_TOKEN: a PAT with Contents:write for
+# dappermint/homebrew-tap. The default GITHUB_TOKEN cannot push to another repo.
+# Without the secret this job fails loudly; run scripts/bump-cask.sh locally instead.
 
 on:
   release:
@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: App release tag to sync (e.g. app-v3.1.0)
+        description: App release tag to sync (e.g. app-v2026.8.1)
         required: true
 
 permissions:
@@ -34,37 +34,32 @@ jobs:
           set -euo pipefail
 
           if [ -z "${BREW_TOKEN:-}" ]; then
-            echo "::error::BREW_TOKEN secret is not set. Add a PAT with Contents:write for frankea/homebrew-whisky."
+            echo "::error::BREW_TOKEN secret is not set. Add a PAT with Contents:write for dappermint/homebrew-tap."
             exit 1
           fi
 
-          version="${TAG#app-v}"
-          # Strictly validate the version before it flows into URLs and the sed
-          # expressions below — refuse anything that isn't a dotted numeric version.
-          if ! printf '%s' "$version" | grep -qE '^[0-9]+(\.[0-9]+)*$'; then
-            echo "::error::Refusing to sync: '${version}' (from tag '${TAG}') is not a dotted numeric version."
+          if ! printf '%s' "$TAG" | grep -qE '^app-v[0-9]+(\.[0-9]+)*$'; then
+            echo "::error::'${TAG}' is not an app-vX.Y.Z tag."
             exit 1
           fi
-          url="https://github.com/frankea/Whisky/releases/download/${TAG}/Whisky-${version}.dmg"
+          version="${TAG#app-v}"
+          url="https://github.com/dappermint/Whisky/releases/download/${TAG}/Whisky-Preview-${version}.dmg"
           echo "Syncing tap to ${version} from ${url}"
 
-          curl -fSL "$url" -o whisky.dmg
-          sha="$(sha256sum whisky.dmg | awk '{print $1}')"
-          echo "sha256=${sha}"
+          curl -fSL "$url" -o whisky-preview.dmg
+          sha="$(sha256sum whisky-preview.dmg | awk '{print $1}')"
 
-          git clone --depth 1 "https://x-access-token:${BREW_TOKEN}@github.com/frankea/homebrew-whisky.git" tap
+          git clone --depth 1 "https://x-access-token:${BREW_TOKEN}@github.com/dappermint/homebrew-tap.git" tap
           cd tap
-          sed -i -E "s/version \"[^\"]+\"/version \"${version}\"/" Casks/whisky.rb
-          sed -i -E "s/sha256 \"[0-9a-f]{64}\"/sha256 \"${sha}\"/" Casks/whisky.rb
+          sed -i -E "s/version \"[^\"]+\"/version \"${version}\"/" Casks/whisky-preview.rb
+          sed -i -E "s/sha256 \"[0-9a-f]{64}\"/sha256 \"${sha}\"/" Casks/whisky-preview.rb
 
-          # `sed -i` exits 0 even when it matches nothing, so assert both edits
-          # actually landed. Otherwise a partial match (e.g. the existing sha256
-          # line not being 64-lowercase-hex) could push a cask carrying the new
-          # version with a stale hash — silently breaking `brew install` for
-          # every user while the workflow stays green.
-          grep -qF "version \"${version}\"" Casks/whisky.rb \
-            || { echo "::error::version line was not updated in Casks/whisky.rb"; exit 1; }
-          grep -qF "sha256 \"${sha}\"" Casks/whisky.rb \
+          # `sed -i` exits 0 even when nothing matched, so assert both edits landed.
+          # A partial match would otherwise push the new version with a stale hash and
+          # break `brew install` for everyone while this workflow stayed green.
+          grep -qF "version \"${version}\"" Casks/whisky-preview.rb \
+            || { echo "::error::version line was not updated"; exit 1; }
+          grep -qF "sha256 \"${sha}\"" Casks/whisky-preview.rb \
             || { echo "::error::sha256 line was not updated (existing line not 64-lowercase-hex?)"; exit 1; }
 
           if git diff --quiet; then
@@ -74,6 +69,6 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -am "whisky ${version}"
+          git commit -am "whisky-preview ${version}"
           git push
-          echo "Tap updated to whisky ${version}."
+          echo "Tap updated to whisky-preview ${version}."

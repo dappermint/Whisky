@@ -1,8 +1,11 @@
 name: Documentation
 
+# Publishes from `preview`, the branch this fork releases from. `main` tracks
+# upstream and must not overwrite our Pages site (it serves WhiskyWineVersion.plist,
+# which the app reads to find the runtime).
 on:
   push:
-    branches: [main]
+    branches: [preview]
     paths:
       - 'WhiskyKit/**'
       - 'dist/pages/**'

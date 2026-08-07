@@ -1,26 +1,132 @@
 name: Release
 
+# Builds Whisky Preview and attaches the DMG to the release for the tag that
+# triggered it. Tags are cut from `preview`; `main` tracks upstream and is never
+# released from.
+#
+# There is no Developer ID for this fork, so the app is ad-hoc signed and cannot
+# be notarized. Gatekeeper therefore blocks a plain double-click of the DMG; the
+# supported install path is the Homebrew cask, which strips the quarantine bit.
+# To move to a real identity later: add DEVELOPER_ID_P12 / DEVELOPER_ID_PASSWORD
+# / NOTARY_* secrets, import the cert before the build step, drop the ad-hoc
+# CODE_SIGN_IDENTITY override, and add a notarytool submit + stapler staple.
+
 on:
-  release:
-    types: [published]
+  push:
+    tags: ['app-v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing app-vX.Y.Z tag to build and upload
+        required: true
 
 permissions:
-  contents: read
+  contents: write
+
+env:
+  XCODE_VERSION: 'latest-stable'
 
 jobs:
   release:
-    name: Release
-    runs-on: ubuntu-latest
+    name: Build and publish
+    runs-on: macos-15
     steps:
-      # The official Homebrew cask `whisky` tracks the original (archived) Whisky
-      # project and is not controlled by this fork, so it is not bumped here. This
-      # fork's Homebrew distribution is the frankea/homebrew-whisky tap, updated by
-      # the UpdateHomebrewTap workflow (see docs/ReleaseWorkflow.md for BREW_TOKEN).
-
-      - name: Release Info
+      - name: Resolve tag
+        id: tag
         env:
-          TAG_NAME: ${{ github.event.release.tag_name }}
+          TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
-          echo "Release $TAG_NAME published"
-          echo "Distribution: GitHub Releases and the frankea/homebrew-whisky tap"
-          echo "Download: https://github.com/frankea/Whisky/releases"
+          set -euo pipefail
+          # Validate the whole tag, not just the version: TAG reaches GITHUB_OUTPUT and
+          # then `actions/checkout`'s ref, so an embedded newline would forge step outputs.
+          if ! printf '%s' "$TAG" | grep -qE '^app-v[0-9]+(\.[0-9]+)*$'; then
+            echo "::error::'${TAG}' is not an app-vX.Y.Z tag."
+            exit 1
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#app-v}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Check the tag matches MARKETING_VERSION
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          set -euo pipefail
+          marketing="$(grep -m1 'MARKETING_VERSION = ' Whisky.xcodeproj/project.pbxproj \
+            | sed -E 's/.*MARKETING_VERSION = ([^;]+);.*/\1/')"
+          if [ "$marketing" != "$VERSION" ]; then
+            echo "::error::tag says ${VERSION} but MARKETING_VERSION is ${marketing}."
+            exit 1
+          fi
+
+      - name: Cache SPM Dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/*/SourcePackages
+            .build
+            WhiskyKit/.build
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Build
+        run: |
+          set -euo pipefail
+          xcodebuild -project Whisky.xcodeproj -scheme Whisky -configuration Release build \
+            -derivedDataPath build/dd \
+            SKIP_SWIFTLINT_BUILD_PHASE=YES
+
+      - name: Verify the ad-hoc signature carries the entitlements
+        run: |
+          set -euo pipefail
+          app="build/dd/Build/Products/Release/Whisky Preview.app"
+          [ -d "$app" ] || { echo "::error::$app not found"; exit 1; }
+          codesign --verify --strict --verbose=2 "$app"
+          # Wine maps JIT pages; without this entitlement every bottle fails to launch.
+          codesign -d --entitlements - --xml "$app" \
+            | plutil -extract com.apple.security.cs.allow-unsigned-executable-memory raw - \
+            | grep -qx 'true'
+
+      - name: Package DMG
+        id: dmg
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          set -euo pipefail
+          app="build/dd/Build/Products/Release/Whisky Preview.app"
+          staging="$(mktemp -d)"
+          cp -R "$app" "$staging/"
+          ln -s /Applications "$staging/Applications"
+          dmg="Whisky-Preview-${VERSION}.dmg"
+          hdiutil create -volname "Whisky Preview" -srcfolder "$staging" -ov -format UDZO "$dmg"
+          sha="$(shasum -a 256 "$dmg" | awk '{print $1}')"
+          echo "dmg=${dmg}" >> "$GITHUB_OUTPUT"
+          echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+          echo "### \`${dmg}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "sha256: \`${sha}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+          DMG: ${{ steps.dmg.outputs.dmg }}
+          SHA: ${{ steps.dmg.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "Whisky Preview ${TAG#app-v}" --notes "Ad-hoc signed, not notarized. Install with the cask: \`brew install --cask dappermint/tap/whisky-preview\`"
+          fi
+          gh release upload "$TAG" "$DMG" --clobber
+          gh release edit "$TAG" --notes "$(gh release view "$TAG" --json body --jq .body)
+
+sha256 \`${SHA}\`"
