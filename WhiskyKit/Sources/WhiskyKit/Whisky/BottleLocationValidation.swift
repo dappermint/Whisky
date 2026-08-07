@@ -132,7 +132,7 @@ public enum BottleLocationValidation {
 
         if isExternalOrCustom {
             if let values = try? directory.resourceValues(forKeys: [.volumeAvailableCapacityKey]),
-                let basic = values.volumeAvailableCapacity {
+               let basic = values.volumeAvailableCapacity {
                 return Int64(basic)
             }
             return nil
