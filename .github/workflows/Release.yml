@@ -29,7 +29,9 @@ env:
 jobs:
   release:
     name: Build and publish
-    runs-on: macos-15
+    # macos-26: the app's deployment target is 26.0, so an older runner cannot
+    # launch it, and the UI tests fail before they start.
+    runs-on: macos-26
     steps:
       - name: Resolve tag
         id: tag

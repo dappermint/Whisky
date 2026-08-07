@@ -29,7 +29,9 @@ env:
 jobs:
   build-docs:
     name: Build Documentation
-    runs-on: macos-14
+    # macos-26: the app's deployment target is 26.0, so an older runner cannot
+    # launch it, and the UI tests fail before they start.
+    runs-on: macos-26
     steps:
       - name: Checkout
         uses: actions/checkout@v6

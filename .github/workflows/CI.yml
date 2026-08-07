@@ -96,7 +96,9 @@ jobs:
   build:
     name: Build all schemes
     needs: [lint, format]
-    runs-on: macos-15
+    # macos-26: the app's deployment target is 26.0, so an older runner cannot
+    # launch it, and the UI tests fail before they start.
+    runs-on: macos-26
 
     steps:
       - name: Checkout
@@ -184,7 +186,9 @@ jobs:
     name: WhiskyUITests
     needs: [lint, format, changes]
     if: github.event_name != 'pull_request' || needs.changes.outputs.app == 'true'
-    runs-on: macos-15
+    # macos-26: the app's deployment target is 26.0, so an older runner cannot
+    # launch it, and the UI tests fail before they start.
+    runs-on: macos-26
 
     steps:
       - name: Checkout
@@ -266,7 +270,9 @@ jobs:
   test:
     name: Run Tests
     needs: [lint, format]
-    runs-on: macos-15
+    # macos-26: the app's deployment target is 26.0, so an older runner cannot
+    # launch it, and the UI tests fail before they start.
+    runs-on: macos-26
     
     steps:
       - name: Checkout
