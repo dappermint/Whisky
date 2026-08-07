@@ -211,7 +211,22 @@ public enum BottleLocationValidation {
 
     /// Reads available capacity, preferring the "important usage" figure (which
     /// counts purgeable space, so it errs optimistic and won't false-positive).
+    /// However, that sometimes doesn't work on removable drives, so we fall
+    /// back to normal figure.
     private static func availableCapacity(at directory: URL) -> Int64? {
+        let isExternalOrCustom: Bool = {
+            guard let values = try? directory.resourceValues(forKeys: [.volumeIsInternalKey]) else { return false }
+            return values.volumeIsInternal == false
+        }()
+
+        if isExternalOrCustom {
+            if let values = try? directory.resourceValues(forKeys: [.volumeAvailableCapacityKey]),
+               let basic = values.volumeAvailableCapacity {
+                return Int64(basic)
+            }
+            return nil
+        }
+
         let keys: Set<URLResourceKey> = [
             .volumeAvailableCapacityForImportantUsageKey,
             .volumeAvailableCapacityKey
