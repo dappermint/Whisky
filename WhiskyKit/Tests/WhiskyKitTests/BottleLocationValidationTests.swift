@@ -103,11 +103,11 @@ final class BottleLocationValidationTests: XCTestCase {
     }
 
     func testProbeSucceedsOnAWritableDirectory() {
-        XCTAssertEqual(BottleLocationValidation.probeWrite(in: tempDir, fileManager: .default), .ok)
+        XCTAssertEqual(BottleLocationValidation.probeWrite(in: tempDir, fileManager: .default), .succeeded)
     }
 
     func testProbeLeavesNothingBehind() throws {
-        XCTAssertEqual(BottleLocationValidation.probeWrite(in: tempDir, fileManager: .default), .ok)
+        XCTAssertEqual(BottleLocationValidation.probeWrite(in: tempDir, fileManager: .default), .succeeded)
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: tempDir.path), [])
     }
 

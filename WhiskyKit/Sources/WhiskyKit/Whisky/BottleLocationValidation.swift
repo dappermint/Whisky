@@ -69,7 +69,7 @@ public enum BottleLocationValidation {
         let path = url.path(percentEncoded: false)
 
         switch probeWrite(in: ancestor, fileManager: fileManager) {
-        case .ok:
+        case .succeeded:
             break
         case .denied:
             // Only a consent-gated volume can be blocked by a withheld grant. A
@@ -123,7 +123,7 @@ public enum BottleLocationValidation {
     /// Why a write probe did not succeed, kept apart so a refusal can be told
     /// from a location that is unusable for some other reason.
     enum WriteProbe: Equatable {
-        case ok
+        case succeeded
         /// Refused with a permission error.
         case denied
         /// Failed for any other reason, a read-only volume among them.
@@ -144,7 +144,7 @@ public enum BottleLocationValidation {
         do {
             try Data().write(to: probe, options: .atomic)
             try? fileManager.removeItem(at: probe)
-            return .ok
+            return .succeeded
         } catch {
             let nsError = error as NSError
             let underlying = nsError.underlyingErrors.map { ($0 as NSError).code }

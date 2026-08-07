@@ -105,7 +105,7 @@ struct BottleCreationView: View {
             Label("create.location.problem", systemImage: "exclamationmark.triangle.fill")
                 .font(.headline)
                 .foregroundStyle(.orange)
-            Text(explanation(for: issue))
+            Text(bottleLocationRefusal(issue) ?? "")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -117,23 +117,6 @@ struct BottleCreationView: View {
             }
         }
         .padding(.vertical, 4)
-    }
-
-    private func explanation(for issue: BottleLocationValidation.ValidationResult) -> String {
-        switch issue {
-        case .valid:
-            ""
-        case let .notWritable(path):
-            String(format: String(localized: "bottle.creation.preflight.notWritable"), path)
-        case let .accessDenied(path):
-            String(format: String(localized: "bottle.creation.preflight.accessDenied"), path)
-        case let .insufficientSpace(available, required):
-            String(
-                format: String(localized: "bottle.creation.preflight.insufficientSpace"),
-                ByteCountFormatter.string(fromByteCount: available, countStyle: .file),
-                ByteCountFormatter.string(fromByteCount: required, countStyle: .file)
-            )
-        }
     }
 
     private func validate(_ url: URL) -> BottleLocationValidation.ValidationResult? {
