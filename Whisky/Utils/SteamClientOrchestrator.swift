@@ -248,7 +248,40 @@ final class SteamClientOrchestrator: ObservableObject {
     }
 
     private func runningImageNames() async -> Set<String> {
-        await Set(runningProcesses().map { $0.imageName.lowercased() })
+        // tasklist.exe is a whole wine process, polled every couple of seconds:
+        // the wait for a cold Steam client spent dozens of them competing with
+        // the client it was waiting for. Wine's processes carry their Windows
+        // image name in the host process list, so a `ps` read answers the
+        // common "nothing is running yet" case without launching anything.
+        guard await Self.hostWineImageNames().isEmpty == false else { return [] }
+        return await Set(runningProcesses().map { $0.imageName.lowercased() })
+    }
+
+    /// Lower-cased `.exe` names of wine processes visible to the host.
+    ///
+    /// Not bottle-scoped, which is why it only ever short-circuits the negative
+    /// case; anything it finds is confirmed against the bottle by tasklist.
+    private static func hostWineImageNames() async -> Set<String> {
+        await Task.detached {
+            let process = Process()
+            process.executableURL = URL(filePath: "/bin/ps")
+            process.arguments = ["-Ao", "comm="]
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            process.standardError = FileHandle.nullDevice
+            guard (try? process.run()) != nil else { return [] }
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            process.waitUntilExit()
+            guard let output = String(bytes: data, encoding: .utf8) else { return [] }
+            return Set(
+                output
+                    .split(whereSeparator: \.isNewline)
+                    .compactMap { line in
+                        let name = (line.split(separator: "\\").last ?? line).lowercased()
+                        return name.hasSuffix(".exe") ? String(name) : nil
+                    }
+            )
+        }.value
     }
 
     private func runningProcesses() async -> [WineProcess] {
