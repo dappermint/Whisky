@@ -274,10 +274,8 @@ struct ProgramOverrideSettingsView: View {
                     }
                 }
 
-                // DXVK sub-controls only when DXVK is what actually runs.
-                // `.recommended` has to be resolved first: unresolved, a program
-                // left on Recommended that resolves to DXVK hid the very
-                // controls that were in effect.
+                // Resolved, so a program on Recommended that runs DXVK does
+                // not hide the controls that are in effect.
                 if resolvedOverriddenBackend == .dxvk {
                     graphicsControls
                 }
@@ -288,8 +286,7 @@ struct ProgramOverrideSettingsView: View {
                     .foregroundStyle(.secondary)
             } else {
                 inheritedSummary(
-                    // Resolved, not raw: a bottle left on Recommended reported
-                    // "Recommended" here instead of the backend it runs.
+                    // Resolved, or a bottle on Recommended reports "Recommended".
                     "\(resolvedBottleBackend.displayName), "
                         + "DXVK Async \(bottle.settings.dxvkAsync ? "On" : "Off"), "
                         + "HUD \(hudDescription(bottle.settings.dxvkHud))"
@@ -552,14 +549,13 @@ struct ProgramOverrideSettingsView: View {
         program.settings.overrides?.graphicsBackend != nil
     }
 
-    /// The backend this program actually launches with, with `.recommended`
-    /// resolved to the concrete backend it stands for.
+    /// The backend this program actually launches with.
     private var resolvedOverriddenBackend: GraphicsBackend {
         let backend = program.settings.overrides?.graphicsBackend ?? .recommended
         return backend == .recommended ? GraphicsBackendResolver.resolve() : backend
     }
 
-    /// The bottle's backend, resolved the same way, for the inherited summary.
+    /// The bottle's backend, resolved, for the inherited summary.
     private var resolvedBottleBackend: GraphicsBackend {
         bottle.settings.graphicsBackend == .recommended
             ? GraphicsBackendResolver.resolve()
@@ -626,10 +622,8 @@ struct ProgramOverrideSettingsView: View {
                 ensureOverrides()
                 if isOn {
                     program.settings.overrides?.graphicsBackend = bottle.settings.graphicsBackend
-                    // `dxvk` is deliberately not seeded: the launch path only
-                    // honours it when no backend override is set, and one is
-                    // being set right here, so copying it writes state that can
-                    // never take effect. It is still cleared below.
+                    // `dxvk` is not seeded: the launch path ignores it whenever
+                    // a backend override is set, and one is set right here.
                     program.settings.overrides?.dxvkAsync = bottle.settings.dxvkAsync
                     program.settings.overrides?.dxvkHud = bottle.settings.dxvkHud
                 } else {
