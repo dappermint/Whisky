@@ -79,14 +79,56 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-spm-
 
-      - name: Build
+      # Signed with a self-signed cert, so TCC sees one stable identity instead of a
+      # fresh one per build. Gatekeeper trusts it no more than ad-hoc — the point is
+      # that Files and Folders consent survives an update. Without the secret the
+      # build still works, just ad-hoc, and consent resets on every release.
+      - name: Import the signing identity
+        id: signing
+        env:
+          CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
         run: |
           set -euo pipefail
-          xcodebuild -project Whisky.xcodeproj -scheme Whisky -configuration Release build \
-            -derivedDataPath build/dd \
-            SKIP_SWIFTLINT_BUILD_PHASE=YES
+          if [ -z "${CERT_P12:-}" ]; then
+            echo "::warning::No MACOS_CERT_P12; falling back to ad-hoc signing."
+            echo "identity=-" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          password="$(openssl rand -base64 24)"
+          printf '%s' "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/identity.p12"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          security import "$RUNNER_TEMP/identity.p12" -k "$keychain" -P "$CERT_PASSWORD" \
+            -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain" >/dev/null
+          security list-keychains -d user -s $(security list-keychains -d user | tr -d ' "') "$keychain"
+          rm -f "$RUNNER_TEMP/identity.p12"
+          # The cert is self-signed, so it is never a *trusted* identity; ask for all.
+          hash="$(security find-identity -p codesigning "$keychain" | awk '/"/ {print $2; exit}')"
+          [ -n "$hash" ] || { echo "::error::identity did not import"; exit 1; }
+          echo "identity=$hash" >> "$GITHUB_OUTPUT"
+          echo "keychain=$keychain" >> "$GITHUB_OUTPUT"
 
-      - name: Verify the ad-hoc signature carries the entitlements
+      - name: Build
+        env:
+          IDENTITY: ${{ steps.signing.outputs.identity }}
+          KEYCHAIN: ${{ steps.signing.outputs.keychain }}
+        run: |
+          set -euo pipefail
+          args=(-project Whisky.xcodeproj -scheme Whisky -configuration Release build
+                -derivedDataPath build/dd SKIP_SWIFTLINT_BUILD_PHASE=YES
+                "CODE_SIGN_IDENTITY=$IDENTITY")
+          if [ -n "${KEYCHAIN:-}" ]; then
+            args+=("OTHER_CODE_SIGN_FLAGS=--keychain $KEYCHAIN")
+          fi
+          xcodebuild "${args[@]}"
+
+      - name: Verify the signature and its entitlements
+        env:
+          IDENTITY: ${{ steps.signing.outputs.identity }}
         run: |
           set -euo pipefail
           app="build/dd/Build/Products/Release/Whisky Preview.app"
@@ -97,6 +139,13 @@ jobs:
           codesign -d --entitlements - --xml "$app" \
             | plutil -extract 'com\.apple\.security\.cs\.allow-unsigned-executable-memory' raw - \
             | grep -qx 'true'
+          # A cdhash requirement means the cert was not used, and TCC consent would
+          # reset for every user on this release.
+          if [ "$IDENTITY" != "-" ]; then
+            codesign -d -r- "$app" 2>&1 | grep -q 'certificate root' \
+              || { echo "::error::signed ad-hoc despite a certificate being available"; exit 1; }
+          fi
+          codesign -d -r- "$app" 2>&1 | grep designated >> "$GITHUB_STEP_SUMMARY"
 
       - name: Package DMG
         id: dmg

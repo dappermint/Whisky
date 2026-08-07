@@ -15,13 +15,25 @@ Static metadata (`WhiskyWineVersion.plist`) is served from GitHub Pages, deploye
 
 ## Signing, and why the cask matters
 
-There is no Apple Developer ID for this fork, so builds are **ad-hoc signed and cannot be
-notarized**. Gatekeeper refuses a quarantined unnotarized app outright — on macOS 15+ the
-right-click-open escape hatch is gone, leaving only a trip through System Settings.
+There is no Apple Developer ID for this fork, so builds **cannot be notarized**. Gatekeeper
+refuses a quarantined unnotarized app outright — on macOS 15+ the right-click-open escape hatch
+is gone, leaving only a trip through System Settings.
 
 The Homebrew cask is therefore the supported install path: it clears the quarantine flag in a
 `postflight` block, so the app just launches. A DMG downloaded straight from the releases page
 will be blocked, which is expected.
+
+Releases are signed with a **self-signed certificate** (`whisky-signing/` beside this checkout,
+mirrored into the `MACOS_CERT_P12` / `MACOS_CERT_PASSWORD` repo secrets). Gatekeeper trusts it
+no more than an ad-hoc signature; it exists for TCC. An ad-hoc signature makes the designated
+requirement a bare cdhash, so every build is a different app to macOS and any Files and Folders
+or removable-volume consent resets on each update. With the certificate the requirement is
+
+    identifier "com.dappermint.WhiskyPreview" and certificate root = H"a863d136..."
+
+which is stable across builds, so consent persists. The release workflow fails if a certificate
+was available but the output ended up ad-hoc signed — silently reverting would reset consent for
+every user. Losing the certificate has the same effect, so keep a backup of `identity.p12`.
 
 Hardened runtime is **off** (`ENABLE_HARDENED_RUNTIME = NO`) and the entitlements carry
 `com.apple.security.cs.allow-unsigned-executable-memory`. Wine maps JIT pages; without that
