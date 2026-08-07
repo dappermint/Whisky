@@ -249,9 +249,13 @@ public class Wine {
         // over the bottle setting, and `.recommended` resolves to its concrete
         // backend. This decides which translation layer's files are deployed;
         // the matching WINEDLLOVERRIDES come from the environment layers.
+        // `.recommended` resolves against what is being launched, not just the
+        // machine: on a runtime with D3DMetal installed, a launcher's Chromium
+        // client cannot render on it and needs DXVK, while the games it starts
+        // still want D3DMetal.
         let effectiveBackendChoice = programOverrides?.graphicsBackend ?? bottle.settings.graphicsBackend
         let effectiveBackend = effectiveBackendChoice == .recommended
-            ? GraphicsBackendResolver.resolve()
+            ? GraphicsBackendResolver.resolve(for: LauncherType.detect(from: url))
             : effectiveBackendChoice
 
         // DXMT first: if launcher auto-DXVK also fires below (e.g. Rockstar),

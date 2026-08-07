@@ -42,11 +42,23 @@ public enum GraphicsBackendResolver {
     ///     to checking the installed runtime.
     /// - Returns: A concrete ``GraphicsBackend`` (never `.recommended`).
     public static func resolve(
+        for launcher: LauncherType? = nil,
         macOSVersion: MacOSVersion = .current,
         runtimeInfo: WhiskyWineVersion? = WhiskyWineInstaller.whiskyWineInfo(),
         d3dMetalInstalled: Bool = WhiskyWineInstaller.isD3DMetalInstalled()
     ) -> GraphicsBackend {
         if d3dMetalInstalled {
+            // Launcher clients are Chromium, and Chromium cannot render on
+            // D3DMetal: the window is created, the process tree looks healthy,
+            // and nothing ever paints. Measured on Steam, whose client sat at
+            // luma 0.0 indefinitely with nine processes running.
+            //
+            // Only the launcher itself. Games it starts still resolve to
+            // D3DMetal, which is the reason to have it installed at all, and
+            // per-executable overrides are what keep the two apart.
+            if launcher != nil {
+                return .dxvk
+            }
             return .d3dMetal
         }
         if GraphicsBackend.dxmt.isAvailable(runtimeInfo: runtimeInfo) {
