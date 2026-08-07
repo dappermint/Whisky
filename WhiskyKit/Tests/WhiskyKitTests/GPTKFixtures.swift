@@ -140,8 +140,11 @@ func makePartialDeploy(store: URL, runtime: URL, runtimeVersion: String) throws 
 
     let encoder = PropertyListEncoder()
     encoder.outputFormat = .xml
+    // The flat, pre-key layout on purpose: this is the shape
+    // migrateFlatOriginals converts, so the record goes beside the DLLs rather
+    // than through originalsRecordURL, which now resolves under a runtime key.
     try encoder.encode(GPTKOriginalsRecord(runtimeVersion: runtimeVersion))
-        .write(to: GPTKImporter.originalsRecordURL(inStore: store))
+        .write(to: originals.appending(path: "OriginalsVersion.plist"))
 
     for name in ["d3d10.dll", "d3d12.dll"] {
         try fileManager.moveItem(at: peDir.appending(path: name), to: originals.appending(path: name))
