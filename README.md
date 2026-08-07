@@ -1,21 +1,38 @@
 <div align="center">
 
-  # Whisky 🥃
+  # Whisky Preview 🥃
   *Wine but a bit stronger*
 
-  > **Active community fork.** The original [whisky-app/whisky](https://github.com/whisky-app/whisky)
-  > was archived on April 9, 2025 with a final maintenance notice. This fork, maintained by
-  > [@frankea](https://github.com/frankea), continues development — addressing the backlog of
-  > upstream issues and adding new functionality. Not affiliated with the original project or
-  > getwhisky.app.
-
-  ![](https://img.shields.io/github/actions/workflow/status/frankea/Whisky/CI.yml?style=for-the-badge&label=CI)
-  [![](https://img.shields.io/codecov/c/github/frankea/Whisky?style=for-the-badge&logo=codecov&label=Coverage&flag=whiskykit)](https://codecov.io/gh/frankea/Whisky)
-  [![](https://img.shields.io/github/downloads/frankea/Whisky/total?style=for-the-badge&logo=github&label=Downloads)](https://github.com/frankea/Whisky/releases)
-  [![](https://img.shields.io/github/downloads/frankea/Whisky/latest/total?style=for-the-badge&label=Latest)](https://github.com/frankea/Whisky/releases/latest)
-  [![](https://img.shields.io/github/issues/frankea/Whisky?style=for-the-badge)](https://github.com/frankea/Whisky/issues)
-  [![Documentation](https://img.shields.io/badge/Documentation-DocC-blue?style=for-the-badge)](https://frankea.github.io/Whisky/documentation/whiskykit/)
+  ![](https://img.shields.io/github/actions/workflow/status/dappermint/Whisky/CI.yml?branch=preview&style=for-the-badge&label=CI)
+  [![](https://img.shields.io/github/downloads/dappermint/Whisky/total?style=for-the-badge&logo=github&label=Downloads)](https://github.com/dappermint/Whisky/releases)
+  [![](https://img.shields.io/github/issues/dappermint/Whisky?style=for-the-badge)](https://github.com/dappermint/Whisky/issues)
+  [![Documentation](https://img.shields.io/badge/Documentation-DocC-blue?style=for-the-badge)](https://dappermint.github.io/Whisky/documentation/whiskykit/)
 </div>
+
+> **This is the `preview` branch.** It carries Steam, DLL override and D3DMetal work that
+> hasn't landed upstream yet, and ships as a separate app (`Whisky Preview.app`,
+> `com.dappermint.WhiskyPreview`) that installs beside a normal Whisky rather than replacing
+> it. `main` tracks [frankea/Whisky](https://github.com/frankea/Whisky) and is where upstream
+> contributions are prepared — it is never released from.
+>
+> Lineage: [whisky-app/whisky](https://github.com/whisky-app/whisky) (archived April 9, 2025)
+> → [frankea/Whisky](https://github.com/frankea/Whisky) → this fork. Not affiliated with the
+> original project or getwhisky.app. Report problems with *this* build here, not upstream.
+
+## Install
+
+```sh
+brew install --cask dappermint/tap/whisky-preview
+```
+
+Builds are ad-hoc signed and not notarized, so Gatekeeper blocks a plain double-click of the
+DMG. The cask clears the quarantine flag on install, which is why it is the supported path.
+There is no in-app updater; upgrade with `brew upgrade --cask whisky-preview`.
+
+On first launch the bottle list is empty, since this app has its own bundle identifier.
+**File → Import Bottles from Another Whisky…** adopts bottles from frankea's build or from the
+archived original. They are referenced in place, never copied or moved, so the other build
+keeps working.
 
 ## Overview
 

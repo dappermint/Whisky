@@ -18,11 +18,12 @@
 //
 
 import os.log
-import Sparkle
 import SwiftUI
 import WhiskyKit
 
-private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.franke.Whisky", category: "WhiskyApp")
+private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "com.dappermint.WhiskyPreview", category: "WhiskyApp"
+)
 
 @main
 // swiftlint:disable:next type_body_length
@@ -55,14 +56,8 @@ struct WhiskyApp: App {
     @State private var lastTroubleshootingSuggestionAt: [String: Date] = [:]
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @Environment(\.openURL) var openURL
-    private let updaterController: SPUStandardUpdaterController
 
     init() {
-        updaterController = SPUStandardUpdaterController(
-            startingUpdater: true,
-            updaterDelegate: nil,
-            userDriverDelegate: SparkleUpdaterDelegate.shared
-        )
         Telemetry.startIfConsented()
     }
 
@@ -124,9 +119,6 @@ struct WhiskyApp: App {
         // Don't ask me how this works, it just does
         .handlesExternalEvents(matching: ["{same path of URL?}"])
         .commands {
-            CommandGroup(after: .appInfo) {
-                SparkleView(updater: updaterController.updater)
-            }
             CommandGroup(before: .systemServices) {
                 Divider()
                 Button("open.setup") {
@@ -159,7 +151,7 @@ struct WhiskyApp: App {
                     }
                 }
                 .keyboardShortcut("I", modifiers: [.command])
-                Button("Migrate from the Original Whisky…") {
+                Button("Import Bottles from Another Whisky…") {
                     showMigrate = true
                 }
             }
@@ -179,12 +171,12 @@ struct WhiskyApp: App {
             }
             CommandGroup(replacing: .help) {
                 Button("help.github") {
-                    if let url = URL(string: "https://github.com/frankea/Whisky") {
+                    if let url = URL(string: "https://github.com/dappermint/Whisky") {
                         openURL(url)
                     }
                 }
                 Button("help.issues") {
-                    if let url = URL(string: "https://github.com/frankea/Whisky/issues") {
+                    if let url = URL(string: "https://github.com/dappermint/Whisky/issues") {
                         openURL(url)
                     }
                 }
@@ -202,7 +194,7 @@ struct WhiskyApp: App {
         Settings {
             SettingsView()
         }
-        MenuBarExtra("Whisky", systemImage: "wineglass", isInserted: $showMenuBarExtra) {
+        MenuBarExtra("Whisky Preview", systemImage: "wineglass", isInserted: $showMenuBarExtra) {
             WhiskyMenuBarView()
                 .environmentObject(BottleVM.shared)
         }

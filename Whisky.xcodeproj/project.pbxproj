@@ -226,7 +226,7 @@
 		6E355E5729D78249002D83BE /* ConfigView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigView.swift; sourceTree = "<group>"; };
 		6E355E5929D782B2002D83BE /* ProgramsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramsView.swift; sourceTree = "<group>"; };
 		6E355E5D29D7D85D002D83BE /* ProgramView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramView.swift; sourceTree = "<group>"; };
-		6E40495229CCA19C006E3F1B /* Whisky.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Whisky.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6E40495229CCA19C006E3F1B /* Whisky Preview.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Whisky Preview.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6E40495529CCA19C006E3F1B /* WhiskyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhiskyApp.swift; sourceTree = "<group>"; };
 		6E40495729CCA19C006E3F1B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		6E40495929CCA19C006E3F1B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -486,7 +486,7 @@
 		6E40495329CCA19C006E3F1B /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				6E40495229CCA19C006E3F1B /* Whisky.app */,
+				6E40495229CCA19C006E3F1B /* Whisky Preview.app */,
 				6E70A4982A9A2197007799E9 /* WhiskyCmd */,
 				6EFDF64A2AAE2DA800EF622F /* WhiskyThumbnail.appex */,
 				1C3B8A506869998F3FE0FC74 /* WhiskyUITests.xctest */,
@@ -751,7 +751,7 @@
 				8C2AEFC72AED79B700CB568F /* WhiskyKit */,
 			);
 			productName = Whisky;
-			productReference = 6E40495229CCA19C006E3F1B /* Whisky.app */;
+			productReference = 6E40495229CCA19C006E3F1B /* Whisky Preview.app */;
 			productType = "com.apple.product-type.application";
 		};
 		6E70A4972A9A2197007799E9 /* WhiskyCmd */ = {
@@ -1219,14 +1219,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Whisky/Whisky.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 53;
+				CURRENT_PROJECT_VERSION = 54;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Whisky/Preview Content\"";
-				DEVELOPMENT_TEAM = Z7JS58F8U3;
-				ENABLE_HARDENED_RUNTIME = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Whisky/Info.plist;
@@ -1240,9 +1240,9 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 3.6.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.franke.Whisky;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				MARKETING_VERSION = 2026.8.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dappermint.WhiskyPreview;
+				PRODUCT_NAME = "Whisky Preview";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -1257,14 +1257,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Whisky/Whisky.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 53;
+				CURRENT_PROJECT_VERSION = 54;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Whisky/Preview Content\"";
-				DEVELOPMENT_TEAM = Z7JS58F8U3;
-				ENABLE_HARDENED_RUNTIME = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Whisky/Info.plist;
@@ -1278,9 +1278,9 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 3.6.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.franke.Whisky;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				MARKETING_VERSION = 2026.8.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dappermint.WhiskyPreview;
+				PRODUCT_NAME = "Whisky Preview";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -1293,18 +1293,18 @@
 			buildSettings = {
 				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = Z7JS58F8U3;
-				ENABLE_HARDENED_RUNTIME = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_PKGINFO_FILE = NO;
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.franke.WhiskyCmd;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dappermint.WhiskyCmd;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
@@ -1319,18 +1319,18 @@
 			buildSettings = {
 				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = Z7JS58F8U3;
-				ENABLE_HARDENED_RUNTIME = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_PKGINFO_FILE = NO;
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.franke.WhiskyCmd;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dappermint.WhiskyCmd;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
@@ -1344,12 +1344,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_ENTITLEMENTS = WhiskyThumbnail/WhiskyThumbnail.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 53;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 54;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = Z7JS58F8U3;
-				ENABLE_HARDENED_RUNTIME = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1362,8 +1362,8 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.6.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.franke.Whisky.WhiskyThumbnail;
+				MARKETING_VERSION = 2026.8.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dappermint.WhiskyPreview.WhiskyThumbnail;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
@@ -1379,12 +1379,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_ENTITLEMENTS = WhiskyThumbnail/WhiskyThumbnail.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 53;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 54;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = Z7JS58F8U3;
-				ENABLE_HARDENED_RUNTIME = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1397,8 +1397,8 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.6.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.franke.Whisky.WhiskyThumbnail;
+				MARKETING_VERSION = 2026.8.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dappermint.WhiskyPreview.WhiskyThumbnail;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
@@ -1411,11 +1411,11 @@
 		EC7088CF22CF6A8529158E5E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = WhiskyUITests/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.franke.WhiskyUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dappermint.WhiskyPreviewUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.0;
@@ -1426,11 +1426,11 @@
 		ED4162A74330FA06C2F299B6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = WhiskyUITests/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.franke.WhiskyUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dappermint.WhiskyPreviewUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.0;

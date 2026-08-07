@@ -61,12 +61,10 @@
 	<string>Whisky needs access to network volumes when bottles are stored on network drives.</string>
 	<key>NSRemovableVolumesUsageDescription</key>
 	<string>Whisky needs access to removable volumes when bottles are stored on external drives.</string>
+	<!-- Empty: telemetry stays off in this fork. A token here would report to
+	     whoever owns the PostHog project, which is not us. -->
 	<key>PostHogProjectToken</key>
-	<string>phc_LJiR538eQO7W24OkTeGFyi3m53BzJCVKEY7c46Lodrh</string>
-	<key>SUFeedURL</key>
-	<string>https://frankea.github.io/Whisky/appcast.xml</string>
-	<key>SUPublicEDKey</key>
-	<string>rJHUOL+DnZ2+w0irWNhkZmt3SfYMyy1qcEPEmIGuszM=</string>
+	<string></string>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>
