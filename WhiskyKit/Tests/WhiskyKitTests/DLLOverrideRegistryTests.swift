@@ -85,6 +85,36 @@ final class DLLOverrideRegistryTests: XCTestCase {
         XCTAssertEqual(parsed["d3d11"], "b")
     }
 
+    // MARK: - Launcher helpers
+
+    /// The reason this exists: steam draws its whole client in the webhelper,
+    /// and AppDefaults is per executable with no inheritance, so an override on
+    /// steam.exe alone leaves the window blank.
+    func testSteamCarriesItsHelpersAlong() {
+        let helpers = Wine.helperExecutables(for: URL(filePath: "/B/Steam/steam.exe"))
+        XCTAssertTrue(helpers.contains("steamwebhelper.exe"))
+    }
+
+    func testAGameIsNotALauncherAndCarriesNothing() {
+        let url = URL(filePath: "/B/Steam/steamapps/common/Some Game/game.exe")
+        XCTAssertTrue(Wine.helperExecutables(for: url).isEmpty)
+    }
+
+    func testUnknownExecutableCarriesNothing() {
+        XCTAssertTrue(Wine.helperExecutables(for: URL(filePath: "/B/thing.exe")).isEmpty)
+    }
+
+    /// A helper must never be listed as its own helper, or a launch would write
+    /// the same scope twice.
+    func testNoLauncherListsItself() {
+        for launcher in LauncherType.allCases {
+            XCTAssertFalse(
+                launcher.helperExecutables.contains { $0.lowercased().contains("steam.exe") },
+                "\(launcher) lists a launcher executable as a helper"
+            )
+        }
+    }
+
     // MARK: - reg query output
 
     func testParsesRegQueryOutput() {

@@ -124,6 +124,17 @@ public extension Wine {
         )
     }
 
+    /// The launcher helper executables that must share `url`'s DLL overrides,
+    /// or none when the executable is not a recognised launcher.
+    ///
+    /// Detection runs on the launched executable rather than the bottle's
+    /// recorded launcher, so this is right even when launcher compatibility
+    /// mode is off: the reason the helpers need the entry is how wine resolves
+    /// `AppDefaults`, not whether the user opted into launcher fixes.
+    static func helperExecutables(for url: URL) -> [String] {
+        LauncherType.detect(from: url)?.helperExecutables ?? []
+    }
+
     /// Parses a `WINEDLLOVERRIDES` string into DLL name to load-order pairs.
     ///
     /// Wine's registry accepts the same load-order syntax as the variable, so
