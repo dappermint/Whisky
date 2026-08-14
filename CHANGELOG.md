@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Video in games that ask D3D12 to convert their decoded frames now plays
+  correctly under D3DMetal. D3DMetal exposes no video device at all, so a
+  game that decodes video itself and asks D3D12 to convert NV12 to RGB was
+  getting nothing back and falling into a fallback path no Windows machine
+  runs: S.T.A.L.K.E.R. Call of Pripyat Enhanced Edition drew its intro and
+  menu backgrounds at half resolution with the colour flattened to an olive
+  cast. Deploying the GPTK payload now also installs the video processor the
+  runtime ships, and installs that already have the payload pick it up at
+  launch without reimporting.
+
 ### Changed
 - Interrupted runtime downloads now resume where they left off and retry
   transient failures automatically instead of restarting the full archive
