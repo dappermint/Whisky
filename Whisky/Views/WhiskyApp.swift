@@ -61,18 +61,20 @@ struct WhiskyApp: App {
         Telemetry.startIfConsented()
     }
 
-    /// Installs the D3D12 video processor into runtimes that already hold the
-    /// GPTK payload.
+    /// Installs the D3D12 video processor and the MetalFX bridge into runtimes
+    /// that already hold the GPTK payload.
     ///
-    /// Deploying does this too, but an install that was set up before the
-    /// interposer existed never deploys again, so without this it would keep
-    /// rendering video through the engine's broken fallback until it happened
-    /// to reimport. Idempotent, and a no-op on runtimes that ship no interposer.
-    private func installVideoProcessorIfNeeded() {
+    /// Deploying does both too, but an install that was set up before they
+    /// existed never deploys again, so without this it would keep rendering
+    /// video through the engine's broken fallback, and keep MetalFX
+    /// unreachable, until it happened to reimport. Idempotent, and a no-op on
+    /// runtimes and payloads that carry neither.
+    private func installGPTKExtrasIfNeeded() {
         var data = BottleData()
         let bottles = data.loadBottles().map(\.url)
         Task.detached(priority: .background) {
             GPTKImporter.ensureVideoProcessorEverywhere(bottles: bottles)
+            GPTKImporter.ensureMetalFXBridgeEverywhere()
         }
     }
 
@@ -86,7 +88,7 @@ struct WhiskyApp: App {
                     Task.detached {
                         await WhiskyApp.deleteOldLogs()
                     }
-                    installVideoProcessorIfNeeded()
+                    installGPTKExtrasIfNeeded()
                     startAudioDeviceListening()
                 }
                 .onReceive(

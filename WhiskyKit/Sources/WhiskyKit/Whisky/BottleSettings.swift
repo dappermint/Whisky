@@ -349,6 +349,16 @@ public struct BottleSettings: Codable, Equatable {
         set { graphicsConfig.backend = newValue }
     }
 
+    /// Whether this bottle opts in to D3DMetal's DLSS-to-MetalFX path.
+    ///
+    /// Takes effect only under D3DMetal, and only for a game that has DLSS
+    /// switched on in its own settings: the bridge implements the DLSS entry
+    /// points, so a game that never asks for DLSS never reaches MetalFX.
+    public var metalFX: Bool {
+        get { graphicsConfig.metalFX }
+        set { graphicsConfig.metalFX = newValue }
+    }
+
     /// Whether DXVK is the active graphics backend.
     ///
     /// This property now derives from ``graphicsBackend``. Setting it to `true`
@@ -819,8 +829,12 @@ public struct BottleSettings: Codable, Equatable {
         // Backend-conditional env vars and DLL overrides
         switch resolvedBackend {
         case .d3dMetal, .recommended:
-            // D3DMetal is Wine's default on macOS -- no special env vars needed
-            break
+            // D3DMetal is Wine's default on macOS -- no special env vars needed,
+            // beyond opting in to the DLSS-to-MetalFX path. The DLL placement
+            // that actually gates it happens in `Wine.applyMetalFX` at launch.
+            if metalFX {
+                builder.set("D3DM_ENABLE_METALFX", "1", layer: .bottleManaged)
+            }
 
         case .dxvk:
             // DXVK: DLL overrides + env vars
