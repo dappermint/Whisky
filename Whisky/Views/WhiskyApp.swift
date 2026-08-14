@@ -61,6 +61,21 @@ struct WhiskyApp: App {
         Telemetry.startIfConsented()
     }
 
+    /// Installs the D3D12 video processor into runtimes that already hold the
+    /// GPTK payload.
+    ///
+    /// Deploying does this too, but an install that was set up before the
+    /// interposer existed never deploys again, so without this it would keep
+    /// rendering video through the engine's broken fallback until it happened
+    /// to reimport. Idempotent, and a no-op on runtimes that ship no interposer.
+    private func installVideoProcessorIfNeeded() {
+        var data = BottleData()
+        let bottles = data.loadBottles().map(\.url)
+        Task.detached(priority: .background) {
+            GPTKImporter.ensureVideoProcessorEverywhere(bottles: bottles)
+        }
+    }
+
     var body: some Scene {
         WindowGroup(id: Self.mainWindowID) {
             ContentView(showSetup: $showSetup)
@@ -71,6 +86,7 @@ struct WhiskyApp: App {
                     Task.detached {
                         await WhiskyApp.deleteOldLogs()
                     }
+                    installVideoProcessorIfNeeded()
                     startAudioDeviceListening()
                 }
                 .onReceive(
