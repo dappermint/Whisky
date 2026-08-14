@@ -170,6 +170,10 @@ extension GPTKImporter {
             try fileManager.removeItem(at: externalDest)
         }
         try fileManager.copyItem(at: storeLib.appending(path: "external"), to: externalDest)
+        // Apple's payload is in place now, which is the only moment the bridge
+        // can be installed: it forwards into the payload's own shared dylib and
+        // has nothing to bind to before this point.
+        try installMetalFXBridge(intoLibraryFolder: folder, usingStore: store)
         logger.info("Deployed GPTK payload into the runtime tree")
     }
 
@@ -202,6 +206,8 @@ extension GPTKImporter {
 
         let originalsAreCurrent = originalsRecord(inStore: store)?.runtimeVersion
             == runtimeVersionStamp(inLibraryFolder: folder)
+
+        removeMetalFXBridge(fromLibraryFolder: folder, usingStore: store)
 
         for name in forwarderDLLNames {
             let backup = originals.appending(path: name)
