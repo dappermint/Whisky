@@ -35253,6 +35253,26 @@
         }
       }
     },
+    "config.metal4" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Metal 4 Backend"
+          }
+        }
+      }
+    },
+    "config.metal4.info" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uses Metal 4 command encoding for DirectX 12 titles. Ignored on macOS versions that predate it."
+          }
+        }
+      }
+    },
     "config.metalFX" : {
       "localizations" : {
         "en" : {
