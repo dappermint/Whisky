@@ -81,6 +81,101 @@ final class BottleLocationValidationTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(available, 0)
     }
 
+    // MARK: - Against a real volume
+
+    /// Opt-in, because it needs a volume the machine running the suite may not
+    /// have. Point `WHISKY_TEST_VOLUME` at a mounted external or network volume
+    /// to check the classification against the real thing rather than a temp
+    /// directory on the boot disk:
+    ///
+    ///     WHISKY_TEST_VOLUME=/Volumes/MyDrive swift test
+    ///
+    /// A disk image works: `hdiutil create -size 50m -fs APFS -volname T t.dmg`
+    /// then `hdiutil attach t.dmg` mounts as External/Removable.
+    func testRealExternalVolumeIsConsentGated() throws {
+        guard let path = ProcessInfo.processInfo.environment["WHISKY_TEST_VOLUME"] else {
+            throw XCTSkip("set WHISKY_TEST_VOLUME to a mounted external volume")
+        }
+        let volume = URL(fileURLWithPath: path)
+        XCTAssertTrue(
+            BottleLocationValidation.isConsentGatedVolume(volume),
+            "\(path) should be consent gated; is it actually external or a network mount?"
+        )
+    }
+
+    /// The distinction the UI hangs on: on a consent-gated volume a permission
+    /// refusal is `.accessDenied` (privacy can fix it), and anything else is
+    /// `.notWritable` (privacy cannot).
+    func testRealExternalVolumeRefusalIsAccessDenied() throws {
+        guard let path = ProcessInfo.processInfo.environment["WHISKY_TEST_VOLUME"] else {
+            throw XCTSkip("set WHISKY_TEST_VOLUME to a mounted external volume")
+        }
+        let volume = URL(fileURLWithPath: path)
+        let locked = volume.appendingPathComponent("whisky-denied-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: locked, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: locked.path)
+            try? FileManager.default.removeItem(at: locked)
+        }
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: locked.path)
+
+        XCTAssertEqual(BottleLocationValidation.probeWrite(in: locked, fileManager: .default), .denied)
+        guard case .accessDenied = BottleLocationValidation.validate(at: locked, minimumFreeBytes: 0) else {
+            return XCTFail("a permission refusal on a consent gated volume must be .accessDenied")
+        }
+    }
+
+    func testRealExternalVolumeWritesCleanly() throws {
+        guard let path = ProcessInfo.processInfo.environment["WHISKY_TEST_VOLUME"] else {
+            throw XCTSkip("set WHISKY_TEST_VOLUME to a mounted external volume")
+        }
+        let dir = URL(fileURLWithPath: path).appendingPathComponent("whisky-ok-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        XCTAssertEqual(BottleLocationValidation.validate(at: dir, minimumFreeBytes: 0), .valid)
+    }
+
+    // MARK: - Permission-shaped refusals
+
+    /// The privacy pointer must only appear for a refusal privacy can explain.
+    /// An unwritable folder on the internal disk is the same errno with a
+    /// different fix, so it stays `.notWritable`.
+    func testUnwritableInternalDirectoryIsNotReportedAsAccessDenied() throws {
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: tempDir.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: tempDir.path) }
+
+        guard case .notWritable = BottleLocationValidation.validate(at: tempDir, minimumFreeBytes: 0) else {
+            return XCTFail("an internal volume can never be a consent problem")
+        }
+    }
+
+    func testProbeReportsDeniedForAPermissionRefusal() throws {
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: tempDir.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: tempDir.path) }
+
+        XCTAssertEqual(BottleLocationValidation.probeWrite(in: tempDir, fileManager: .default), .denied)
+    }
+
+    func testProbeSucceedsOnAWritableDirectory() {
+        XCTAssertEqual(BottleLocationValidation.probeWrite(in: tempDir, fileManager: .default), .succeeded)
+    }
+
+    func testProbeLeavesNothingBehind() throws {
+        XCTAssertEqual(BottleLocationValidation.probeWrite(in: tempDir, fileManager: .default), .succeeded)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: tempDir.path), [])
+    }
+
+    func testProbeReportsFailedWhenTheTargetIsNotADirectory() throws {
+        let file = tempDir.appendingPathComponent("a-file")
+        try Data("x".utf8).write(to: file)
+        // ENOTDIR, not a permission problem, so it must not read as a refusal.
+        XCTAssertEqual(BottleLocationValidation.probeWrite(in: file, fileManager: .default), .failed)
+    }
+
+    func testInternalVolumeIsNotConsentGated() {
+        XCTAssertFalse(BottleLocationValidation.isConsentGatedVolume(tempDir))
+    }
+
     func testNearestExistingDirectoryWalksUpToFirstExistingParent() {
         let deep = tempDir.appendingPathComponent("a/b/c")
         let nearest = BottleLocationValidation.nearestExistingDirectory(for: deep, fileManager: .default)
@@ -146,10 +241,5 @@ final class BottleLocationValidationTests: XCTestCase {
 
     func testConsentGatedVolumeIsFalseForAnInternalPath() {
         XCTAssertFalse(BottleLocationValidation.isConsentGatedVolume(tempDir))
-    }
-
-    func testPrivacySettingsDeepLinkIsValid() throws {
-        let url = try XCTUnwrap(BottleLocationValidation.privacySettingsURL)
-        XCTAssertEqual(url.scheme, "x-apple.systempreferences")
     }
 }

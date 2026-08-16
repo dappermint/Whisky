@@ -350,30 +350,11 @@ public class Wine {
             programSettings: programSettings, gameProfileEnvironment: gameProfileEnvironment
         )
 
-        // Registry, not WINEDLLOVERRIDES: the variable is inherited by every
-        // child, so a launcher's backend became every game's, and wine reads it
-        // before the registry so AppDefaults entries were dead while it was set.
-        let bottleOverrides = constructWineEnvironment(for: bottle)["WINEDLLOVERRIDES"] ?? ""
-        var scopes: [(scope: DLLOverrideScope, overrides: String)] = [
-            (scope: .bottle, overrides: bottleOverrides)
-        ]
-
-        if overridesApplyToDescendants {
-            // These describe something this process will spawn, and AppDefaults
-            // cannot express that: it is keyed on an executable whose name is
-            // not known here. The variable is the only thing that reaches a
-            // descendant, so it stays.
-        } else {
-            let programOverrideString = wineEnvironment.removeValue(forKey: "WINEDLLOVERRIDES") ?? ""
-            // Helpers need their own entry: AppDefaults is per executable and
-            // children do not inherit, so steamwebhelper.exe would otherwise
-            // fall back to the bottle default and draw nothing.
-            for executable in [url.lastPathComponent] + helperExecutables(for: url) {
-                scopes.append((scope: .program(executable), overrides: programOverrideString))
-            }
-        }
-
-        try await syncDLLOverrides(bottle: bottle, scopes: scopes)
+        try await applyDLLOverrides(
+            for: url, bottle: bottle,
+            wineEnvironment: &wineEnvironment,
+            applyToDescendants: overridesApplyToDescendants
+        )
 
         // Create a run log entry to track this session
         let programName = url.lastPathComponent

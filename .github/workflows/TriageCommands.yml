@@ -1,0 +1,105 @@
+name: Triage Commands
+
+# Slash commands in issue and PR comments, restricted to the allow-list
+# below. This stands in for GitHub's triage role, which only exists on
+# organization-owned repositories: project members get the same daily
+# levers (labels, closing, duplicates) without holding any repository
+# permission, and every action is auditable as a workflow run.
+#
+# Supported, first line of a comment only:
+#   /label name[, name...]     add existing labels (unknown names skipped)
+#   /unlabel name[, name...]   remove labels
+#   /close [not-planned]       close the issue or PR
+#   /reopen                    reopen the issue or PR
+#   /duplicate #N              mark as duplicate of #N and close
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  run:
+    name: Run command
+    if: >-
+      startsWith(github.event.comment.body, '/') &&
+      contains(fromJSON('["frankea", "dappermint"]'), github.event.comment.user.login)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply command
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const issueNumber = context.payload.issue.number;
+            const isPullRequest = Boolean(context.payload.issue.pull_request);
+            const firstLine = context.payload.comment.body.split('\n')[0].trim();
+            const match = firstLine.match(/^\/(label|unlabel|close|reopen|duplicate)\b\s*(.*)$/);
+            if (!match) return;
+            const [, command, rawArgs] = match;
+            const args = rawArgs.trim();
+
+            const react = (reaction) => github.rest.reactions.createForIssueComment({
+              owner, repo, comment_id: context.payload.comment.id, content: reaction,
+            });
+
+            const existingLabels = async () => {
+              const labels = await github.paginate(github.rest.issues.listLabelsForRepo, { owner, repo });
+              return new Set(labels.map((label) => label.name));
+            };
+
+            const splitNames = (list) => list.split(',').map((name) => name.trim()).filter(Boolean);
+
+            try {
+              switch (command) {
+                case 'label': {
+                  const known = await existingLabels();
+                  const wanted = splitNames(args).filter((name) => known.has(name));
+                  if (wanted.length === 0) return react('confused');
+                  await github.rest.issues.addLabels({ owner, repo, issue_number: issueNumber, labels: wanted });
+                  break;
+                }
+                case 'unlabel': {
+                  for (const name of splitNames(args)) {
+                    await github.rest.issues.removeLabel({ owner, repo, issue_number: issueNumber, name })
+                      .catch(() => {});
+                  }
+                  break;
+                }
+                case 'close': {
+                  const update = { owner, repo, issue_number: issueNumber, state: 'closed' };
+                  if (!isPullRequest) {
+                    update.state_reason = args === 'not-planned' ? 'not_planned' : 'completed';
+                  }
+                  await github.rest.issues.update(update);
+                  break;
+                }
+                case 'reopen': {
+                  await github.rest.issues.update({ owner, repo, issue_number: issueNumber, state: 'open' });
+                  break;
+                }
+                case 'duplicate': {
+                  const target = args.match(/^#?(\d+)$/);
+                  if (!target) return react('confused');
+                  await github.rest.issues.createComment({
+                    owner, repo, issue_number: issueNumber, body: `Duplicate of #${target[1]}`,
+                  });
+                  const known = await existingLabels();
+                  if (known.has('duplicate')) {
+                    await github.rest.issues.addLabels({ owner, repo, issue_number: issueNumber, labels: ['duplicate'] });
+                  }
+                  const update = { owner, repo, issue_number: issueNumber, state: 'closed' };
+                  if (!isPullRequest) update.state_reason = 'not_planned';
+                  await github.rest.issues.update(update);
+                  break;
+                }
+              }
+              await react('+1');
+            } catch (error) {
+              core.setFailed(`Command /${command} failed: ${error.message}`);
+              await react('confused').catch(() => {});
+            }

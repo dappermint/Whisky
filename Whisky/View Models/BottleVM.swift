@@ -64,6 +64,27 @@ enum BottleCreationError: LocalizedError, Equatable {
     }
 }
 
+/// Why a bottle location was refused, phrased for the user, or `nil` when it is
+/// usable. Shared so the creation sheet and the failure alert cannot drift.
+func bottleLocationRefusal(_ result: BottleLocationValidation.ValidationResult) -> String? {
+    switch result {
+    case .valid:
+        nil
+    case let .notWritable(path):
+        String(format: String(localized: "bottle.creation.preflight.notWritable"), path)
+    case let .accessDenied(path):
+        String(format: String(localized: "bottle.creation.preflight.accessDenied"), path)
+    case let .missingCapability(capability, path):
+        capability.explanation(path: path)
+    case let .insufficientSpace(available, required):
+        String(
+            format: String(localized: "bottle.creation.preflight.insufficientSpace"),
+            ByteCountFormatter.string(fromByteCount: available, countStyle: .file),
+            ByteCountFormatter.string(fromByteCount: required, countStyle: .file)
+        )
+    }
+}
+
 private let bottleVMLogger = Logger(
     subsystem: Bundle.whiskyBundleIdentifier,
     category: "BottleVM"
@@ -155,25 +176,8 @@ final class BottleVM: ObservableObject {
             // Pre-flight the chosen location before creating anything, so an
             // unwritable or near-full destination surfaces a clear error up
             // front instead of a cryptic late wineboot failure (issue #61).
-            switch BottleLocationValidation.validate(at: request.bottleURL) {
-            case .valid:
-                break
-            case let .notWritable(path):
-                throw BottleCreationError.locationUnsuitable(
-                    message: String(format: String(localized: "bottle.creation.preflight.notWritable"), path)
-                )
-            case let .missingCapability(capability, path):
-                throw BottleCreationError.locationUnsuitable(
-                    message: capability.explanation(path: path)
-                )
-            case let .insufficientSpace(availableBytes, requiredBytes):
-                throw BottleCreationError.locationUnsuitable(
-                    message: String(
-                        format: String(localized: "bottle.creation.preflight.insufficientSpace"),
-                        ByteCountFormatter.string(fromByteCount: availableBytes, countStyle: .file),
-                        ByteCountFormatter.string(fromByteCount: requiredBytes, countStyle: .file)
-                    )
-                )
+            if let refusal = bottleLocationRefusal(BottleLocationValidation.validate(at: request.bottleURL)) {
+                throw BottleCreationError.locationUnsuitable(message: refusal)
             }
 
             try await createBottleDirectory(at: request.newBottleDir)

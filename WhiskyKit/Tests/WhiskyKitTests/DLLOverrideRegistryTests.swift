@@ -167,4 +167,68 @@ final class DLLOverrideRegistryTests: XCTestCase {
         let doc = Wine.registryDocument(for: [(key: #"HKCU\A"#, overrides: ["d3d11": "n,b"])])
         XCTAssertTrue(doc.contains("\r\n"))
     }
+
+    // MARK: - Encoding
+
+    func testWrittenDocumentStartsWithAUTF16LEBOM() throws {
+        // Wine detects a Unicode .reg by its BOM alone. Without one the file parses
+        // as ANSI, matches no header, and the import silently does nothing.
+        let doc = Wine.registryDocument(for: [(key: #"HKCU\A"#, overrides: ["d3d11": "n,b"])])
+        let url = FileManager.default.temporaryDirectory.appending(path: "bom-\(UUID().uuidString).reg")
+        try ("\u{FEFF}" + doc).write(to: url, atomically: true, encoding: .utf16LittleEndian)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let head = try Data(contentsOf: url).prefix(2)
+        XCTAssertEqual(Array(head), [0xFF, 0xFE], "expected a little-endian BOM")
+    }
+
+    func testWrittenDocumentRoundTripsThroughAUTF16Reader() throws {
+        let doc = Wine.registryDocument(for: [(key: #"HKCU\A"#, overrides: ["d3d11": "n,b"])])
+        let url = FileManager.default.temporaryDirectory.appending(path: "rt-\(UUID().uuidString).reg")
+        try ("\u{FEFF}" + doc).write(to: url, atomically: true, encoding: .utf16LittleEndian)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        // Reading without naming an encoding is what a BOM is for.
+        let read = try String(contentsOf: url)
+        XCTAssertTrue(read.hasPrefix("\u{FEFF}Windows Registry Editor Version 5.00"))
+        XCTAssertTrue(read.contains(#""d3d11"="n,b""#))
+    }
+
+    // MARK: - Rendering safety
+
+    func testAcceptsRealDLLNamesAndModes() {
+        for dll in ["d3d11", "d3d10core", "dxgi", "nvapi64", "api-ms-win-crt-runtime-l1-1-0", "d3dx9_43"] {
+            XCTAssertTrue(Wine.isRenderable(dll: dll, mode: "native,builtin"), dll)
+        }
+        for mode in ["native", "builtin", "native,builtin", "builtin,native", ""] {
+            XCTAssertTrue(Wine.isRenderable(dll: "d3d11", mode: mode), mode)
+        }
+    }
+
+    func testRejectsNamesThatWouldBreakOutOfTheValue() {
+        // A quote or backslash terminates the value early and corrupts every
+        // later scope in the same document.
+        for dll in [#"d3d11""#, #"d3d11\"#, "d3d11]\n[HKCU\\Evil", "", "d3d 11", "d3d11;dxgi"] {
+            XCTAssertFalse(Wine.isRenderable(dll: dll, mode: "native"), dll.debugDescription)
+        }
+        for mode in [#"native""#, #"n\b"#, "native]"] {
+            XCTAssertFalse(Wine.isRenderable(dll: "d3d11", mode: mode), mode.debugDescription)
+        }
+    }
+
+    func testOneBadOverrideDoesNotTakeTheDocumentDown() {
+        let doc = Wine.registryDocument(for: [
+            (key: #"HKCU\A"#, overrides: [#"bad"name"#: "native", "d3d11": "native,builtin"])
+        ])
+        XCTAssertTrue(doc.contains(#""d3d11"="native,builtin""#), "the good override must survive")
+        XCTAssertFalse(doc.contains("bad"), "the unrenderable one must be dropped")
+        // Exactly one value line, so nothing was left half-written.
+        XCTAssertEqual(doc.components(separatedBy: "\r\n").filter { $0.hasPrefix("\"") }.count, 1)
+    }
+
+    func testScopeWhoseOverridesAreAllUnrenderableIsStillPruned() {
+        let doc = Wine.registryDocument(for: [(key: #"HKCU\A"#, overrides: [#"bad"name"#: "native"])])
+        XCTAssertTrue(doc.contains(#"[-HKCU\A]"#), "the prune must still be emitted")
+        XCTAssertFalse(doc.contains(#"[HKCU\A]"#), "no empty key should be recreated")
+    }
 }

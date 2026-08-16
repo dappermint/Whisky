@@ -39,6 +39,11 @@ public enum BottleLocationValidation {
         case notWritable(path: String)
         /// The volume cannot do something a Wine prefix requires.
         case missingCapability(Capability, path: String)
+        /// A mounted, consent-gated volume refused the write with a permission
+        /// error, which is what a withheld Files and Folders grant looks like.
+        /// Distinct from ``notWritable`` because it is the only case System
+        /// Settings can fix.
+        case accessDenied(path: String)
         /// The volume does not have enough free space to create a bottle.
         case insufficientSpace(availableBytes: Int64, requiredBytes: Int64)
     }
@@ -94,9 +99,18 @@ public enum BottleLocationValidation {
         fileManager: FileManager = .default
     ) -> ValidationResult {
         let ancestor = nearestExistingDirectory(for: url, fileManager: fileManager)
+        let path = url.path(percentEncoded: false)
 
-        guard isWritable(ancestor, fileManager: fileManager) else {
-            return .notWritable(path: url.path(percentEncoded: false))
+        switch probeWrite(in: ancestor, fileManager: fileManager) {
+        case .succeeded:
+            break
+        case .denied:
+            // Only a consent-gated volume can be blocked by a withheld grant. A
+            // locked folder on the internal disk is the same errno with a
+            // different fix, and sending that to the privacy pane wastes a trip.
+            return isConsentGatedVolume(ancestor) ? .accessDenied(path: path) : .notWritable(path: path)
+        case .failed:
+            return .notWritable(path: path)
         }
 
         if let missing = missingCapability(in: ancestor, fileManager: fileManager) {
@@ -143,27 +157,6 @@ public enum BottleLocationValidation {
         return fileManager.fileExists(atPath: path)
     }
 
-    /// Whether macOS gates this location behind Files and Folders consent, where an
-    /// unwritable result most likely means a declined prompt rather than a bad folder.
-    /// Whisky is not sandboxed, so choosing the folder in an open panel grants nothing.
-    public static func isConsentGatedVolume(_ url: URL) -> Bool {
-        guard let volume = try? url.resourceValues(forKeys: [.volumeURLKey]).volume,
-              let values = try? volume.resourceValues(forKeys: [.volumeIsInternalKey, .volumeIsLocalKey])
-        else { return false }
-        return values.volumeIsLocal == false || values.volumeIsInternal == false
-    }
-
-    /// Deep link to **Full Disk Access**, not Files and Folders.
-    ///
-    /// Files and Folders only lists apps that have already asked, and has no way to
-    /// add one; Full Disk Access has a `+` button, so it is the only pane where a
-    /// user can grant access to an app macOS never prompted for. That case is
-    /// routine here: this build is ad-hoc signed, so its designated requirement is a
-    /// bare cdhash and every update looks like a different app to TCC.
-    public static let privacySettingsURL = URL(
-        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
-    )
-
     /// Performs each prefix operation in a scratch directory and reports the first
     /// one the location refuses, or `nil` if it can host a prefix.
     static func missingCapability(in directory: URL, fileManager: FileManager) -> Capability? {
@@ -195,18 +188,55 @@ public enum BottleLocationValidation {
         return nil
     }
 
-    /// Probes writability by creating and removing a unique temp file.
+    /// Why a write probe did not succeed, kept apart so a refusal can be told
+    /// from a location that is unusable for some other reason.
+    enum WriteProbe: Equatable {
+        case succeeded
+        /// Refused with a permission error.
+        case denied
+        /// Failed for any other reason, a read-only volume among them.
+        case failed
+    }
+
+    /// Probes writability by creating and removing a unique temp file, and on a
+    /// consent-gated volume this is also what makes macOS ask: the prompt fires
+    /// on a real access, and there is no status API to consult instead.
     ///
     /// `FileManager.isWritableFile(atPath:)` and the `isWritable` resource key
     /// are documented as unreliable on modern macOS, so an attempt-and-clean
-    /// probe is used instead.
-    private static func isWritable(_ directory: URL, fileManager: FileManager) -> Bool {
+    /// probe is used instead. It writes through `Data` rather than
+    /// `createFile(atPath:contents:)` because only the throwing form reports
+    /// *why* it failed.
+    static func probeWrite(in directory: URL, fileManager: FileManager) -> WriteProbe {
         let probe = directory.appendingPathComponent(".whisky-write-probe-\(UUID().uuidString)")
-        guard fileManager.createFile(atPath: probe.path(percentEncoded: false), contents: nil) else {
-            return false
+        do {
+            try Data().write(to: probe, options: .atomic)
+            try? fileManager.removeItem(at: probe)
+            return .succeeded
+        } catch {
+            let nsError = error as NSError
+            let underlying = nsError.underlyingErrors.map { ($0 as NSError).code }
+            let denied = nsError.code == NSFileWriteNoPermissionError
+                || underlying.contains(Int(EPERM)) || underlying.contains(Int(EACCES))
+            return denied ? .denied : .failed
         }
-        try? fileManager.removeItem(at: probe)
-        return true
+    }
+
+    /// Whether macOS gates this location behind Files and Folders consent.
+    ///
+    /// Whisky is not sandboxed, so choosing the folder in an open panel grants
+    /// nothing by itself.
+    public static func isConsentGatedVolume(_ url: URL) -> Bool {
+        guard let volume = try? url.resourceValues(forKeys: [.volumeURLKey]).volume,
+              let values = try? volume.resourceValues(forKeys: [.volumeIsInternalKey, .volumeIsLocalKey])
+        else { return false }
+        // `volumeIsInternal` is nil, not false, on volumes macOS cannot place on a
+        // bus: disk images and some enclosures report that way. Comparing it to
+        // false therefore classified exactly the gated volumes as internal, so
+        // nothing was ever reported as a consent problem. Only a definite true
+        // rules a volume out.
+        if values.volumeIsLocal == false { return true }
+        return values.volumeIsInternal != true
     }
 
     /// Reads available capacity, preferring the "important usage" figure (which
@@ -216,7 +246,8 @@ public enum BottleLocationValidation {
     private static func availableCapacity(at directory: URL) -> Int64? {
         let isExternalOrCustom: Bool = {
             guard let values = try? directory.resourceValues(forKeys: [.volumeIsInternalKey]) else { return false }
-            return values.volumeIsInternal == false
+            // nil, not false, on the removable volumes this exists for.
+            return values.volumeIsInternal != true
         }()
 
         if isExternalOrCustom {

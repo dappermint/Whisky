@@ -102,62 +102,33 @@ struct BottleCreationView: View {
     @ViewBuilder
     private func locationWarning(_ issue: BottleLocationValidation.ValidationResult) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("This location can't hold a bottle", systemImage: "exclamationmark.triangle.fill")
+            Label("create.location.problem", systemImage: "exclamationmark.triangle.fill")
                 .font(.headline)
                 .foregroundStyle(.orange)
-            Text(explanation(for: issue))
+            Text(bottleLocationRefusal(issue) ?? "")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
-                if showsPrivacyRecovery(for: issue),
-                   let settings = BottleLocationValidation.privacySettingsURL {
-                    Button("Open Full Disk Access…") { openURL(settings) }
+                if case .accessDenied = issue, let settings = Self.filesAndFoldersSettingsURL {
+                    Button("create.location.openPrivacySettings") { openURL(settings) }
                 }
-                Button("Check Again") { locationIssue = validate(newBottleURL) }
+                Button("create.location.checkAgain") { locationIssue = validate(newBottleURL) }
             }
         }
         .padding(.vertical, 4)
-    }
-
-    /// An unwritable consent-gated volume is most likely a declined prompt, which
-    /// only Settings can undo.
-    private func showsPrivacyRecovery(for issue: BottleLocationValidation.ValidationResult) -> Bool {
-        guard case .notWritable = issue else { return false }
-        return BottleLocationValidation.isConsentGatedVolume(newBottleURL)
-    }
-
-    private func explanation(for issue: BottleLocationValidation.ValidationResult) -> String {
-        switch issue {
-        case .valid:
-            ""
-        case let .notWritable(path):
-            notWritableExplanation(path)
-        case let .missingCapability(capability, path):
-            capability.explanation(path: path)
-        case let .insufficientSpace(available, required):
-            String(localized: """
-            Not enough free space: \(ByteCountFormatter.string(fromByteCount: available, countStyle: .file)) \
-            available, \(ByteCountFormatter.string(fromByteCount: required, countStyle: .file)) needed.
-            """)
-        }
-    }
-
-    private func notWritableExplanation(_ path: String) -> String {
-        guard BottleLocationValidation.isConsentGatedVolume(newBottleURL) else {
-            return String(localized: "\(path) isn't writable. Pick another location, or fix its permissions in Finder.")
-        }
-        return String(localized: """
-        macOS is withholding access to \(path). Add Whisky Preview under Privacy & Security \u{2192} \
-        Full Disk Access with the + button, then check again. It won't be listed under Files and \
-        Folders: this build is ad-hoc signed, so each update looks like a new app to macOS.
-        """)
     }
 
     private func validate(_ url: URL) -> BottleLocationValidation.ValidationResult? {
         let result = BottleLocationValidation.validate(at: url)
         return result == .valid ? nil : result
     }
+
+    /// Nothing can re-present the consent prompt once it has been answered, so
+    /// Settings is the only way back from a refusal.
+    private static let filesAndFoldersSettingsURL = URL(
+        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_FilesAndFolders"
+    )
 
     func submit() {
         // The default location never passes through the panel, so validate again here.

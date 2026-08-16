@@ -18,7 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   runtime ships, and installs that already have the payload pick it up at
   launch without reimporting.
 
+## [3.6.1] - 2026-08-13 (App)
+
 ### Changed
+- With D3DMetal installed, the Recommended graphics backend now resolves
+  launchers to DXVK, since their Chromium-based clients cannot render on
+  D3DMetal, while the games they start still resolve to D3DMetal. Bottles
+  without D3DMetal installed behave exactly as before (#188).
 - Interrupted runtime downloads now resume where they left off and retry
   transient failures automatically instead of restarting the full archive
   from zero. Partial downloads survive quitting the app, the Retry button
@@ -30,8 +36,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   launches is materialized, so Play is snappier for games that ship many
   helper executables and bottles stop accumulating unused settings plists
   (#181).
+- Waiting for a cold Steam client no longer spawns a Wine tasklist process
+  every two seconds: a host-side process check answers the common
+  nothing-running-yet case, so cold starts stop competing with the client
+  they are waiting for (#189).
+
+### Added
+- Creating a bottle on an external or network volume now checks the location
+  up front, while the creation sheet is still open: if macOS is withholding
+  Files and Folders access, the sheet says so and offers a direct route to
+  the privacy settings instead of failing later with a cryptic prefix error.
+  The default location is checked on submit too, and creation stays disabled
+  until the location is usable (#190, #191).
+- Community translations from Crowdin for the new interrupted-setup message,
+  covering all 22 supported languages (#195).
 
 ### Fixed
+- The external-volume checks above now actually engage on disk images and
+  other removable volumes that macOS cannot place on a bus: those volumes
+  answer nil rather than false to the internal-volume query, so both the
+  consent check and the capacity fallback had classified them as internal
+  and never ran (#193).
+- Bottles on non-APFS removable drives are no longer refused as "full" when
+  the drive has plenty of space: the capacity check now falls back to the
+  standard figure on external volumes, where the purgeable-space service
+  behind the preferred figure has no backing and reports zero (#192).
+- DLL overrides now reach Wine through the prefix registry instead of the
+  WINEDLLOVERRIDES environment variable: the bottle's set goes to the prefix
+  default and the launched program's resolved set to its own AppDefaults
+  entry (helper processes like steamwebhelper.exe included). A launcher's
+  graphics backend no longer silently becomes every game's backend, and
+  per-program backend overrides now take effect instead of being masked by
+  the inherited variable (#184, #185).
+- The DLL Overrides section now lists the managed overrides of the graphics
+  backend actually in effect: a DXMT bottle shows the four entries it applies
+  at launch instead of none, and a stale legacy DXVK flag no longer credits a
+  D3DMetal bottle with overrides that are never applied (#186).
+- Program override settings now resolve Recommended before reporting: the
+  DXVK sub-controls appear for a program that resolves to DXVK, and the
+  inherited summary names the backend that actually runs instead of reading
+  "Recommended" (#187).
 - A bottle no longer shows up twice in the bottle list and `whisky list`
   when the registry holds the same path in two URL forms (with and without
   a trailing slash). The registry now compares canonical paths everywhere

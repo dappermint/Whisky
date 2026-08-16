@@ -62,11 +62,50 @@ public extension Wine {
         )
         let url = FileManager.default.temporaryDirectory
             .appending(path: "whisky-dll-overrides-\(UUID().uuidString).reg")
-        try document.write(to: url, atomically: true, encoding: .utf16LittleEndian)
+        // Wine detects a Unicode .reg by its BOM alone, and `.utf16LittleEndian`
+        // writes none — the file parses as ANSI, matches no header, and imports
+        // nothing while exiting 0. Written explicitly rather than via `.utf16`,
+        // whose BOM follows platform endianness.
+        try ("\u{FEFF}" + document).write(to: url, atomically: true, encoding: .utf16LittleEndian)
         defer { try? FileManager.default.removeItem(at: url) }
 
-        try await runWine(["regedit", url.path(percentEncoded: false)], bottle: bottle)
+        // `reg import`, not `regedit`: regedit has no silent switch, so it puts up
+        // the import confirmation and never exits.
+        try await runWine(["reg", "import", url.path(percentEncoded: false)], bottle: bottle)
         dllOverrideLogger.debug("Synced DLL overrides for \(scopes.count) scope(s) in one import")
+    }
+
+    /// Moves this launch's DLL overrides from the environment into the registry.
+    ///
+    /// Registry, not `WINEDLLOVERRIDES`: the variable is inherited by every child,
+    /// so a launcher's backend became every game's, and wine reads it before the
+    /// registry, which left `AppDefaults` entries dead while it was set.
+    ///
+    /// - Parameter applyToDescendants: When the overrides describe something this
+    ///   process will *spawn*, `AppDefaults` cannot express it — that is keyed on
+    ///   an executable whose name is not known here — so the variable stays.
+    @MainActor
+    static func applyDLLOverrides(
+        for url: URL,
+        bottle: Bottle,
+        wineEnvironment: inout [String: String],
+        applyToDescendants: Bool
+    ) async throws {
+        var scopes: [(scope: DLLOverrideScope, overrides: String)] = [
+            (scope: .bottle, overrides: constructWineEnvironment(for: bottle)["WINEDLLOVERRIDES"] ?? "")
+        ]
+
+        if !applyToDescendants {
+            let programOverrides = wineEnvironment.removeValue(forKey: "WINEDLLOVERRIDES") ?? ""
+            // Helpers need their own entry: AppDefaults is per executable and
+            // children do not inherit, so steamwebhelper.exe would otherwise fall
+            // back to the bottle default and draw nothing.
+            for executable in [url.lastPathComponent] + helperExecutables(for: url) {
+                scopes.append((scope: .program(executable), overrides: programOverrides))
+            }
+        }
+
+        try await syncDLLOverrides(bottle: bottle, scopes: scopes)
     }
 
     /// Renders a `.reg` leaving each key holding exactly `overrides`.
@@ -78,14 +117,32 @@ public extension Wine {
         for scope in scopes {
             lines.append("[-\(scope.key)]")
             lines.append("")
-            guard !scope.overrides.isEmpty else { continue }
+            let renderable = scope.overrides
+                .filter { isRenderable(dll: $0.key, mode: $0.value) }
+                .sorted { $0.key < $1.key }
+            guard !renderable.isEmpty else { continue }
             lines.append("[\(scope.key)]")
-            for (dll, mode) in scope.overrides.sorted(by: { $0.key < $1.key }) {
+            for (dll, mode) in renderable {
                 lines.append("\"\(dll)\"=\"\(mode)\"")
             }
             lines.append("")
         }
         return lines.joined(separator: "\r\n")
+    }
+
+    /// Whether an override can be rendered without corrupting the document.
+    ///
+    /// Custom overrides are user-typed, and a quote or backslash in a name would
+    /// terminate the value early and take every later scope down with it. A DLL
+    /// name is a filename and a mode is a list of known words, so anything
+    /// outside these sets could not have loaded regardless — dropping it costs
+    /// nothing and contains the blast radius to the one bad entry.
+    static func isRenderable(dll: String, mode: String) -> Bool {
+        let name = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyz0123456789._-+")
+        let modes = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyz,")
+        guard !dll.isEmpty else { return false }
+        return dll.lowercased().unicodeScalars.allSatisfy(name.contains)
+            && mode.lowercased().unicodeScalars.allSatisfy(modes.contains)
     }
 
     /// The launcher helpers that must share `url`'s DLL overrides.
