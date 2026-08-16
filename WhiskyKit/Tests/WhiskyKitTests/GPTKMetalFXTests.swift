@@ -212,33 +212,48 @@ struct GPTKMetalFXTests {
 
 @Suite("MetalFX Setting Tests")
 struct MetalFXSettingTests {
-    @Test("The setting is off by default and survives a round trip")
+    @Test("The setting is on by default and survives a round trip")
     func settingRoundTrips() throws {
         var settings = BottleSettings()
-        #expect(!settings.metalFX)
+        #expect(settings.metalFX)
 
-        settings.metalFX = true
+        settings.metalFX = false
         let decoded = try PropertyListDecoder().decode(
             BottleSettings.self, from: PropertyListEncoder().encode(settings)
         )
 
+        #expect(!decoded.metalFX)
+    }
+
+    @Test("A bottle written before the key existed picks up the new default")
+    func absentKeyDefaultsOn() throws {
+        // The graphics config is nested, so an older bottle's plist has the
+        // dictionary without the key rather than no dictionary at all.
+        let plist: [String: Any] = ["graphicsConfig": ["backend": "recommended"]]
+        let data = try PropertyListSerialization.data(
+            fromPropertyList: plist, format: .xml, options: 0
+        )
+
+        let decoded = try PropertyListDecoder().decode(BottleSettings.self, from: data)
+
         #expect(decoded.metalFX)
     }
 
-    @Test("The env var is set only when the bottle opted in, and only under D3DMetal")
+    @Test("The env var follows the setting, and is only set under D3DMetal")
     func environmentFollowsTheSetting() throws {
         var builder = EnvironmentBuilder()
         var settings = BottleSettings()
         settings.graphicsBackend = .d3dMetal
         _ = settings.populateBottleManagedLayer(builder: &builder, resolvedBackend: .d3dMetal)
-        #expect(builder.resolve().environment["D3DM_ENABLE_METALFX"] == nil)
+        #expect(builder.resolve().environment["D3DM_ENABLE_METALFX"] == "1")
 
-        settings.metalFX = true
-        var onBuilder = EnvironmentBuilder()
-        _ = settings.populateBottleManagedLayer(builder: &onBuilder, resolvedBackend: .d3dMetal)
-        #expect(onBuilder.resolve().environment["D3DM_ENABLE_METALFX"] == "1")
+        settings.metalFX = false
+        var offBuilder = EnvironmentBuilder()
+        _ = settings.populateBottleManagedLayer(builder: &offBuilder, resolvedBackend: .d3dMetal)
+        #expect(offBuilder.resolve().environment["D3DM_ENABLE_METALFX"] == nil)
 
         // DXVK never reaches D3DMetal's bridge, so the knob would be a lie
+        settings.metalFX = true
         settings.graphicsBackend = .dxvk
         var dxvkBuilder = EnvironmentBuilder()
         _ = settings.populateBottleManagedLayer(builder: &dxvkBuilder, resolvedBackend: .dxvk)
