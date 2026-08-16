@@ -8,6 +8,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Discord now sees what a bottle is running. Two switches per bottle, both off
+  by default: Whisky can publish the program it launched as your activity, and
+  games that publish their own rich presence can reach the Discord client
+  through a relay for the named pipe they expect. Neither writes anything into
+  a prefix, and the presence half needs a Discord application id supplied at
+  build time.
+- MetalFX can be enabled at all now. It is reachable only through the DLSS API,
+  which means a game calling `NVSDK_NGX_D3D12_*` in `nvngx.dll`, and the
+  payload's copy of that bridge was the one file deployment skipped, so
+  `D3DM_ENABLE_METALFX` had nothing to hook in any bottle. It is on by default
+  under D3DMetal, and only engages for a game that asks for DLSS with DLSS
+  switched on in the game's own settings.
+- Metal 4 command encoding for D3DMetal, on by default. D3DMetal checks the OS
+  version before it reads the variable and only takes that path for D3D12
+  devices, so it is inert rather than harmful on older systems and D3D11 games.
+
+### Fixed
+- DLL overrides now actually reach the prefix. The `.reg` file was written
+  without a byte order mark, which is the only thing Wine uses to recognise a
+  Unicode `.reg`, so the import matched no header and did nothing while exiting
+  successfully, and it was applied with `regedit`, which has no silent switch.
+
+### Changed
+- In sync with upstream Whisky 3.6.1, so the bottle location checks, the
+  resumable runtime downloads and the launcher DXVK resolution match what
+  upstream ships. Preview's own capability probe, which reports the first thing
+  a location cannot do that a prefix needs, is kept on top of it.
+
+### Added
 - Video in games that ask D3D12 to convert their decoded frames now plays
   correctly under D3DMetal. D3DMetal exposes no video device at all, so a
   game that decodes video itself and asks D3D12 to convert NV12 to RGB was

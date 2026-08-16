@@ -179,7 +179,7 @@ jobs:
         run: |
           set -euo pipefail
           notes="$(printf '%s\n\n%s\n' \
-            'Ad-hoc signed, not notarized. Install with the cask:' \
+            'Self-signed, not notarized. Install with the cask:' \
             '`brew install --cask dappermint/tap/whisky-preview`')"
           notes="$(printf '%s\nsha256 `%s`\n' "$notes" "$SHA")"
           if gh release view "$TAG" >/dev/null 2>&1; then
