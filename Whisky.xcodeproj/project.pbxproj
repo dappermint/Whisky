@@ -64,6 +64,7 @@
 		6E7C07C02AAF570100F6E66B /* FileOpenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E7C07BF2AAF570100F6E66B /* FileOpenView.swift */; };
 		6E95F66D2AB3EF3A00D585D1 /* WhiskyCmd in Embed WhiskyCmd */ = {isa = PBXBuildFile; fileRef = 6E70A4982A9A2197007799E9 /* WhiskyCmd */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		6EB58AC92AEACE5E00B1ED3F /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 6EB58AC82AEACE5E00B1ED3F /* Localizable.xcstrings */; };
+		C1A2B3C4E5F60601A9B0E1D8 /* WhiskyAudioTest.exe in Resources */ = {isa = PBXBuildFile; fileRef = C1A2B3C4E5F60601A9B0E1D9 /* WhiskyAudioTest.exe */; };
 		6EF557982A410599001A4F09 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EF557972A410599001A4F09 /* SetupView.swift */; };
 		6EFDF64C2AAE2DA800EF622F /* QuickLookThumbnailing.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6EFDF64B2AAE2DA800EF622F /* QuickLookThumbnailing.framework */; };
 		6EFDF64E2AAE2DA800EF622F /* Quartz.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6EFDF64D2AAE2DA800EF622F /* Quartz.framework */; };
@@ -256,6 +257,7 @@
 		6E7C07BF2AAF570100F6E66B /* FileOpenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOpenView.swift; sourceTree = "<group>"; };
 		6E899D1129CFC41D00A4A083 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6EB58AC82AEACE5E00B1ED3F /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		C1A2B3C4E5F60601A9B0E1D9 /* WhiskyAudioTest.exe */ = {isa = PBXFileReference; lastKnownFileType = file; path = Resources/WhiskyAudioTest.exe; sourceTree = "<group>"; };
 		6EF557972A410599001A4F09 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
 		6EFDF64A2AAE2DA800EF622F /* WhiskyThumbnail.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WhiskyThumbnail.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		6EFDF64B2AAE2DA800EF622F /* QuickLookThumbnailing.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickLookThumbnailing.framework; path = System/Library/Frameworks/QuickLookThumbnailing.framework; sourceTree = SDKROOT; };
@@ -512,6 +514,7 @@
 				6E40495E29CCA19C006E3F1B /* Whisky.entitlements */,
 				6E40495B29CCA19C006E3F1B /* Preview Content */,
 				6EB58AC82AEACE5E00B1ED3F /* Localizable.xcstrings */,
+				C1A2B3C4E5F60601A9B0E1D9 /* WhiskyAudioTest.exe */,
 			);
 			path = Whisky;
 			sourceTree = "<group>";
@@ -903,6 +906,7 @@
 			files = (
 				6E40495D29CCA19C006E3F1B /* Preview Assets.xcassets in Resources */,
 				6EB58AC92AEACE5E00B1ED3F /* Localizable.xcstrings in Resources */,
+				C1A2B3C4E5F60601A9B0E1D8 /* WhiskyAudioTest.exe in Resources */,
 				6E40495A29CCA19C006E3F1B /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
