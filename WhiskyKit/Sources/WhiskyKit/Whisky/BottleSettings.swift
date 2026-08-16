@@ -128,6 +128,7 @@ public struct BottleInfo: Codable, Equatable {
 /// - ``metalValidation``
 /// - ``dxrEnabled``
 /// - ``sequoiaCompatMode``
+/// - ``metal4Enabled``
 ///
 /// ### DXVK Settings
 /// - ``dxvk``
@@ -330,6 +331,16 @@ public struct BottleSettings: Codable, Equatable {
     public var sequoiaCompatMode: Bool {
         get { metalConfig.sequoiaCompatMode }
         set { metalConfig.sequoiaCompatMode = newValue }
+    }
+
+    /// Whether D3DMetal uses the Metal 4 command encoding backend.
+    ///
+    /// `D3DMDevice::MTL4OptionEnabled` checks the OS version *before* it reads
+    /// `D3DM_MTL4`, and only takes the Metal 4 path for D3D12 devices, so the
+    /// variable is inert rather than harmful on older systems and D3D11 titles.
+    public var metal4Enabled: Bool {
+        get { metalConfig.metal4Enabled }
+        set { metalConfig.metal4Enabled = newValue }
     }
 
     /// The graphics backend for this bottle.
@@ -832,6 +843,13 @@ public struct BottleSettings: Codable, Equatable {
             // happens in `Wine.applyMetalFX` at launch; this is the opt-in.
             if metalFX {
                 builder.set("D3DM_ENABLE_METALFX", "1", layer: .bottleManaged)
+            }
+
+            // `D3DMDevice::MTL4OptionEnabled` checks the OS version before it
+            // reads this and only takes the Metal 4 path for D3D12 devices, so
+            // the variable is inert rather than harmful everywhere else.
+            if metal4Enabled {
+                builder.set("D3DM_MTL4", "1", layer: .bottleManaged)
             }
 
         case .dxvk:

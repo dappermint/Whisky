@@ -336,3 +336,52 @@ struct MetalFXSettingTests {
         #expect(dxvkBuilder.resolve().environment["D3DM_ENABLE_METALFX"] == nil)
     }
 }
+
+@Suite("Metal 4 Setting Tests")
+struct Metal4SettingTests {
+    @Test("The setting is on by default and survives a round trip")
+    func settingRoundTrips() throws {
+        var settings = BottleSettings()
+        #expect(settings.metal4Enabled)
+
+        settings.metal4Enabled = false
+        let decoded = try PropertyListDecoder().decode(
+            BottleSettings.self, from: PropertyListEncoder().encode(settings)
+        )
+
+        #expect(!decoded.metal4Enabled)
+    }
+
+    @Test("A bottle written before the key existed picks up the new default")
+    func absentKeyDefaultsOn() throws {
+        let plist: [String: Any] = ["metalConfig": ["metalHud": false]]
+        let data = try PropertyListSerialization.data(
+            fromPropertyList: plist, format: .xml, options: 0
+        )
+
+        let decoded = try PropertyListDecoder().decode(BottleSettings.self, from: data)
+
+        #expect(decoded.metal4Enabled)
+    }
+
+    @Test("The env var follows the setting, and is only set under D3DMetal")
+    func environmentFollowsTheSetting() throws {
+        var builder = EnvironmentBuilder()
+        var settings = BottleSettings()
+        settings.graphicsBackend = .d3dMetal
+        _ = settings.populateBottleManagedLayer(builder: &builder, resolvedBackend: .d3dMetal)
+        #expect(builder.resolve().environment["D3DM_MTL4"] == "1")
+
+        settings.metal4Enabled = false
+        var offBuilder = EnvironmentBuilder()
+        _ = settings.populateBottleManagedLayer(builder: &offBuilder, resolvedBackend: .d3dMetal)
+        #expect(offBuilder.resolve().environment["D3DM_MTL4"] == nil)
+
+        // Metal 4 is D3DMetal's own backend, so it means nothing under DXVK
+        settings.metal4Enabled = true
+        settings.graphicsBackend = .dxvk
+        var dxvkBuilder = EnvironmentBuilder()
+        _ = settings.populateBottleManagedLayer(builder: &dxvkBuilder, resolvedBackend: .dxvk)
+        #expect(dxvkBuilder.resolve().environment["D3DM_MTL4"] == nil)
+    }
+}

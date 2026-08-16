@@ -63,13 +63,22 @@ struct GraphicsConfigSection: View {
                 runningProcessWarning
             }
 
-            // MetalFX rides on D3DMetal's DLSS bridge, so it is meaningless
-            // under any other backend rather than merely inactive.
+            // MetalFX rides on D3DMetal's DLSS bridge and Metal 4 is D3DMetal's
+            // own command-encoding backend, so both are meaningless under any
+            // other backend rather than merely inactive.
             if resolvedBackend == .d3dMetal {
                 Toggle(isOn: $bottle.settings.metalFX) {
                     VStack(alignment: .leading) {
                         Text("config.metalFX")
                         Text("config.metalFX.info")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Toggle(isOn: $bottle.settings.metal4Enabled) {
+                    VStack(alignment: .leading) {
+                        Text("config.metal4")
+                        Text("config.metal4.info")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
