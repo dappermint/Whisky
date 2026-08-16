@@ -113,5 +113,6 @@ developer_id.p12*
 # A build's Discord application id. The id belongs to whoever owns the
 # application users see, so it is supplied per build rather than committed.
 WhiskyKit/Sources/WhiskyKit/Discord/Local/client-id.txt
-Whisky/Resources/WhiskyAudioTest.exe is committed; the build script also drops one here
+# Built by scripts/build_audio_test.sh, which also drops a copy beside itself.
+# The one under Whisky/Resources is committed; this one is not.
 scripts/WhiskyAudioTest.exe
