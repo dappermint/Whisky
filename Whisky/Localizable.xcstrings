@@ -589,6 +589,12 @@
             "value" : "Analysieren"
           }
         },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyse"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -725,6 +731,12 @@
             "value" : "Wine-Absturzausgabe für Lösungsvorschläge analysieren"
           }
         },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyse Wine crash output for troubleshooting guidance"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -859,6 +871,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Letzten Lauf analysieren"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyse last run"
           }
         },
         "es" : {
@@ -6533,6 +6551,12 @@
             "value" : "Zuletzt analysiert:"
           }
         },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last analysed:"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8502,6 +8526,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Erneut analysieren"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Re-analyse"
           }
         },
         "es" : {
@@ -20458,6 +20488,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The Wine runtime (WhiskyWine) isn't installed, so the bottle can't be initialized. Run Setup to download it, then try again."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Wine runtime (WhiskyWine) isn't installed, so the bottle can't be initialised. Run Setup to download it, then try again."
           }
         },
         "es" : {
@@ -36903,6 +36939,12 @@
             "value" : "Optimized for Unity/IL2CPP games (Genshin, etc.)"
           }
         },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optimised for Unity/IL2CPP games (Genshin, etc.)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -37469,6 +37511,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Reinitializes the Wine prefix to fix missing user directories"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reinitialises the Wine prefix to fix missing user directories"
           }
         },
         "es" : {
@@ -92485,6 +92533,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The user profile directory is missing. Wine may not be properly initialized."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The user profile directory is missing. Wine may not be properly initialised."
           }
         },
         "es" : {
