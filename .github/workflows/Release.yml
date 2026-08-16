@@ -114,6 +114,22 @@ jobs:
           echo "identity=$hash" >> "$GITHUB_OUTPUT"
           echo "keychain=$keychain" >> "$GITHUB_OUTPUT"
 
+      # The id is not in the repository: it belongs to whoever owns the Discord
+      # application users see. Without the secret the build is still valid, it
+      # just reports presence unavailable and leaves the toggle disabled.
+      - name: Supply the Discord application id
+        env:
+          DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+        run: |
+          set -euo pipefail
+          target=WhiskyKit/Sources/WhiskyKit/Discord/Local/client-id.txt
+          if [ -z "${DISCORD_CLIENT_ID:-}" ]; then
+            echo "::notice::no DISCORD_CLIENT_ID secret, Discord presence ships disabled"
+            exit 0
+          fi
+          printf '%s\n' "$DISCORD_CLIENT_ID" > "$target"
+          echo "wrote $target"
+
       - name: Build
         env:
           IDENTITY: ${{ steps.signing.outputs.identity }}
