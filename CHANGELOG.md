@@ -8,6 +8,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- The app opens onto a library rather than a sidebar of bottle names. Everything
+  worth launching is there, most recently played first: programs you pinned, and
+  Steam games parsed out of the bottle. Steam games show the banner Steam already
+  cached inside the prefix, so the art arrives with nothing fetched, and anything
+  without art gets a card coloured from the icon in its own executable. A bottle
+  is one click away under Bottles, and is named on a card only when you have more
+  than one.
+- British English. Thirteen strings differ, and macOS picks it up from Language &
+  Region without anything to set in the app.
+
+### Fixed
+- The audio settings showed their own key names, so the driver picker read
+  `config.audio.driver.auto` instead of Automatic. Every string in the audio
+  feature had translations for 22 languages and no English source value. 63 keys,
+  plus 37 more across the console and program overrides that were never in the
+  catalogue at all.
+- Play Test Tone now plays a tone. The executable it runs has never been included
+  in a build, so the button ran, emitted nothing, and then asked whether you heard
+  it. The tone is also 600ms with fades now rather than a 100ms click, since a
+  click is what a broken audio path sounds like.
+
+### Changed
+- The bottle action bar reads as one control group, with Run as the only
+  prominent button rather than four that look equally important.
+
+### Added
 - Discord now sees what a bottle is running. Two switches per bottle, both off
   by default: Whisky can publish the program it launched as your activity, and
   games that publish their own rich presence can reach the Discord client
