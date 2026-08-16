@@ -60563,6 +60563,54 @@
         }
       }
     },
+    "library.launch.failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't launch"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't launch"
+          }
+        }
+      }
+    },
+    "library.launch.steamGameMissing" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam no longer lists this game as installed."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam no longer lists this game as installed."
+          }
+        }
+      }
+    },
+    "library.source.steam" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam"
+          }
+        }
+      }
+    },
     "main.createFirst" : {
       "localizations" : {
         "ar" : {

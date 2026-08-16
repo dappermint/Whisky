@@ -25,14 +25,12 @@ enum BottleStage {
     case programs
     case processes
     case gameConfigs
-    case steamLibrary
 }
 
 struct BottleView: View {
     @ObservedObject var bottle: Bottle
     @State private var path = NavigationPath()
     @State private var programLoading: Bool = false
-    @State private var hasSteamLibrary: Bool = false
     @State private var showWinetricksSheet: Bool = false
     @State private var showDuplicate: Bool = false
     @State private var toast: ToastData?
@@ -60,12 +58,6 @@ struct BottleView: View {
                         Label("tab.programs", systemImage: "list.bullet")
                     }
                     .accessibilityIdentifier("nav.installedPrograms")
-                    if hasSteamLibrary {
-                        NavigationLink(value: BottleStage.steamLibrary) {
-                            Label("tab.steamLibrary", systemImage: "gamecontroller")
-                        }
-                        .accessibilityIdentifier("nav.steamLibrary")
-                    }
                     NavigationLink(value: BottleStage.config) {
                         Label("tab.config", systemImage: "gearshape")
                     }
@@ -264,13 +256,6 @@ struct BottleView: View {
                 // Trigger a reload
                 BottleVM.shared.bottles = BottleVM.shared.bottles
             }
-            .task(id: bottle.url) {
-                // Filesystem check kept out of body evaluation
-                let bottleURL = bottle.url
-                hasSteamLibrary = await Task.detached {
-                    SteamLibrary.detectInstall(bottleURL: bottleURL) != nil
-                }.value
-            }
             .navigationDestination(for: BottleStage.self) { stage in
                 switch stage {
                 case .config:
@@ -283,8 +268,6 @@ struct BottleView: View {
                     RunningProcessesView(bottle: bottle)
                 case .gameConfigs:
                     GameConfigurationView(bottle: bottle)
-                case .steamLibrary:
-                    SteamLibraryView(bottle: bottle)
                 }
             }
             .navigationDestination(for: Program.self) { program in
