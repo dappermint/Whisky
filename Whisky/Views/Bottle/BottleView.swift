@@ -95,99 +95,110 @@ struct BottleView: View {
                 .scrollDisabled(true)
             }
             .bottomBar {
-                HStack {
-                    Spacer()
-                    Button("button.cDrive") {
-                        bottle.openCDrive()
-                    }
-                    .accessibilityIdentifier("bottle.openCDrive")
-                    Button("button.terminal") {
-                        bottle.openTerminal()
-                    }
-                    .accessibilityIdentifier("bottle.openTerminal")
-                    Button("button.winetricks") {
-                        showWinetricksSheet.toggle()
-                    }
-                    .accessibilityIdentifier("bottle.openWinetricks")
-                    Button("button.run") {
-                        let panel = NSOpenPanel()
-                        panel.allowsMultipleSelection = false
-                        panel.canChooseDirectories = false
-                        panel.canChooseFiles = true
-                        panel.allowedContentTypes = [
-                            UTType.exe,
-                            UTType(exportedAs: "com.microsoft.msi-installer"),
-                            UTType(exportedAs: "com.microsoft.bat"),
-                            UTType(exportedAs: "com.microsoft.msix-package"),
-                            UTType(exportedAs: "com.microsoft.appx-package"),
-                            UTType(exportedAs: "com.microsoft.application-reference"),
-                            UTType(exportedAs: "com.microsoft.windows-internet-shortcut")
-                        ]
-                        panel.directoryURL = bottle.url.appending(path: "drive_c")
-                        panel.begin { result in
-                            programLoading = true
-                            Task(priority: .userInitiated) {
-                                if result == .OK {
-                                    if let url = panel.urls.first {
-                                        do {
-                                            // Auto-detect launcher and apply fixes if compatibility mode enabled
-                                            // This completes synchronously on MainActor, ensuring settings are
-                                            // persisted before Wine.runProgram() reads them
-                                            LauncherFixes.detectAndApply(from: url, for: bottle)
+                // One container so the four capsules read as a single control
+                // group and blend when they are close, rather than four
+                // separate slabs of glass sitting next to each other.
+                GlassEffectContainer(spacing: 8) {
+                    HStack {
+                        Spacer()
+                        Button("button.cDrive") {
+                            bottle.openCDrive()
+                        }
+                        .buttonStyle(.glass)
+                        .accessibilityIdentifier("bottle.openCDrive")
+                        Button("button.terminal") {
+                            bottle.openTerminal()
+                        }
+                        .buttonStyle(.glass)
+                        .accessibilityIdentifier("bottle.openTerminal")
+                        Button("button.winetricks") {
+                            showWinetricksSheet.toggle()
+                        }
+                        .buttonStyle(.glass)
+                        .accessibilityIdentifier("bottle.openWinetricks")
+                        Button("button.run") {
+                            let panel = NSOpenPanel()
+                            panel.allowsMultipleSelection = false
+                            panel.canChooseDirectories = false
+                            panel.canChooseFiles = true
+                            panel.allowedContentTypes = [
+                                UTType.exe,
+                                UTType(exportedAs: "com.microsoft.msi-installer"),
+                                UTType(exportedAs: "com.microsoft.bat"),
+                                UTType(exportedAs: "com.microsoft.msix-package"),
+                                UTType(exportedAs: "com.microsoft.appx-package"),
+                                UTType(exportedAs: "com.microsoft.application-reference"),
+                                UTType(exportedAs: "com.microsoft.windows-internet-shortcut")
+                            ]
+                            panel.directoryURL = bottle.url.appending(path: "drive_c")
+                            panel.begin { result in
+                                programLoading = true
+                                Task(priority: .userInitiated) {
+                                    if result == .OK {
+                                        if let url = panel.urls.first {
+                                            do {
+                                                // Auto-detect launcher and apply fixes if compatibility mode enabled
+                                                // This completes synchronously on MainActor, ensuring settings are
+                                                // persisted before Wine.runProgram() reads them
+                                                LauncherFixes.detectAndApply(from: url, for: bottle)
 
-                                            Telemetry.capture(.firstProgramLaunchAttempted)
-                                            if url.pathExtension == "bat" {
-                                                try await Wine.runBatchFile(url: url, bottle: bottle)
-                                            } else {
-                                                try await Wine.runProgram(at: url, bottle: bottle)
-                                            }
-                                            await MainActor.run {
-                                                withAnimation {
-                                                    toast = ToastData(
-                                                        message: String(
-                                                            localized: "status.launched \(url.lastPathComponent)"
-                                                        ),
-                                                        style: .success
-                                                    )
+                                                Telemetry.capture(.firstProgramLaunchAttempted)
+                                                if url.pathExtension == "bat" {
+                                                    try await Wine.runBatchFile(url: url, bottle: bottle)
+                                                } else {
+                                                    try await Wine.runProgram(at: url, bottle: bottle)
+                                                }
+                                                await MainActor.run {
+                                                    withAnimation {
+                                                        toast = ToastData(
+                                                            message: String(
+                                                                localized: "status.launched \(url.lastPathComponent)"
+                                                            ),
+                                                            style: .success
+                                                        )
+                                                    }
+                                                }
+                                            } catch {
+                                                let errDesc = error.localizedDescription
+                                                await MainActor.run {
+                                                    withAnimation {
+                                                        toast = ToastData(
+                                                            message: String(
+                                                                localized: "status.launchFailed \(errDesc)"
+                                                            ),
+                                                            style: .error,
+                                                            autoDismiss: false
+                                                        )
+                                                    }
                                                 }
                                             }
-                                        } catch {
-                                            let errDesc = error.localizedDescription
                                             await MainActor.run {
-                                                withAnimation {
-                                                    toast = ToastData(
-                                                        message: String(
-                                                            localized: "status.launchFailed \(errDesc)"
-                                                        ),
-                                                        style: .error,
-                                                        autoDismiss: false
-                                                    )
-                                                }
+                                                programLoading = false
                                             }
                                         }
+                                    } else {
                                         await MainActor.run {
                                             programLoading = false
                                         }
                                     }
-                                } else {
-                                    await MainActor.run {
-                                        programLoading = false
-                                    }
+                                    await updateStartMenu()
                                 }
-                                await updateStartMenu()
                             }
                         }
+                        // Running a program is the reason the app exists, so it is
+                        // the only prominent control on this bar.
+                        .buttonStyle(.glassProminent)
+                        .accessibilityIdentifier("bottle.runProgram")
+                        .disabled(programLoading)
+                        if programLoading {
+                            Spacer()
+                                .frame(width: 10)
+                            ProgressView()
+                                .controlSize(.small)
+                        }
                     }
-                    .accessibilityIdentifier("bottle.runProgram")
-                    .disabled(programLoading)
-                    if programLoading {
-                        Spacer()
-                            .frame(width: 10)
-                        ProgressView()
-                            .controlSize(.small)
-                    }
+                    .padding()
                 }
-                .padding()
             }
             .task {
                 await updateStartMenu()
