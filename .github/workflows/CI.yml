@@ -70,6 +70,23 @@ jobs:
             exit 1
           }
 
+  # A partial en-GB is worse than none: macOS picks one localization per process
+  # and renders the raw key for anything missing from it, so a single string
+  # added without regenerating shows `config.audio.driver.auto` to every British
+  # user rather than falling back to en.
+  localization:
+    name: Localization
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check en-GB covers every string
+        run: |
+          ./scripts/british-english.py --check || {
+            echo ""
+            echo "Run ./scripts/british-english.py locally and commit the result."
+            exit 1
+          }
+
   # Detects which areas a PR touches so macOS jobs can be skipped when they
   # can't be affected. Runs on every event; the outputs are only consulted for
   # pull requests (pushes to main always run everything).
