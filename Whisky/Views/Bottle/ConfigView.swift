@@ -86,7 +86,11 @@ struct ConfigView: View {
                 onRetryRetinaMode: loadRetinaMode,
                 onRetryDpi: loadDpi
             )
-            LauncherConfigSection(bottle: bottle, isExpanded: $launcherSectionExpanded)
+            LauncherConfigSection(
+                bottle: bottle,
+                isExpanded: $launcherSectionExpanded,
+                onViewDiagnostics: loadLatestDiagnosisAndView
+            )
             InputConfigSection(bottle: bottle, isExpanded: $inputSectionExpanded)
             GraphicsConfigSection(bottle: bottle)
             AudioConfigSection(bottle: bottle)

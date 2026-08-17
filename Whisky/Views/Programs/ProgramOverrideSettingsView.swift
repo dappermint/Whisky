@@ -39,6 +39,7 @@ struct ProgramOverrideSettingsView: View {
     @State private var gameMatch: MatchResult?
     @State private var showGameConfigDetail: Bool = false
     @State private var recommendedDependencies: [DependencyDefinition] = []
+    @State private var dependencyToInstall: DependencyDefinition?
 
     var body: some View {
         dependencyBadgeSection
@@ -76,6 +77,10 @@ struct ProgramOverrideSettingsView: View {
                     )
                     .frame(minWidth: 600, minHeight: 400)
                 }
+            }
+            .sheet(item: $dependencyToInstall) { definition in
+                DependencyInstallSheet(definition: definition, bottle: bottle)
+                    .frame(minWidth: 500, minHeight: 400)
             }
     }
 
@@ -164,10 +169,7 @@ struct ProgramOverrideSettingsView: View {
                             .font(.callout)
                         Spacer()
                         Button(String(localized: "dependency.install")) {
-                            NotificationCenter.default.post(
-                                name: .openDependenciesSection,
-                                object: nil
-                            )
+                            dependencyToInstall = definition
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(.orange)
@@ -894,10 +896,3 @@ struct ProgramOverrideSettingsView: View {
 }
 
 // swiftlint:enable type_body_length
-
-extension Notification.Name {
-    /// Posted to navigate to the Dependencies section in ConfigView.
-    static let openDependenciesSection = Notification.Name(
-        "com.franke.Whisky.openDependenciesSection"
-    )
-}
