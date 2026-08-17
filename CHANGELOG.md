@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Library recency reflects launches started in Whisky rather than reading Steam's
+  manifest dates, which carried over playtime from other machines or external sessions.
 - Steam games still read "Never run" in 2026.8.8. Recording launches only fills
   in from the build that started doing it, so everything already installed had
   nothing to show. Steam has been writing a last-played time into each game's
