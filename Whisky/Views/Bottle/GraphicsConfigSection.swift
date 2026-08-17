@@ -129,7 +129,7 @@ struct GraphicsConfigSection: View {
                     bottleURL: bottle.url
                 )
 
-                // Metal settings subsection (migrated from MetalConfigSection)
+                // Metal settings subsection
                 VStack(alignment: .leading, spacing: 8) {
                     Text("config.metal.title")
                         .font(.headline)
