@@ -203,6 +203,9 @@ final class BottleVM: ObservableObject {
             createdBottle.saveBottleSettings()
 
             try persistBottleCreation(request: request)
+            // Clear before the reload: loadBottles keeps in-flight instances alive by
+            // url, so a bottle still marked in-flight here spins until the app restarts.
+            createdBottle.inFlight = false
             loadBottles()
             Telemetry.capture(.firstBottleCreated)
         } catch {
