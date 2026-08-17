@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Steam games still read "Never run" in 2026.8.8. Recording launches only fills
+  in from the build that started doing it, so everything already installed had
+  nothing to show. Steam has been writing a last-played time into each game's
+  manifest all along, including for sessions started inside the client, so that
+  is where the time comes from now and the history you already have shows up.
+- A focused library card drew two rings, a rounded one following the card and a
+  squarer one outside it.
+
+### Fixed
 - Steam games in the library always read "Never run", and the Steam entry took
   the credit for every launch. A Steam game starts by running the client with
   `-applaunch`, so the run log belonged to the client rather than to the game.
