@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- A new bottle is usable the moment it finishes. The spinner beside its name kept
+  running after creation had completed and only a relaunch cleared it.
 - Library recency reflects launches started in Whisky rather than reading Steam's
   manifest dates, which carried over playtime from other machines or external sessions.
 - Steam games still read "Never run" in 2026.8.8. Recording launches only fills
