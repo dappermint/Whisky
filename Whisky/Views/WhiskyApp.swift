@@ -81,7 +81,9 @@ struct WhiskyApp: App {
     var body: some Scene {
         WindowGroup(id: Self.mainWindowID) {
             ContentView(showSetup: $showSetup)
-                .frame(minWidth: ViewWidth.large, minHeight: 316)
+                // Wide enough for two columns of library cards next to the
+                // sidebar. At 600 the grid could only ever draw one.
+                .frame(minWidth: ViewWidth.window, minHeight: 316)
                 .environmentObject(BottleVM.shared)
                 .onAppear {
                     NSWindow.allowsAutomaticWindowTabbing = false

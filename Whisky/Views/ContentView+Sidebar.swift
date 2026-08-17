@@ -34,7 +34,7 @@ extension ContentView {
                 // than being the whole sidebar. With one bottle this is the row
                 // that reaches its config; with several it is also the switcher.
                 Section("sidebar.bottles") {
-                    ForEach(filteredBottles) { bottle in
+                    ForEach(sortedBottles) { bottle in
                         Group {
                             if bottle.inFlight {
                                 HStack {
@@ -76,10 +76,11 @@ extension ContentView {
                 }
             }
             .animation(.default, value: bottleVM.bottles)
-            .animation(.default, value: bottleFilter)
             .listStyle(.sidebar)
             .accessibilityIdentifier("bottleSidebar")
-            .searchable(text: $bottleFilter, placement: .sidebar)
+            // No search field here. The library has one, and two fields forty
+            // points apart searching different things (bottles here, programs
+            // there) is a choice nobody should have to make to find a game.
             .onChange(of: newlyCreatedBottleURL) { _, url in
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     selected = url
@@ -119,7 +120,7 @@ extension ContentView {
                     .id(bottle.url)
             }
         } else if bottleVM.countActive() > 0 {
-            LibraryView(selectedBottle: $selected)
+            LibraryView(selectedBottle: $selected, refresh: $triggerRefresh)
         } else {
             if bottleVM.bottles.isEmpty || bottleVM.countActive() == 0, bottlesLoaded {
                 VStack {
@@ -140,15 +141,8 @@ extension ContentView {
         }
     }
 
-    var filteredBottles: [Bottle] {
-        if bottleFilter.isEmpty {
-            bottleVM.bottles
-                .sorted()
-        } else {
-            bottleVM.bottles
-                .filter { $0.settings.name.localizedCaseInsensitiveContains(bottleFilter) }
-                .sorted()
-        }
+    var sortedBottles: [Bottle] {
+        bottleVM.bottles.sorted()
     }
 }
 

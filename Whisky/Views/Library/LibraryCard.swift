@@ -25,6 +25,16 @@ extension Color {
     }
 }
 
+/// Where an entry is in a launch.
+enum LibraryEntryState: Equatable {
+    /// Not started, or started and already exited.
+    case idle
+    /// Whisky has been asked to start it and Wine has not put a window up yet.
+    case launching
+    /// It has a process of its own in ``ProcessRegistry``.
+    case running
+}
+
 /// One library entry, coloured by its own icon.
 ///
 /// Landscape rather than the portrait box art other launchers use, because they
@@ -38,34 +48,61 @@ struct LibraryCard: View {
     /// the prefix is plumbing and naming it on every card is noise.
     let bottleName: String?
     let lastPlayed: Date?
+    let state: LibraryEntryState
     let launch: () -> Void
 
     @State private var icon: Image?
     @State private var artwork: Image?
     @State private var palette: IconPalette = .neutral
     @State private var isHovering = false
+    @FocusState private var isFocused: Bool
 
+    /// Both stops are opaque. A gradient that fades towards transparent
+    /// composites against the window, which is near-white in light mode, and
+    /// the white label on top of that corner falls to about 2:1 contrast.
     private var backdrop: Color { Color(palette.deepened()) }
+    private var backdropDeep: Color { Color(palette.deepened(toLuminance: 0.07)) }
+
+    /// Taken from the palette rather than hardcoded, so the label cannot end up
+    /// the same lightness as what is behind it if the deepening target moves.
+    private var foreground: Color {
+        palette.deepened().prefersLightForeground ? .white : .black
+    }
+
+    /// A launcher is named by what it is. A pin takes its name from the
+    /// executable, which is how the Steam client ends up on screen as "steam".
+    private var title: String { item.launcher?.displayName ?? item.name }
 
     var body: some View {
         Button(action: launch) {
             card
         }
         .buttonStyle(.plain)
+        .focusable()
+        .focused($isFocused)
+        .onKeyPress(.return) {
+            launch()
+            return .handled
+        }
         .onHover { hovering in
             withAnimation(.easeOut(duration: 0.16)) { isHovering = hovering }
         }
         .task(id: item.id) {
             await loadIcon()
         }
-        .accessibilityLabel(item.name)
+        .accessibilityLabel(title)
+        .accessibilityValue(Text(subtitle))
         .accessibilityHint(Text("library.card.hint"))
     }
+
+    /// Hover is a mouse-only signal, so anything shown only on hover does not
+    /// exist for somebody on the keyboard.
+    private var isActive: Bool { isHovering || isFocused }
 
     private var card: some View {
         ZStack(alignment: .topLeading) {
             LinearGradient(
-                colors: [backdrop, backdrop.opacity(0.45)],
+                colors: [backdrop, backdropDeep],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -102,16 +139,10 @@ struct LibraryCard: View {
                         iconView
                     }
                     Spacer()
-                    if isHovering {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 13))
-                            .frame(width: 30, height: 30)
-                            .glassEffect(.regular.interactive(), in: .circle)
-                            .transition(.opacity.combined(with: .scale))
-                    }
+                    statusView
                 }
                 Spacer(minLength: 8)
-                Text(item.name)
+                Text(title)
                     .font(.headline)
                     .lineLimit(1)
                     // Tail, not middle: a game's name is recognisable from its
@@ -120,20 +151,58 @@ struct LibraryCard: View {
                     .truncationMode(.tail)
                 Text(subtitle)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(foreground.opacity(0.7))
                     .lineLimit(1)
             }
             .padding(14)
         }
-        .foregroundStyle(.white)
+        // Artwork brings its own scrim, so a card showing art is always dark
+        // under the label whatever the sampled palette says.
+        .foregroundStyle(artwork == nil ? foreground : .white)
         .frame(height: 132)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(.white.opacity(isHovering ? 0.22 : 0.08), lineWidth: 1)
+                .strokeBorder(.white.opacity(isActive ? 0.22 : 0.08), lineWidth: 1)
         }
-        .shadow(color: .black.opacity(isHovering ? 0.28 : 0.16), radius: isHovering ? 10 : 5, y: 3)
-        .scaleEffect(isHovering ? 1.015 : 1)
+        .overlay {
+            if isFocused {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Color.accentColor, lineWidth: 3)
+            }
+        }
+        .shadow(color: .black.opacity(isActive ? 0.28 : 0.16), radius: isActive ? 10 : 5, y: 3)
+        .scaleEffect(isActive ? 1.015 : 1)
+    }
+
+    /// The top-right corner: what it is doing, or the offer to start it.
+    @ViewBuilder
+    private var statusView: some View {
+        switch state {
+        case .launching:
+            ProgressView()
+                .controlSize(.small)
+                .frame(width: 30, height: 30)
+                .glassEffect(.regular, in: .circle)
+                .help("library.card.launching")
+        case .running:
+            Label("library.card.running", systemImage: "circle.fill")
+                .labelStyle(.titleAndIcon)
+                .font(.caption2)
+                .imageScale(.small)
+                .foregroundStyle(.green)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .glassEffect(.regular, in: .capsule)
+        case .idle:
+            if isActive {
+                Image(systemName: "play.fill")
+                    .font(.system(size: 13))
+                    .frame(width: 30, height: 30)
+                    .glassEffect(.regular.interactive(), in: .circle)
+                    .transition(.opacity.combined(with: .scale))
+            }
+        }
     }
 
     @ViewBuilder
@@ -154,6 +223,9 @@ struct LibraryCard: View {
     /// is here at all, and a pin needs no explanation.
     private var subtitle: String {
         var parts: [String] = []
+        if item.isLauncher {
+            parts.append(String(localized: "library.card.launcher"))
+        }
         if item.source == .steam {
             parts.append(String(localized: "library.source.steam"))
         }
@@ -168,20 +240,23 @@ struct LibraryCard: View {
         return parts.joined(separator: " · ")
     }
 
+    /// Decoding and palette sampling both happen inside ``IconCache``, which is
+    /// where the reasoning about repeating them lives.
     private func loadIcon() async {
-        if let artworkURL = item.artworkURL, let image = NSImage(contentsOf: artworkURL) {
-            artwork = Image(nsImage: image)
+        if let artworkURL = item.artworkURL,
+           let sampled = await IconCache.shared.sampledArtwork(for: artworkURL) {
+            artwork = Image(nsImage: sampled.image)
             // Still sampled: the border and the hover glow pick up the art's own
             // colour, so a card reads as one object rather than art in a frame.
-            palette = IconPalette.palette(for: image)
+            palette = sampled.palette
             return
         }
         guard let iconURL = item.iconURL else {
             palette = .neutral
             return
         }
-        let image = await IconCache.shared.iconOrFallback(for: iconURL)
-        palette = IconPalette.palette(for: image)
-        icon = Image(nsImage: image)
+        let sampled = await IconCache.shared.sampledIcon(for: iconURL)
+        palette = sampled.palette
+        icon = Image(nsImage: sampled.image)
     }
 }

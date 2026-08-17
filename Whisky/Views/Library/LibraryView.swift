@@ -16,6 +16,7 @@
 //  If not, see https://www.gnu.org/licenses/.
 //
 
+import AppKit
 import SwiftUI
 import WhiskyKit
 
@@ -31,21 +32,34 @@ import WhiskyKit
 struct LibraryView: View {
     @EnvironmentObject var bottleVM: BottleVM
     @Binding var selectedBottle: URL?
+    /// Toggled by the toolbar's refresh button. Folded into the reload trigger
+    /// because the bottle list is unchanged by a refresh, so watching only that
+    /// left the button spinning without rebuilding anything.
+    @Binding var refresh: Bool
 
+    @AppStorage("librarySort") private var sort: LibrarySort = .recent
+
+    @StateObject private var model = LibraryModel()
     @State private var search: String = ""
-    @State private var entries: [Row] = []
-    @State private var launchError: String?
 
     private var bottles: [Bottle] { bottleVM.bottles.filter(\.isAvailable) }
 
-    private var visible: [Row] {
-        guard !search.isEmpty else { return entries }
-        return entries.filter { $0.item.name.localizedCaseInsensitiveContains(search) }
+    private var visible: [LibraryRow] {
+        guard !search.isEmpty else { return model.rows }
+        return model.rows.filter { $0.item.name.localizedCaseInsensitiveContains(search) }
+    }
+
+    /// Every input that changes what the grid should contain. Pins live in
+    /// bottle settings, so a program pinned in the bottle screen shows up here
+    /// without a relaunch.
+    private var reloadTrigger: String {
+        let pins = bottles.flatMap { $0.settings.pins.map(\.name) }
+        return (bottles.map(\.url.path) + pins + ["\(refresh)"]).joined(separator: "\u{1F}")
     }
 
     var body: some View {
         Group {
-            if entries.isEmpty {
+            if model.rows.isEmpty {
                 emptyState
             } else {
                 grid
@@ -53,37 +67,96 @@ struct LibraryView: View {
         }
         .navigationTitle("library.title")
         .searchable(text: $search, prompt: Text("library.search"))
-        .task(id: bottles.map(\.url)) {
-            await reload()
+        .toolbar { sortMenu }
+        .toast($model.toast)
+        .task(id: reloadTrigger) {
+            await model.reload(bottles: bottles)
         }
-        .alert("library.launch.failed", isPresented: .constant(launchError != nil)) {
-            Button("button.ok") { launchError = nil }
+        .onChange(of: sort, initial: true) {
+            model.sort = sort
+        }
+        .onDisappear {
+            model.stopTracking()
+        }
+        .alert(
+            "library.launch.failed",
+            isPresented: Binding(
+                get: { model.launchError != nil },
+                set: { if !$0 { model.launchError = nil } }
+            )
+        ) {
+            Button("button.ok") { model.launchError = nil }
         } message: {
-            Text(launchError ?? "")
+            Text(model.launchError ?? "")
+        }
+    }
+
+    private var sortMenu: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Menu {
+                Picker("library.sort", selection: $sort) {
+                    ForEach(LibrarySort.allCases) { option in
+                        Text(option.label).tag(option)
+                    }
+                }
+                .pickerStyle(.inline)
+            } label: {
+                Label("library.sort", systemImage: "arrow.up.arrow.down")
+            }
+            .accessibilityIdentifier("library.sort")
         }
     }
 
     private var grid: some View {
         ScrollView {
             LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 220, maximum: 320), spacing: 14)],
+                // 180 rather than 220 so two columns fit at the window's own
+                // minimum width, where the sidebar leaves about 330pt: one
+                // column of landscape cards is a list with wasted space.
+                columns: [GridItem(.adaptive(minimum: 180, maximum: 320), spacing: 14)],
                 spacing: 14
             ) {
-                ForEach(visible) { entry in
+                ForEach(visible) { row in
                     LibraryCard(
-                        item: entry.item,
-                        bottleName: entry.bottleName,
-                        lastPlayed: entry.lastPlayed,
-                        launch: { launch(entry) }
+                        item: row.item,
+                        bottleName: row.bottleName,
+                        lastPlayed: row.lastPlayed,
+                        state: model.state(for: row.item),
+                        launch: { model.launch(row, bottles: bottles) }
                     )
-                    .contextMenu {
-                        Button("library.card.configure") {
-                            selectedBottle = entry.item.bottleURL
-                        }
-                    }
+                    .contextMenu { menu(for: row) }
                 }
             }
             .padding(18)
+        }
+    }
+
+    @ViewBuilder
+    private func menu(for row: LibraryRow) -> some View {
+        Button("button.run") { model.launch(row, bottles: bottles) }
+        if model.state(for: row.item) == .running {
+            Button("library.card.stop") { model.stop(row, bottles: bottles) }
+        }
+        Divider()
+        if case let .program(url) = row.item.launch {
+            Button("button.showInFinder") {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            }
+            Button("library.card.unpin", role: .destructive) { unpin(url, in: row.item.bottleURL) }
+        }
+        // Per-program settings live inside the bottle's own navigation stack,
+        // which the library cannot push onto, so this is as close as the menu
+        // gets without a deep link into it.
+        Button("library.card.configure") {
+            selectedBottle = row.item.bottleURL
+        }
+    }
+
+    private func unpin(_ url: URL, in bottleURL: URL) {
+        guard let bottle = bottles.first(where: { $0.url == bottleURL }) else { return }
+        bottle.settings.pins.removeAll { $0.url == url }
+        if let program = bottle.programs.first(where: { $0.url == url }) {
+            program.pinned = false
         }
     }
 
@@ -92,90 +165,11 @@ struct LibraryView: View {
             Label("library.empty.title", systemImage: "square.grid.2x2")
         } description: {
             Text(bottles.isEmpty ? "library.empty.noBottle" : "library.empty.noPrograms")
-        }
-    }
-
-    private func launch(_ entry: Row) {
-        guard let bottle = bottles.first(where: { $0.url == entry.item.bottleURL }) else { return }
-
-        switch entry.item.launch {
-        case let .program(url):
-            // Through the bottle's own program list where possible, so the launch
-            // picks up that program's overrides rather than only the bottle's.
-            if let program = bottle.programs.first(where: { $0.url == url }) {
-                program.run()
-            } else {
-                Task {
-                    do {
-                        try await Wine.runProgram(at: url, bottle: bottle)
-                    } catch {
-                        launchError = error.localizedDescription
-                    }
-                }
-            }
-        case let .steam(appID):
-            let games = SteamLibrary.enumerate(bottleURL: bottle.url)
-            guard let game = games.first(where: { $0.appId == appID }) else {
-                launchError = String(localized: "library.launch.steamGameMissing")
-                return
-            }
-            SteamClientOrchestrator(bottle: bottle).launch(game)
-        }
-    }
-
-    /// Rebuilt in one pass rather than per card: enumerating Steam walks
-    /// libraryfolders.vdf and every run log lookup is a plist read, so doing it
-    /// inside a card turns scrolling into disk traffic.
-    private func reload() async {
-        var built: [Row] = []
-        let showBottleName = bottles.count > 1
-
-        for bottle in bottles {
-            let url = bottle.url
-            // Pins come straight from settings, which is a main-actor read.
-            // Steam is the part that walks the filesystem, so only that goes
-            // off the main actor, and it needs nothing but the bottle URL.
-            let pinned = PinnedLibrarySource.items(inBottleAt: url, settings: bottle.settings)
-            let steam = await Task.detached { SteamLibrarySource.entries(inBottleAt: url) }.value
-            let items = LibraryCatalogue.merge([pinned, steam])
-
-            for item in items {
-                built.append(
-                    Row(
-                        item: item,
-                        bottleName: showBottleName ? bottle.settings.name : nil,
-                        lastPlayed: lastPlayed(for: item, in: bottle.url)
-                    )
-                )
-            }
-        }
-
-        entries = built.sorted { first, second in
-            switch (first.lastPlayed, second.lastPlayed) {
-            case let (lhs?, rhs?):
-                lhs > rhs
-            case (_?, nil):
-                true
-            case (nil, _?):
-                false
-            case (nil, nil):
-                first.item.name.localizedStandardCompare(second.item.name) == .orderedAscending
+        } actions: {
+            if let first = bottles.first {
+                Button("library.empty.pinHint") { selectedBottle = first.url }
+                    .buttonStyle(.borderedProminent)
             }
         }
     }
-
-    private func lastPlayed(for item: LibraryEntry, in bottleURL: URL) -> Date? {
-        guard case let .program(url) = item.launch else { return nil }
-        return RunLogStore.load(for: url.lastPathComponent, in: bottleURL).entries.map(\.startTime).max()
-    }
-}
-
-/// A library entry plus what this screen needs to draw it. Private because
-/// bottleName and lastPlayed are presentation, not part of the catalogue.
-private struct Row: Identifiable {
-    let item: LibraryEntry
-    let bottleName: String?
-    let lastPlayed: Date?
-
-    var id: String { item.id }
 }
