@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Steam games in the library always read "Never run", and the Steam entry took
+  the credit for every launch. A Steam game starts by running the client with
+  `-applaunch`, so the run log belonged to the client rather than to the game.
+  Launches are recorded per game now, which also means "most recently played
+  first" sorts the way it says it does.
+- Refresh rebuilds the library. It reloaded only when the set of bottles changed,
+  so a game installed in Steam or a program pinned in a bottle stayed invisible
+  until the app was restarted, while the button spun as though something had
+  happened.
+- Starting something from the library shows that it is starting. A card carries a
+  spinner from the click and a badge while the game is running, rather than
+  twenty silent seconds while Wine brings a window up.
+- Card text in light mode. The backdrop faded towards transparent, so the corner
+  holding the name composited against the window and left white text on something
+  close to white.
+- The same Steam game installed in two bottles appeared as two cards sharing one
+  identity, which had them swapping artwork.
+- The warning badge on a bottle in the sidebar is a button. It means the prefix
+  still has a wineserver running, and it now stops it instead of only saying so.
+
+### Added
+- The library sorts by recency, name or bottle, and a card has a menu: run it,
+  stop it, show it in Finder, remove the pin. Cards take keyboard focus and start
+  on return, so the play button is not mouse-only.
+- Storefront clients are labelled as launchers and sit below the games, named for
+  what they are rather than for their executable, so the Steam client stops
+  appearing as `steam`.
+
+### Changed
+- The sidebar's search field is gone. The library has one, and two fields side by
+  side searching different things is a choice nobody should have to make to find
+  a game.
+- Cards are narrower and the window is wider at its minimum, so two columns fit
+  at the smallest size the window can take.
+- Pins in the bottle screen start on a single click, the same as a library card.
+- Scrolling the library no longer re-reads Steam's manifests or re-decodes every
+  banner, both of which happened on each pass.
+
 ### Added
 - The app opens onto a library rather than a sidebar of bottle names. Everything
   worth launching is there, most recently played first: programs you pinned, and
