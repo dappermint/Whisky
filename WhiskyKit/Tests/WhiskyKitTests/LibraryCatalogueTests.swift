@@ -133,4 +133,49 @@ struct LibraryCatalogueTests {
         #expect(decoded == .steam)
         #expect(decoded.rawValue == "steam")
     }
+
+    @Test("The same Steam game in two bottles gets two ids, not one")
+    func steamIDsAreScopedToTheirBottle() {
+        // Two rows sharing an id inside one ForEach breaks the grid's diffing,
+        // and duplicating a bottle to test a runtime is routine.
+        let first = URL(fileURLWithPath: "/tmp/whisky-library-test/One")
+        let second = URL(fileURLWithPath: "/tmp/whisky-library-test/Two")
+
+        let ids = [first, second].map { "steam:\($0.path(percentEncoded: false)):440" }
+
+        #expect(Set(ids).count == 2)
+    }
+
+    @Test("A pinned storefront client is marked as a launcher, a game is not")
+    func pinsDetectLaunchers() throws {
+        var (url, settings) = bottle()
+        settings.pins = [
+            pin("steam", "/tmp/whisky-library-test/Bottle/drive_c/Program Files (x86)/Steam/steam.exe"),
+            pin("Ready or Not", "/tmp/whisky-library-test/Bottle/drive_c/RoN/ReadyOrNot.exe")
+        ]
+
+        let items = PinnedLibrarySource.items(inBottleAt: url, settings: settings)
+        let client = try #require(items.first { $0.name == "steam" })
+        let game = try #require(items.first { $0.name == "Ready or Not" })
+
+        #expect(client.isLauncher)
+        #expect(client.launcher == .steam)
+        #expect(!game.isLauncher)
+    }
+
+    @Test("A game inside a Steam library is not mistaken for the client")
+    func steamLibraryGamesAreNotLaunchers() throws {
+        var (url, settings) = bottle()
+        settings.pins = [
+            pin(
+                "Ready or Not",
+                "/tmp/whisky-library-test/Bottle/drive_c/Program Files (x86)/Steam/"
+                    + "steamapps/common/Ready Or Not/ReadyOrNot.exe"
+            )
+        ]
+
+        let item = try #require(PinnedLibrarySource.items(inBottleAt: url, settings: settings).first)
+
+        #expect(!item.isLauncher)
+    }
 }

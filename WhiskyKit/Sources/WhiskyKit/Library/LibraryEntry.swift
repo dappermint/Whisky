@@ -60,6 +60,14 @@ public struct LibraryEntry: Identifiable, Hashable, Sendable {
     public let bottleURL: URL
     public let source: LibrarySourceID
     public let launch: Launch
+    /// Whether this entry is a storefront client rather than a game.
+    ///
+    /// A launcher is worth keeping in the library, since it is how you reach an
+    /// account, a store and an update. It is not what somebody scanning the grid
+    /// is looking for, so it is labelled and sorted below the games.
+    public let launcher: LauncherType?
+
+    public var isLauncher: Bool { launcher != nil }
 
     public init(
         id: String,
@@ -68,7 +76,8 @@ public struct LibraryEntry: Identifiable, Hashable, Sendable {
         artworkURL: URL? = nil,
         bottleURL: URL,
         source: LibrarySourceID,
-        launch: Launch
+        launch: Launch,
+        launcher: LauncherType? = nil
     ) {
         self.id = id
         self.name = name
@@ -77,6 +86,7 @@ public struct LibraryEntry: Identifiable, Hashable, Sendable {
         self.bottleURL = bottleURL
         self.source = source
         self.launch = launch
+        self.launcher = launcher
     }
 }
 
@@ -102,7 +112,11 @@ public enum PinnedLibrarySource: LibrarySource {
                 iconURL: programURL,
                 bottleURL: url,
                 source: id,
-                launch: .program(programURL)
+                launch: .program(programURL),
+                // The app's existing definition of a launcher, reused rather
+                // than re-guessed: it is a pure string match, so this stays a
+                // settings read with nothing touching disk.
+                launcher: LauncherType.detect(from: programURL)
             )
         }
     }
@@ -123,7 +137,11 @@ public enum SteamLibrarySource: LibrarySource {
         let steamRoot = SteamLibrary.detectInstall(bottleURL: url)
         return SteamLibrary.enumerate(bottleURL: url).map { game in
             LibraryEntry(
-                id: "steam:\(game.appId)",
+                // Scoped to the bottle, because the same game can be installed
+                // in two of them and an id shared by two rows breaks the grid's
+                // diffing rather than merely looking odd. A pin is already
+                // scoped: its id carries the executable's full path.
+                id: "steam:\(url.path(percentEncoded: false)):\(game.appId)",
                 name: game.name,
                 iconURL: steamRoot.flatMap { iconURL(appID: game.appId, steamRoot: $0) },
                 artworkURL: steamRoot.flatMap { artworkURL(appID: game.appId, steamRoot: $0) },
