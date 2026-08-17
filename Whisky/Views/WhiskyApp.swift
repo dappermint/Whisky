@@ -147,8 +147,7 @@ struct WhiskyApp: App {
                 }
                 .toast($audioDeviceToast)
         }
-        // Don't ask me how this works, it just does
-        .handlesExternalEvents(matching: ["{same path of URL?}"])
+        .handlesExternalEvents(matching: ["*"])
         .commands {
             CommandGroup(before: .systemServices) {
                 Divider()
