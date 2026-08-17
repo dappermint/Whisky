@@ -119,14 +119,14 @@ final class LibraryModel: ObservableObject {
             // Steam is the part that walks the filesystem, so only that goes
             // off the main actor, and it needs nothing but the bottle URL.
             let pinned = PinnedLibrarySource.items(inBottleAt: url, settings: bottle.settings)
-            let steam = await Task.detached { SteamSnapshot(inBottleAt: url) }.value
+            let steam = await Task.detached { SteamLibrarySource.entries(inBottleAt: url) }.value
 
-            for item in LibraryCatalogue.merge([pinned, steam.entries]) {
+            for item in LibraryCatalogue.merge([pinned, steam]) {
                 built.append(
                     LibraryRow(
                         item: item,
                         bottleName: showBottleName ? bottle.settings.name : nil,
-                        lastPlayed: lastPlayed(for: item, played: steam.played, routed: routed)
+                        lastPlayed: lastPlayed(for: item, routed: routed)
                     )
                 )
             }
@@ -137,26 +137,16 @@ final class LibraryModel: ObservableObject {
         rows = sorted(built)
     }
 
-    /// When an entry was last started.
-    ///
-    /// Steam's own `LastPlayed` is the source for a Steam game, because a game
-    /// is started by running `steam.exe -applaunch` and the run log therefore
-    /// belongs to the client, not to the game. It also covers sessions started
-    /// from inside the client, and history that predates Whisky recording
-    /// anything itself.
-    ///
-    /// The later of that and our own record wins, since Steam writes its field
-    /// when a game exits: for the run happening right now, ours is the only one
-    /// that knows.
+    /// When an entry was last started in Whisky.
     private func lastPlayed(
-        for item: LibraryEntry, played: [Int: Date], routed: [Int: Date]
+        for item: LibraryEntry, routed: [Int: Date]
     ) -> Date? {
         switch item.launch {
         case let .program(url):
             RunLogStore.load(for: url.lastPathComponent, in: item.bottleURL)
                 .entries.map(\.startTime).max()
         case let .steam(appID):
-            [played[appID], routed[appID]].compactMap { $0 }.max()
+            routed[appID]
         }
     }
 
@@ -298,20 +288,6 @@ extension LibraryModel {
     func stopTracking() {
         for orchestrator in orchestrators.values {
             orchestrator.stop()
-        }
-    }
-}
-
-/// One bottle's Steam entries and when each of its games was last played,
-/// gathered together so the walk over `steamapps` happens once.
-private struct SteamSnapshot: Sendable {
-    let entries: [LibraryEntry]
-    let played: [Int: Date]
-
-    init(inBottleAt url: URL) {
-        entries = SteamLibrarySource.entries(inBottleAt: url)
-        played = SteamLibrary.enumerate(bottleURL: url).reduce(into: [:]) { result, game in
-            result[game.appId] = game.manifest.lastPlayed
         }
     }
 }
