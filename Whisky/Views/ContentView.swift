@@ -23,7 +23,6 @@ import UniformTypeIdentifiers
 import WhiskyKit
 
 struct ContentView: View {
-    @AppStorage("selectedBottleURL") var selectedBottleURL: URL?
     @EnvironmentObject var bottleVM: BottleVM
     @Binding var showSetup: Bool
 
@@ -36,7 +35,6 @@ struct ContentView: View {
     @State var triggerRefresh: Bool = false
     @State var refreshAnimation: Angle = .degrees(0)
 
-    @State var bottleFilter = ""
     @State var toast: ToastData?
     @State var corruptRegistryBackupURL: URL?
 
@@ -159,9 +157,7 @@ struct ContentView: View {
                 toast: $toast
             )
         }
-        .onChange(of: selected) { oldValue, newValue in
-            selectedBottleURL = newValue
-
+        .onChange(of: selected) { oldValue, _ in
             // Check if previous bottle had running processes
             guard let oldURL = oldValue,
                   let oldBottle = bottleVM.bottles.first(where: { $0.url == oldURL })
