@@ -228,6 +228,43 @@ struct SteamLibraryTests {
         #expect(!games.contains { $0.appId == 999 || $0.appId == 777 })
     }
 
+    @Test("A second enumeration of an unchanged library returns the same games")
+    func enumerationIsCachedUntilTheLibraryChanges() throws {
+        let (bottle, tempRoot) = try makeFixtureBottle()
+        defer { try? FileManager.default.removeItem(at: tempRoot) }
+
+        let first = SteamLibrary.enumerate(bottleURL: bottle)
+        let second = SteamLibrary.enumerate(bottleURL: bottle)
+
+        #expect(first.map(\.appId) == second.map(\.appId))
+    }
+
+    @Test("Installing a game invalidates the cache")
+    func newManifestIsPickedUp() throws {
+        let (bottle, tempRoot) = try makeFixtureBottle()
+        defer { try? FileManager.default.removeItem(at: tempRoot) }
+
+        let before = SteamLibrary.enumerate(bottleURL: bottle)
+
+        let steamapps = try #require(SteamLibrary.detectInstall(bottleURL: bottle))
+            .appending(path: "steamapps")
+        try FileManager.default.createDirectory(
+            at: steamapps.appending(path: "common").appending(path: "New Game"),
+            withIntermediateDirectories: true
+        )
+        try acf(appId: 271_590, name: "New Game", installDir: "New Game", stateFlags: 4)
+            .write(
+                to: steamapps.appending(path: "appmanifest_271590.acf"),
+                atomically: true,
+                encoding: .utf8
+            )
+
+        let after = SteamLibrary.enumerate(bottleURL: bottle)
+
+        #expect(!before.contains { $0.appId == 271_590 })
+        #expect(after.contains { $0.appId == 271_590 })
+    }
+
     @Test("Runtime payloads are not listed as games")
     func filtersRuntimePayloads() throws {
         let (bottle, tempRoot) = try makeFixtureBottle()
