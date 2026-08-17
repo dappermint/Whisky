@@ -80,6 +80,10 @@ struct LibraryCard: View {
         .buttonStyle(.plain)
         .focusable()
         .focused($isFocused)
+        // The system ring is a rectangle around the button's frame, so on a
+        // rounded card it draws a second, squarer outline outside the one below
+        // that follows the card's own shape.
+        .focusEffectDisabled()
         .onKeyPress(.return) {
             launch()
             return .handled

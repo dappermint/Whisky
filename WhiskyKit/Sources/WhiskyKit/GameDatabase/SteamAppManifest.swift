@@ -48,6 +48,13 @@ public struct SteamAppManifest: Equatable, Sendable {
     public let buildID: Int?
     /// The size on disk in bytes, when present.
     public let sizeOnDisk: Int64?
+    /// When Steam last recorded the app exiting, absent if it never has.
+    ///
+    /// Steam's own record, so it covers sessions started from inside the client
+    /// as well as ones Whisky started, and it is already there for everything
+    /// installed before Whisky began recording launches itself. It is written on
+    /// exit, so a game that is running still reads as its previous session.
+    public let lastPlayed: Date?
 
     /// Whether Steam considers the app fully installed (not downloading,
     /// updating, or partially removed).
@@ -75,6 +82,10 @@ public struct SteamAppManifest: Equatable, Sendable {
         self.stateFlags = appState["stateflags"]?.intValue ?? 0
         self.buildID = appState["buildid"]?.intValue
         self.sizeOnDisk = appState["sizeondisk"]?.stringValue.flatMap(Int64.init)
+        // Unix seconds, and zero for an app that has never been played rather
+        // than an absent key.
+        self.lastPlayed = appState["lastplayed"]?.intValue
+            .flatMap { $0 > 0 ? Date(timeIntervalSince1970: TimeInterval($0)) : nil }
     }
 
     /// Parses a Steam App ID from ACF/VDF format text.
