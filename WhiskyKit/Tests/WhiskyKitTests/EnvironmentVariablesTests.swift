@@ -199,9 +199,24 @@ final class EnvironmentVariablesTests: XCTestCase {
         XCTAssertEqual(env["D3DM_SUPPORT_DXR"], "1")
     }
 
+    func testSpoofDoesNotOutbidForceD3D11() {
+        var settings = BottleSettings()
+        settings.launcherCompatibilityMode = true
+        settings.gpuSpoofing = true
+        settings.forceD3D11 = true
+
+        var env: [String: String] = [:]
+        settings.environmentVariables(wineEnv: &env)
+
+        // Feature level is one resolved decision: the spoof's launcher layer
+        // must not undo the force-D3D11 pin from the bottle layer.
+        XCTAssertEqual(env["D3DM_FEATURE_LEVEL_12_0"], "0")
+        XCTAssertNil(env["D3DM_FEATURE_LEVEL_12_1"])
+    }
+
     // MARK: - Sequoia Compatibility Mode
 
-    func testEnvironmentVariablesWithSequoiaCompatMode() {
+    func testSequoiaToggleEmitsNothing() {
         var settings = BottleSettings()
         settings.sequoiaCompatMode = true
         settings.metalValidation = false
@@ -209,15 +224,28 @@ final class EnvironmentVariablesTests: XCTestCase {
         var env: [String: String] = [:]
         settings.environmentVariables(wineEnv: &env)
 
-        if MacOSVersion.current.major >= 15 {
-            XCTAssertEqual(env["MTL_DEBUG_LAYER"], "0")
-            XCTAssertEqual(env["D3DM_VALIDATION"], "0")
-            XCTAssertEqual(env["WINEFSYNC"], "0")
-        } else {
-            XCTAssertNil(env["MTL_DEBUG_LAYER"])
-            XCTAssertNil(env["D3DM_VALIDATION"])
-            XCTAssertNil(env["WINEFSYNC"])
-        }
+        // All three values the toggle used to set are platform-layer fixes on
+        // every supported macOS, carried with provenance by
+        // constructWineEnvironment; the bottle-layer duplicates meant the
+        // toggle's off position changed nothing.
+        XCTAssertNil(env["MTL_DEBUG_LAYER"])
+        XCTAssertNil(env["D3DM_VALIDATION"])
+        XCTAssertNil(env["WINEFSYNC"])
+    }
+
+    @MainActor
+    func testPlatformLayerCarriesTheSequoiaFixes() throws {
+        let tempDir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+        let bottle = Bottle(bottleUrl: tempDir, inFlight: false, isAvailable: true)
+
+        let env = Wine.constructWineEnvironment(for: bottle)
+
+        // Supported macOS is 15.4+ at minimum, so all three fixes apply.
+        XCTAssertEqual(env["MTL_DEBUG_LAYER"], "0")
+        XCTAssertEqual(env["D3DM_VALIDATION"], "0")
+        XCTAssertEqual(env["WINEFSYNC"], "0")
     }
 
     // MARK: - Performance Preset Environment Variables
@@ -232,7 +260,6 @@ final class EnvironmentVariablesTests: XCTestCase {
         settings.environmentVariables(wineEnv: &env)
 
         // Performance preset - prioritize FPS over visual quality
-        XCTAssertEqual(env["D3DM_FAST_SHADER_COMPILE"], "1")
         XCTAssertEqual(env["D3DM_VALIDATION"], "0")
         XCTAssertEqual(env["MTL_DEBUG_LAYER"], "0")
         XCTAssertEqual(env["DXVK_ASYNC"], "1")
@@ -249,7 +276,6 @@ final class EnvironmentVariablesTests: XCTestCase {
         settings.environmentVariables(wineEnv: &env)
 
         XCTAssertEqual(env["DXVK_SHADER_OPT_LEVEL"], "2")
-        XCTAssertEqual(env["D3DM_FAST_SHADER_COMPILE"], "0")
     }
 
     func testEnvironmentVariablesWithUnityPreset() {
@@ -264,7 +290,6 @@ final class EnvironmentVariablesTests: XCTestCase {
         XCTAssertEqual(env["MONO_THREADS_SUSPEND"], "1")
         XCTAssertEqual(env["WINE_LARGE_ADDRESS_AWARE"], "65536")
         XCTAssertEqual(env["D3DM_FORCE_D3D11"], "1")
-        XCTAssertEqual(env["WINE_HEAP_REUSE"], "0")
         XCTAssertEqual(env["WINE_DISABLE_NTDLL_THREAD_REGS"], "1")
         XCTAssertEqual(env["WINEPRELOADRESERVE"], "1")
     }
@@ -289,8 +314,10 @@ final class EnvironmentVariablesTests: XCTestCase {
         var env: [String: String] = [:]
         settings.environmentVariables(wineEnv: &env)
 
-        XCTAssertEqual(env["DXVK_SHADER_COMPILE_THREADS"], "1")
-        XCTAssertEqual(env["__GL_SHADER_DISK_CACHE"], "0")
+        // The variable DXVK reads, not the NVIDIA GL one the toggle used to set.
+        XCTAssertEqual(env["DXVK_STATE_CACHE"], "0")
+        XCTAssertNil(env["DXVK_SHADER_COMPILE_THREADS"])
+        XCTAssertNil(env["__GL_SHADER_DISK_CACHE"])
     }
 
     // MARK: - EnvironmentBuilder Layer Populator Tests

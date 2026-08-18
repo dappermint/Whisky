@@ -115,12 +115,12 @@ final class GPUDetectionTests: XCTestCase {
         }
     }
 
-    func testVulkanConfiguration() {
+    func testNoHardcodedVulkanICDPath() {
         let env = GPUDetection.spoofGPU(vendor: .nvidia)
 
-        // Should include MoltenVK ICD path
-        XCTAssertNotNil(env["VK_ICD_FILENAMES"])
-        XCTAssertTrue(env["VK_ICD_FILENAMES"]?.contains("MoltenVK") ?? false)
+        // The old value pointed at /usr/local/share, which exists on no user
+        // machine; the runtime carries its own MoltenVK configuration.
+        XCTAssertNil(env["VK_ICD_FILENAMES"])
     }
 
     func testShaderModelSupport() {

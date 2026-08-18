@@ -162,27 +162,18 @@ final class BottleLauncherConfigTests: XCTestCase {
         XCTAssertEqual(env["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d9=n,b;dxgi=n,b")
     }
 
-    func testSSLTLSConfiguration() {
+    func testNoInventedNetworkVariables() {
         var settings = BottleSettings()
         settings.launcherCompatibilityMode = true
 
         var env: [String: String] = [:]
         settings.environmentVariables(wineEnv: &env)
 
-        // Should include SSL/TLS fixes
-        XCTAssertEqual(env["WINE_ENABLE_SSL"], "1")
-        XCTAssertEqual(env["WINE_SSL_VERSION_MIN"], "TLS1.2")
-    }
-
-    func testConnectionPoolingFixes() {
-        var settings = BottleSettings()
-        settings.launcherCompatibilityMode = true
-
-        var env: [String: String] = [:]
-        settings.environmentVariables(wineEnv: &env)
-
-        // Should include connection fixes
-        XCTAssertEqual(env["WINE_MAX_CONNECTIONS_PER_SERVER"], "10")
-        XCTAssertEqual(env["WINE_FORCE_HTTP11"], "1")
+        // These exist in no Wine or WineCX source, so setting them was
+        // decoration; launcher compatibility must not bring them back.
+        XCTAssertNil(env["WINE_ENABLE_SSL"])
+        XCTAssertNil(env["WINE_SSL_VERSION_MIN"])
+        XCTAssertNil(env["WINE_MAX_CONNECTIONS_PER_SERVER"])
+        XCTAssertNil(env["WINE_FORCE_HTTP11"])
     }
 }
