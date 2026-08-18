@@ -298,7 +298,7 @@ public enum LibraryCatalogue {
 
     /// Whether `url` points inside `root`, on path components rather than on
     /// string prefixes, so `…/Game` never claims `…/Game II`.
-    static func isPath(_ url: URL, under root: URL) -> Bool {
+    public static func isPath(_ url: URL, under root: URL) -> Bool {
         let path = url.standardizedFileURL.pathComponents
         let rootPath = root.standardizedFileURL.pathComponents
         return path.count > rootPath.count && Array(path.prefix(rootPath.count)) == rootPath

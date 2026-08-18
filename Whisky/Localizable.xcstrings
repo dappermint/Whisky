@@ -59658,6 +59658,22 @@
         }
       }
     },
+    "library.card.settings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Game Settings…"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Game Settings…"
+          }
+        }
+      }
+    },
     "library.card.unhide" : {
       "localizations" : {
         "en" : {
@@ -59670,6 +59686,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unhide"
+          }
+        }
+      }
+    },
+    "library.empty.addGame" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a Game…"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a Game…"
+          }
+        }
+      }
+    },
+    "library.empty.gameFirst" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open a Windows game or installer and it shows up here, ready to launch. Dropping a file anywhere on this window works too."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open a Windows game or installer and it shows up here, ready to launch. Dropping a file anywhere on this window works too."
           }
         }
       }
