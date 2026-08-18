@@ -79,6 +79,7 @@
 		A1B2C3D4E5F60718A9B0C1D2 /* DLLOverrideEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A9B0C1D3 /* DLLOverrideEditor.swift */; };
 		A1B2C3D4E5F60718A9B0C1D4 /* DLLOverrideConfigSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A9B0C1D5 /* DLLOverrideConfigSection.swift */; };
 		A1B2C3D4E5F60718A9B0C1D6 /* ProgramOverrideSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A9B0C1D7 /* ProgramOverrideSettingsView.swift */; };
+		AB5DECAF20260818000000D6 /* LaunchPlanInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB5DECAF20260818000000D7 /* LaunchPlanInspectorView.swift */; };
 		AB0BCABD2B61036E00E21C31 /* RunningProcessesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0BCABC2B61036E00E21C31 /* RunningProcessesView.swift */; };
 		F1A2B3C4E5F61501A9B0C1E2 /* WhiskyMenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4E5F61501A9B0C1E1 /* WhiskyMenuBarView.swift */; };
 		B1A2C3D4E5F60302A9B0C1D3 /* ProcessesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A2C3D4E5F60302A9B0C1D2 /* ProcessesViewModel.swift */; };
@@ -275,6 +276,7 @@
 		A1B2C3D4E5F60718A9B0C1D3 /* DLLOverrideEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DLLOverrideEditor.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718A9B0C1D5 /* DLLOverrideConfigSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DLLOverrideConfigSection.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718A9B0C1D7 /* ProgramOverrideSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramOverrideSettingsView.swift; sourceTree = "<group>"; };
+		AB5DECAF20260818000000D7 /* LaunchPlanInspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchPlanInspectorView.swift; sourceTree = "<group>"; };
 		AA2516958D60EC8937A2AF71 /* LaunchResult+Toast.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "LaunchResult+Toast.swift"; sourceTree = "<group>"; };
 		AA88CFEB38031323229CD377 /* LauncherDiagnostics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LauncherDiagnostics.swift; sourceTree = "<group>"; };
 		AB0BCABC2B61036E00E21C31 /* RunningProcessesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunningProcessesView.swift; sourceTree = "<group>"; };
@@ -423,6 +425,7 @@
 				6E17B6482AF4118F00831173 /* EnvironmentArgView.swift */,
 				8C73E1332AF472FC00B6FB45 /* ProgramMenuView.swift */,
 				A1B2C3D4E5F60718A9B0C1D7 /* ProgramOverrideSettingsView.swift */,
+				AB5DECAF20260818000000D7 /* LaunchPlanInspectorView.swift */,
 				E1A2B3C4E5F60901A9B0C1D1 /* ConsoleRunHistoryView.swift */,
 				E1A2B3C4E5F60901A9B0C1D3 /* ConsoleLogView.swift */,
 			);
@@ -1005,6 +1008,7 @@
 				6E40495629CCA19C006E3F1B /* WhiskyApp.swift in Sources */,
 				8C73E1342AF472FC00B6FB45 /* ProgramMenuView.swift in Sources */,
 				A1B2C3D4E5F60718A9B0C1D6 /* ProgramOverrideSettingsView.swift in Sources */,
+				AB5DECAF20260818000000D6 /* LaunchPlanInspectorView.swift in Sources */,
 				E1A2B3C4E5F60901A9B0C1D0 /* ConsoleRunHistoryView.swift in Sources */,
 				E1A2B3C4E5F60901A9B0C1D2 /* ConsoleLogView.swift in Sources */,
 				6E50D98329CD6066008C39F6 /* BottleVM.swift in Sources */,

@@ -34,6 +34,7 @@ struct ProgramOverrideSettingsView: View {
 
     @State private var showResetConfirmation = false
     @State private var showDiagnosticsSheet = false
+    @State private var showProvenance = false
     @State private var activeDiagnosis: CrashDiagnosis?
     @State private var activeLogText: String = ""
     @State private var gameMatch: MatchResult?
@@ -83,6 +84,9 @@ struct ProgramOverrideSettingsView: View {
                 DependencyInstallSheet(definition: definition, bottle: bottle)
                     .frame(minWidth: 500, minHeight: 400)
             }
+            .sheet(isPresented: $showProvenance) {
+                LaunchPlanInspectorView(bottle: bottle, program: program)
+            }
     }
 
     // MARK: - Diagnostics Section
@@ -110,6 +114,10 @@ struct ProgramOverrideSettingsView: View {
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            }
+
+            Button("program.provenance.button") {
+                showProvenance = true
             }
         }
     }

@@ -48,6 +48,27 @@ extension Wine {
         programSettings: ProgramSettings? = nil,
         gameProfileEnvironment: [String: String] = [:]
     ) -> [String: String] {
+        constructWineEnvironmentWithProvenance(
+            for: bottle,
+            environment: environment,
+            programOverrides: programOverrides,
+            programSettings: programSettings,
+            gameProfileEnvironment: gameProfileEnvironment
+        ).environment
+    }
+
+    /// The same construction, keeping the per-key provenance so an inspector
+    /// can say which layer set each variable and why. `logSummary` is off for
+    /// inspection so browsing settings never writes launch lines to the log.
+    @MainActor
+    public static func constructWineEnvironmentWithProvenance(
+        for bottle: Bottle,
+        environment: [String: String] = [:],
+        programOverrides: ProgramOverrides? = nil,
+        programSettings: ProgramSettings? = nil,
+        gameProfileEnvironment: [String: String] = [:],
+        logSummary: Bool = true
+    ) -> (environment: [String: String], provenance: EnvironmentProvenance) {
         var builder = EnvironmentBuilder()
         var dllResolver = DLLOverrideResolver(managed: [], bottleCustom: [], programCustom: [])
 
@@ -155,9 +176,11 @@ extension Wine {
         }
 
         // Launch logging: safe summary of bottle, active layers, and whitelisted keys
-        logLaunchSummary(bottleName: bottle.settings.name, provenance: provenance, environment: result)
+        if logSummary {
+            logLaunchSummary(bottleName: bottle.settings.name, provenance: provenance, environment: result)
+        }
 
-        return result
+        return (environment: result, provenance: provenance)
     }
 
     /// Builtin-mode reset entries for every DLL any translation layer may have
