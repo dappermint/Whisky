@@ -213,7 +213,8 @@ struct ConfigView: View {
                     logText: latestDiagnosisLogText,
                     programName: program.name,
                     bottleName: bottle.settings.name,
-                    timestamp: program.settings.lastDiagnosisDate ?? Date()
+                    timestamp: program.settings.lastDiagnosisDate ?? Date(),
+                    applyBottle: bottle
                 )
                 .frame(minWidth: 600, minHeight: 400)
             }

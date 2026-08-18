@@ -121,7 +121,8 @@ struct WhiskyApp: App {
                         logText: crashDiagnosisLogText,
                         programName: banner.programName,
                         bottleName: bottle(forProgramPath: banner.programPath)?.settings.name ?? "",
-                        timestamp: Date()
+                        timestamp: Date(),
+                        applyBottle: bottle(forProgramPath: banner.programPath)
                     )
                     .frame(minWidth: 600, minHeight: 400)
                 }

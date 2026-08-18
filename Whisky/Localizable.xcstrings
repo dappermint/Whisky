@@ -67530,6 +67530,56 @@
         }
       }
     },
+    "remediation.applied" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applied: %@"
+          }
+        }
+      }
+    },
+    "remediation.installFailed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ did not install. The log has the details."
+          }
+        }
+      }
+    },
+    "remediation.installed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ installed."
+          }
+        }
+      }
+    },
+    "remediation.installing" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installing %@. This can take a few minutes."
+          }
+        }
+      }
+    },
+    "remediation.unsupported" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This suggestion cannot be applied automatically."
+          }
+        }
+      }
+    },
     "rename.bottle.title" : {
       "localizations" : {
         "ar" : {

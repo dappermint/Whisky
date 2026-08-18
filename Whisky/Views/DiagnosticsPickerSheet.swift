@@ -97,7 +97,8 @@ struct DiagnosticsPickerSheet: View {
                     logText: resultLogText,
                     programName: program.name,
                     bottleName: selectedBottle?.settings.name ?? "",
-                    timestamp: Date()
+                    timestamp: Date(),
+                    applyBottle: selectedBottle
                 )
                 .frame(minWidth: 600, minHeight: 400)
             }
