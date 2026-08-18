@@ -25,6 +25,7 @@ struct SettingsView: View {
     @AppStorage("checkWhiskyWineUpdates") var checkWhiskyWineUpdates = true
     @AppStorage("defaultBottleLocation") var defaultBottleLocation = BottleData.defaultBottleDir
     @AppStorage("preferredTerminal") var preferredTerminal = "terminal"
+    @AppStorage("audioDeviceAlerts") var audioDeviceAlerts = true
     @AppStorage(Telemetry.consentDefaultsKey) private var telemetryConsentRaw: String = Telemetry.ConsentState
         .undecided.rawValue
 
@@ -42,6 +43,8 @@ struct SettingsView: View {
                 Toggle("settings.toggle.kill.on.terminate", isOn: $killOnTerminate)
                 Toggle("settings.toggle.menubar", isOn: $showMenuBarExtra)
                     .help("settings.toggle.menubar.help")
+                Toggle("settings.toggle.audioAlerts", isOn: $audioDeviceAlerts)
+                    .help("settings.toggle.audioAlerts.help")
                 Picker("settings.terminal", selection: $preferredTerminal) {
                     // installedTerminals should always include Terminal.app on macOS,
                     // but fall back to showing just Terminal if somehow empty

@@ -42,6 +42,28 @@ enum CrashNotifier {
         "com.franke.Whisky.openCrashDiagnosisFromNotification"
     )
 
+    /// A lightweight informational notification (audio device changes), on
+    /// the same provisional path: quiet delivery, never a permission prompt.
+    static func notifyInfo(title: String, body: String, identifier: String) {
+        Task {
+            let center = UNUserNotificationCenter.current()
+            let granted = await (try? center.requestAuthorization(options: [.alert, .provisional])) ?? false
+            guard granted else { return }
+
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+
+            do {
+                try await center.add(UNNotificationRequest(
+                    identifier: identifier, content: content, trigger: nil
+                ))
+            } catch {
+                logger.error("Failed to deliver notification: \(error.localizedDescription)")
+            }
+        }
+    }
+
     /// Posts a notification for a crash that happened in the background.
     ///
     /// Authorization is provisional: delivered quietly to Notification Center

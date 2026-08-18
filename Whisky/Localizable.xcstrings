@@ -17180,6 +17180,22 @@
         }
       }
     },
+    "audio.troubleshoot.button" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio Troubleshooting…"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio Troubleshooting…"
+          }
+        }
+      }
+    },
     "audio.troubleshoot.didItWork" : {
       "localizations" : {
         "ar" : {
@@ -60687,6 +60703,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This suggestion cannot be applied automatically."
+          }
+        }
+      }
+    },
+    "settings.toggle.audioAlerts" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio device alerts"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio device alerts"
+          }
+        }
+      }
+    },
+    "settings.toggle.audioAlerts.help" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Say when the output device changes or a Bluetooth headset falls back to telephony quality. Alerts land in Notification Center while a game is frontmost."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Say when the output device changes or a Bluetooth headset falls back to telephony quality. Alerts land in Notification Center while a game is frontmost."
           }
         }
       }

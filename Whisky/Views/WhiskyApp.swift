@@ -55,6 +55,7 @@ struct WhiskyApp: App {
     @State private var audioDeviceToast: ToastData?
     @State private var audioMonitor = AudioDeviceMonitor()
     @State private var audioAlertTracker = AudioAlertTracker()
+    @AppStorage("audioDeviceAlerts") private var audioDeviceAlerts = true
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @Environment(\.openURL) var openURL
 
@@ -390,27 +391,42 @@ struct WhiskyApp: App {
     private func startAudioDeviceListening() {
         audioMonitor.startListening { event in
             Task { @MainActor in
-                guard audioAlertTracker.shouldAlert(deviceName: event.deviceName) else { return }
+                guard audioDeviceAlerts,
+                      audioAlertTracker.shouldAlert(deviceName: event.deviceName)
+                else { return }
 
+                let title: String
+                let style: ToastStyle
                 switch event.eventType {
                 case .defaultOutputChanged, .disconnected:
-                    let message = String(
-                        localized: "audio.alert.disconnected"
-                    ) + ": \(event.deviceName)"
-                    audioDeviceToast = ToastData(message: message, style: .info)
+                    title = String(localized: "audio.alert.disconnected")
+                    style = .info
                 case .reconnected:
-                    let message = String(
-                        localized: "audio.alert.reconnected"
-                    ) + ": \(event.deviceName)"
-                    audioDeviceToast = ToastData(message: message, style: .success)
+                    title = String(localized: "audio.alert.reconnected")
+                    style = .success
                 case .sampleRateChanged:
-                    // Check for low sample rate (HFP/Bluetooth issue)
-                    if let device = audioMonitor.defaultOutputDevice(),
-                       device.sampleRate < 22_050, device.sampleRate > 0 {
-                        let message = String(localized: "audio.alert.lowSampleRate")
-                            + ": \(event.deviceName)"
-                        audioDeviceToast = ToastData(message: message, style: .info)
-                    }
+                    // Only worth a word when the rate is HFP-low (Bluetooth
+                    // headset fell back to its telephony profile).
+                    guard let device = audioMonitor.defaultOutputDevice(),
+                          device.sampleRate < 22_050, device.sampleRate > 0
+                    else { return }
+                    title = String(localized: "audio.alert.lowSampleRate")
+                    style = .info
+                }
+
+                // A toast in Whisky's window is invisible exactly when it
+                // matters, mid-game with the headset gone, so background
+                // alerts go to Notification Center instead.
+                if NSApp.isActive {
+                    audioDeviceToast = ToastData(
+                        message: title + ": \(event.deviceName)", style: style
+                    )
+                } else {
+                    CrashNotifier.notifyInfo(
+                        title: title,
+                        body: event.deviceName,
+                        identifier: "audio-\(event.deviceName)"
+                    )
                 }
             }
         }
