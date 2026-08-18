@@ -110,6 +110,8 @@ public extension Program {
             Logger.wineKit.info("\(self.name, privacy: .public) launch plan: \(note, privacy: .public)")
         }
 
+        await Wine.syncAudioRegistry(bottle: bottle)
+
         let arguments = settings.arguments.split { $0.isWhitespace }.map(String.init)
         let environment = generateEnvironment()
 
