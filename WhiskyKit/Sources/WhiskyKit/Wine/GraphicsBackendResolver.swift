@@ -40,12 +40,15 @@ public enum GraphicsBackendResolver {
     ///     runtime's version plist.
     ///   - d3dMetalInstalled: Whether the D3DMetal payload exists on disk. Defaults
     ///     to checking the installed runtime.
+    ///   - dxmtRuntimeNative: Whether the runtime's DXMT payload is the native
+    ///     variant. Defaults to checking the installed runtime.
     /// - Returns: A concrete ``GraphicsBackend`` (never `.recommended`).
     public static func resolve(
         for launcher: LauncherType? = nil,
         macOSVersion: MacOSVersion = .current,
         runtimeInfo: WhiskyWineVersion? = WhiskyWineInstaller.whiskyWineInfo(),
-        d3dMetalInstalled: Bool = WhiskyWineInstaller.isD3DMetalInstalled()
+        d3dMetalInstalled: Bool = WhiskyWineInstaller.isD3DMetalInstalled(),
+        dxmtRuntimeNative: Bool = Wine.isDXMTRuntimeNative()
     ) -> GraphicsBackend {
         if d3dMetalInstalled {
             // Launcher clients are Chromium and cannot render on D3DMetal:
@@ -56,7 +59,16 @@ public enum GraphicsBackendResolver {
             }
             return .d3dMetal
         }
-        if GraphicsBackend.dxmt.isAvailable(runtimeInfo: runtimeInfo) {
+        // The same gate the backend picker applies, not the version record
+        // alone: a version-only check lets auto promise DXMT on a runtime
+        // whose payload is missing or builtin-variant, which then throws
+        // payloadMissing at launch after the picker refused the same choice.
+        if WhiskyWineInstaller.backendAvailability(
+            .dxmt,
+            runtimeInfo: runtimeInfo,
+            d3dMetalInstalled: d3dMetalInstalled,
+            dxmtRuntimeNative: dxmtRuntimeNative
+        ) {
             return .dxmt
         }
         return .dxvk
@@ -75,7 +87,8 @@ public enum GraphicsBackendResolver {
             for: launcher,
             macOSVersion: macOSVersion,
             runtimeInfo: WhiskyWineInstaller.whiskyWineInfo(for: runtime),
-            d3dMetalInstalled: WhiskyWineInstaller.isD3DMetalInstalled(for: runtime)
+            d3dMetalInstalled: WhiskyWineInstaller.isD3DMetalInstalled(for: runtime),
+            dxmtRuntimeNative: Wine.isDXMTRuntimeNative(for: runtime)
         )
     }
 
