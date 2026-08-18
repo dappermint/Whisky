@@ -216,11 +216,23 @@ extension FixPreviewView {
 // MARK: - Actions
 
 extension FixPreviewView {
+    /// The node's params, with the winetricks verb inherited from the check
+    /// that found it missing when the flow does not hardcode one.
+    private var resolvedParams: [String: String] {
+        var params = node.params ?? [:]
+        if node.fixId == "install-winetricks-verb", params["verb"] == nil,
+           let missing = engine.lastCheckResult?.evidence["missing"],
+           let first = missing.split(separator: ",").first {
+            params["verb"] = first.trimmingCharacters(in: .whitespaces)
+        }
+        return params
+    }
+
     private func loadPreview() {
         guard let fixId = node.fixId else { return }
         fixPreview = FixApplicator.preview(
             fixId: fixId,
-            params: node.params ?? [:],
+            params: resolvedParams,
             bottle: bottle,
             program: program
         )
@@ -228,11 +240,21 @@ extension FixPreviewView {
 
     private func applyFix() {
         guard let fixId = node.fixId else { return }
-        isApplying = true
+        let params = resolvedParams
 
+        if fixId == "install-winetricks-verb" {
+            guard let verb = params["verb"] else {
+                engine.skipStep()
+                return
+            }
+            installVerb(verb, fixId: fixId)
+            return
+        }
+
+        isApplying = true
         let attempt = FixApplicator.apply(
             fixId: fixId,
-            params: node.params ?? [:],
+            params: params,
             bottle: bottle,
             program: program
         )
@@ -241,8 +263,36 @@ extension FixPreviewView {
             beforeValue: attempt.beforeValue,
             afterValue: attempt.afterValue
         )
-        engine.confirmFixApplied(fixId: fixId)
+        if attempt.result == .failed {
+            engine.markFixFailed(fixId: fixId)
+        } else {
+            engine.confirmFixApplied(fixId: fixId)
+        }
 
         isApplying = false
+    }
+
+    /// Runs the winetricks install for real and only confirms the attempt
+    /// once the verb actually landed.
+    private func installVerb(_ verb: String, fixId: String) {
+        isApplying = true
+        engine.applyFix(fixId: fixId, beforeValue: nil, afterValue: verb)
+        Task {
+            var exitCode: Int32?
+            var failure: String?
+            for await progress in Winetricks.installVerb(verb, for: bottle) {
+                switch progress {
+                case let .completed(code): exitCode = code
+                case let .failed(message): failure = message
+                case .preparing, .output: break
+                }
+            }
+            if failure == nil, exitCode == 0 {
+                engine.confirmFixApplied(fixId: fixId)
+            } else {
+                engine.markFixFailed(fixId: fixId)
+            }
+            isApplying = false
+        }
     }
 }

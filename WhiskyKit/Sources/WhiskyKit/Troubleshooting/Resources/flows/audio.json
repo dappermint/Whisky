@@ -80,13 +80,12 @@
       "id": "check_audio_buffer",
       "type": "check",
       "phase": "checks",
-      "title": "Check DirectSound buffer settings",
-      "description": "Checking the DirectSound buffer size in the Wine registry. An incorrect buffer size can cause crackling or latency.",
-      "checkId": "registry.value_check",
+      "title": "Checking the audio buffer preset",
+      "description": "Crackling or popping audio usually means the DirectSound buffer is too small for the output device. The stable preset uses a larger buffer.",
+      "checkId": "setting.value_check",
       "params": {
-        "key": "HKCU\\Software\\Wine\\DirectSound",
-        "value": "DefaultBufSize",
-        "expected": "20480"
+        "setting": "audioLatencyPreset",
+        "expected": "stable"
       },
       "on": {
         "pass": "check_sample_rate",
@@ -104,20 +103,17 @@
       "id": "fix_buffer_size",
       "type": "fix",
       "phase": "fix",
-      "title": "Adjust DirectSound buffer size",
-      "description": "Setting the DirectSound buffer to the recommended size to reduce audio crackling and latency.",
-      "fixId": "set-registry-value",
-      "fixPreview": {
-        "settingName": "DirectSound Buffer Size",
-        "currentValueKey": "currentValue",
-        "newValue": "20480",
-        "scope": "bottle"
-      },
+      "title": "Switch to the stable audio buffer",
+      "description": "Applies the stable audio latency preset, which uses a larger DirectSound buffer. The change takes effect on the next launch of the program.",
+      "fixId": "set-buffer-size",
       "isReversible": true,
       "requiresConfirmation": false,
       "on": {
         "applied": "verify_fix",
         "skipped": "check_sample_rate"
+      },
+      "params": {
+        "preset": "stable"
       }
     },
     "check_sample_rate": {

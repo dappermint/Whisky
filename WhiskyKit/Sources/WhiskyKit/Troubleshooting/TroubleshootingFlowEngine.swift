@@ -80,6 +80,10 @@ public final class TroubleshootingFlowEngine: ObservableObject {
     /// Explanation of why the flow path changed.
     @Published public var pathChangeReason: String?
 
+    /// The most recent check result, exposed so fix views can inherit
+    /// evidence (e.g. which winetricks verb the check found missing).
+    @Published public private(set) var lastCheckResult: CheckResult?
+
     // MARK: - Dependencies
 
     private let flowDefinitions: [String: FlowDefinition]
@@ -228,6 +232,7 @@ public final class TroubleshootingFlowEngine: ObservableObject {
             let result = await checkRegistry.run(checkId: checkId, params: params, context: context)
 
             isRunningCheck = false
+            lastCheckResult = result
             session.recordCheckResult(nodeId: node.id, result: result)
 
             // Branch on normalized outcome
@@ -280,6 +285,17 @@ public final class TroubleshootingFlowEngine: ObservableObject {
     public func confirmFixApplied(fixId: String) {
         if let index = session.fixAttempts.lastIndex(where: { $0.fixId == fixId && $0.result == .pending }) {
             session.fixAttempts[index].result = .applied
+            autoSave()
+        }
+    }
+
+    /// Marks the most recent pending fix attempt as failed, so a fix that
+    /// could not be performed never reads as applied in the session record.
+    ///
+    /// - Parameter fixId: The fix identifier that failed.
+    public func markFixFailed(fixId: String) {
+        if let index = session.fixAttempts.lastIndex(where: { $0.fixId == fixId && $0.result == .pending }) {
+            session.fixAttempts[index].result = .failed
             autoSave()
         }
     }

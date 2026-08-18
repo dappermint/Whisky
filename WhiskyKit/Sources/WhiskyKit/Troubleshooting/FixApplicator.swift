@@ -77,14 +77,27 @@ public struct FixPreview: Sendable {
 /// | `enable-esync` | Enhanced sync mode | Yes |
 /// | `enable-controller-compat` | Controller compatibility mode | Yes |
 /// | `install-winetricks-verb` | Winetricks verb installation | No |
-/// | `install-dependency` | Dependency installation | No |
-/// | `run-enhanced-diagnostics` | WINEDEBUG preset | Yes |
+/// | `run-enhanced-diagnostics` | Program WINEDEBUG preset | Yes |
 /// | `restart-wineserver` | Wineserver process restart | No |
+/// | `set-registry-value` | Arbitrary Wine registry value | Yes |
+/// | `apply-launcher-fixes` | Launcher compatibility settings | No |
+/// | `apply-game-config` | GameDB recommended configuration | Yes |
 public enum FixApplicator { // swiftlint:disable:this type_body_length
     private static let logger = Logger(
         subsystem: Bundle.whiskyBundleIdentifier,
         category: "FixApplicator"
     )
+
+    /// Every fixId ``apply(fixId:params:bottle:program:)`` implements.
+    /// ``FlowValidator`` rejects flows that reference anything else, so a
+    /// fix card can never render with a dead Apply button.
+    public static let knownFixIds: Set<String> = [
+        "switch-backend", "enable-dxvk-async", "set-audio-driver",
+        "set-buffer-size", "enable-esync", "enable-controller-compat",
+        "install-winetricks-verb", "run-enhanced-diagnostics",
+        "restart-wineserver", "set-registry-value", "apply-launcher-fixes",
+        "apply-game-config"
+    ]
 
     // MARK: - Preview
 
@@ -179,22 +192,63 @@ public enum FixApplicator { // swiftlint:disable:this type_body_length
                 isReversible: false
             )
 
-        case "install-dependency":
-            let dependency = params["dependency"] ?? "unknown"
+        case "run-enhanced-diagnostics":
+            guard let program else { return nil }
+            let preset = params["preset"].flatMap(WineDebugPreset.init(rawValue:)) ?? .verbose
             return FixPreview(
-                settingName: "Dependency",
-                currentValue: "Not installed",
-                newValue: dependency,
+                settingName: "WINEDEBUG Preset",
+                currentValue: program.settings.activeWineDebugPreset?.rawValue ?? "default",
+                newValue: preset.rawValue,
+                scope: "program",
+                isReversible: true
+            )
+
+        case "set-registry-value":
+            let name = params["settingName"] ?? params["valueName"] ?? "Registry value"
+            let current: String = if let key = params["key"], let valueName = params["valueName"] {
+                WineRegistryFile.readValue(
+                    bottleURL: bottle.url, key: key, valueName: valueName
+                ) ?? "Not set"
+            } else {
+                "Unknown"
+            }
+            let newValue = params["value"].flatMap { $0.isEmpty ? nil : $0 } ?? "Not set"
+            return FixPreview(
+                settingName: name,
+                currentValue: current,
+                newValue: newValue,
+                scope: "bottle",
+                isReversible: true
+            )
+
+        case "apply-launcher-fixes":
+            let launcher = program.flatMap { LauncherType.detect(from: $0.url) }
+            return FixPreview(
+                settingName: "Launcher compatibility fixes",
+                currentValue: launcher.map(\.displayName) ?? "No launcher detected",
+                newValue: "Reapplied",
                 scope: "bottle",
                 isReversible: false
             )
 
-        case "run-enhanced-diagnostics":
-            let preset = params["preset"] ?? "verbose"
+        case "apply-game-config":
+            guard let program,
+                  let match = GameMatcher.bestMatch(
+                      metadata: ProgramMetadata(
+                          exeName: program.url.lastPathComponent, exeURL: program.url
+                      ),
+                      against: GameDBLoader.loadDefaults()
+                  ),
+                  let variant = match.entry.defaultVariant
+            else {
+                return nil
+            }
+            let changes = GameConfigApplicator.previewChanges(variant: variant, bottle: bottle)
             return FixPreview(
-                settingName: "WINEDEBUG Preset",
-                currentValue: "default",
-                newValue: preset,
+                settingName: "Game configuration: \(match.entry.title)",
+                currentValue: changes.isEmpty
+                    ? "Already matches" : "\(changes.count) setting(s) differ",
+                newValue: variant.label,
                 scope: "bottle",
                 isReversible: true
             )
@@ -317,25 +371,87 @@ public enum FixApplicator { // swiftlint:disable:this type_body_length
                 result: .pending
             )
 
-        case "install-dependency":
-            // Dependency installation is async and non-reversible.
-            // Delegated to DependencyManager infrastructure.
-            let dependency = params["dependency"] ?? "unknown"
+        case "run-enhanced-diagnostics":
+            guard let program else {
+                logger.info("run-enhanced-diagnostics needs a program context")
+                return FixAttempt(fixId: fixId, result: .failed)
+            }
+            let preset = params["preset"].flatMap(WineDebugPreset.init(rawValue:)) ?? .verbose
+            let before = program.settings.activeWineDebugPreset?.rawValue ?? "default"
+            program.settings.activeWineDebugPreset = preset
+            return FixAttempt(
+                fixId: fixId,
+                beforeValue: before,
+                afterValue: preset.rawValue,
+                result: .applied
+            )
+
+        case "set-registry-value":
+            guard let key = params["key"], let valueName = params["valueName"] else {
+                logger.error("set-registry-value needs 'key' and 'valueName' params")
+                return FixAttempt(fixId: fixId, result: .failed)
+            }
+            let before = WineRegistryFile.readValue(
+                bottleURL: bottle.url, key: key, valueName: valueName
+            )
+            let value = params["value"] ?? ""
+            writeRegistryValue(
+                key: key,
+                valueName: valueName,
+                value: value,
+                type: registryType(for: params["valueType"]),
+                bottle: bottle
+            )
+            // The write runs through wine reg; the verify step re-reads the
+            // prefix to confirm it landed.
+            return FixAttempt(
+                fixId: fixId,
+                beforeValue: before,
+                afterValue: value.isEmpty ? nil : value,
+                result: .pending,
+                params: params
+            )
+
+        case "apply-launcher-fixes":
+            guard let program, let launcher = LauncherType.detect(from: program.url) else {
+                logger.info("apply-launcher-fixes: no launcher detected for this program")
+                return FixAttempt(fixId: fixId, result: .failed)
+            }
+            LauncherFixes.apply(to: bottle, launcher: launcher, force: true)
             return FixAttempt(
                 fixId: fixId,
                 beforeValue: nil,
-                afterValue: dependency,
-                result: .pending
-            )
-
-        case "run-enhanced-diagnostics":
-            let preset = params["preset"] ?? "verbose"
-            return FixAttempt(
-                fixId: fixId,
-                beforeValue: "default",
-                afterValue: preset,
+                afterValue: launcher.rawValue,
                 result: .applied
             )
+
+        case "apply-game-config":
+            guard let program,
+                  let match = GameMatcher.bestMatch(
+                      metadata: ProgramMetadata(
+                          exeName: program.url.lastPathComponent, exeURL: program.url
+                      ),
+                      against: GameDBLoader.loadDefaults()
+                  ),
+                  let variant = match.entry.defaultVariant
+            else {
+                logger.info("apply-game-config: no confident game match for this program")
+                return FixAttempt(fixId: fixId, result: .failed)
+            }
+            do {
+                _ = try GameConfigApplicator.apply(
+                    entry: match.entry, variant: variant, to: bottle, programURL: program.url
+                )
+                return FixAttempt(
+                    fixId: fixId,
+                    beforeValue: nil,
+                    afterValue: "\(match.entry.title) (\(variant.label))",
+                    result: .applied
+                )
+            } catch {
+                logger.error("apply-game-config failed: \(error.localizedDescription)")
+                return FixAttempt(fixId: fixId, result: .failed)
+            }
 
         case "restart-wineserver":
             // Non-reversible: kills the wineserver process
@@ -432,11 +548,30 @@ public enum FixApplicator { // swiftlint:disable:this type_body_length
             return true
 
         case "run-enhanced-diagnostics":
-            // Reversible: clear the WINEDEBUG preset by restoring default
+            guard let program else { return false }
+            // A before-value that names no preset ("default") clears it
+            program.settings.activeWineDebugPreset = attempt.beforeValue
+                .flatMap(WineDebugPreset.init(rawValue:))
             return true
 
+        case "set-registry-value":
+            guard let params = attempt.params,
+                  let key = params["key"], let valueName = params["valueName"]
+            else {
+                return false
+            }
+            writeRegistryValue(
+                key: key, valueName: valueName, value: attempt.beforeValue ?? "",
+                type: registryType(for: params["valueType"]), bottle: bottle
+            )
+            return true
+
+        case "apply-game-config":
+            guard let snapshot = GameConfigSnapshot.load(from: bottle.url) else { return false }
+            return (try? GameConfigApplicator.revert(bottle: bottle, snapshot: snapshot)) != nil
+
         case "install-winetricks-verb",
-             "install-dependency",
+             "apply-launcher-fixes",
              "restart-wineserver":
             // Non-reversible fixes cannot be undone
             logger.info("Fix '\(attempt.fixId)' is not reversible")
@@ -445,6 +580,40 @@ public enum FixApplicator { // swiftlint:disable:this type_body_length
         default:
             logger.warning("Unknown fixId for undo: \(attempt.fixId)")
             return false
+        }
+    }
+
+    // MARK: - Registry Helpers
+
+    private static func registryType(for name: String?) -> RegistryType {
+        switch name {
+        case "dword": .dword
+        case "qword": .qword
+        case "binary": .binary
+        default: .string
+        }
+    }
+
+    /// Fires the registry write without blocking the caller. An empty value
+    /// deletes the entry, which is how an override is cleared.
+    @MainActor
+    private static func writeRegistryValue(
+        key: String, valueName: String, value: String, type: RegistryType, bottle: Bottle
+    ) {
+        Task {
+            do {
+                if value.isEmpty {
+                    try await Wine.deleteRegistryValue(bottle: bottle, key: key, name: valueName)
+                } else {
+                    try await Wine.addRegistryKey(
+                        bottle: bottle, key: key, name: valueName, data: value, type: type
+                    )
+                }
+            } catch {
+                logger.error(
+                    "Registry write \(key)\\\(valueName) failed: \(error.localizedDescription)"
+                )
+            }
         }
     }
 }

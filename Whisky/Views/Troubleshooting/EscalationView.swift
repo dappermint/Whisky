@@ -123,7 +123,9 @@ extension EscalationView {
 extension EscalationView {
     private var optionsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            enhancedDiagnosticsOption
+            if program != nil {
+                enhancedDiagnosticsOption
+            }
             exportDiagnosticsOption
             supportIssueOption
             retryOption
@@ -137,19 +139,30 @@ extension EscalationView {
     private var enhancedDiagnosticsOption: some View {
         escalationButton(
             title: "Run Enhanced Diagnostics",
-            description: "Re-run with verbose Wine logging enabled (WINEDEBUG). "
-                + "This creates detailed logs that help diagnose the issue.",
+            description: "Enable verbose Wine logging (WINEDEBUG) for this program's "
+                + "next run. The detailed log helps diagnose the issue.",
             sfSymbol: "text.magnifyingglass",
             action: runEnhancedDiagnostics
         )
     }
 
     private func runEnhancedDiagnostics() {
-        engine.applyFix(
+        let attempt = FixApplicator.apply(
             fixId: "run-enhanced-diagnostics",
-            beforeValue: "default",
-            afterValue: "verbose"
+            params: [:],
+            bottle: bottle,
+            program: program
         )
+        engine.applyFix(
+            fixId: attempt.fixId,
+            beforeValue: attempt.beforeValue,
+            afterValue: attempt.afterValue
+        )
+        if attempt.result == .failed {
+            engine.markFixFailed(fixId: attempt.fixId)
+        } else {
+            engine.confirmFixApplied(fixId: attempt.fixId)
+        }
     }
 }
 
