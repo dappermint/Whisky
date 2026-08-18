@@ -69,7 +69,6 @@ final class GameDatabaseTests: XCTestCase {
           "exeNames": ["eldenring.exe"],
           "exeFingerprints": [
             {
-              "sha256": null,
               "fileSize": 78643200,
               "peTimestamp": null
             }

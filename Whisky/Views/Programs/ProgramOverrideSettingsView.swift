@@ -35,6 +35,7 @@ struct ProgramOverrideSettingsView: View {
     @State private var showResetConfirmation = false
     @State private var showDiagnosticsSheet = false
     @State private var showProvenance = false
+    @State private var showAudioWizard = false
     @State private var activeDiagnosis: CrashDiagnosis?
     @State private var activeLogText: String = ""
     @State private var gameMatch: MatchResult?
@@ -86,6 +87,14 @@ struct ProgramOverrideSettingsView: View {
             }
             .sheet(isPresented: $showProvenance) {
                 LaunchPlanInspectorView(bottle: bottle, program: program)
+            }
+            .sheet(isPresented: $showAudioWizard) {
+                TroubleshootingWizardView(
+                    bottle: bottle,
+                    program: program,
+                    entryContext: .program(programURL: program.url, bottleURL: bottle.url),
+                    preselectedCategory: .audio
+                )
             }
     }
 
@@ -153,14 +162,10 @@ struct ProgramOverrideSettingsView: View {
     // MARK: - Audio Troubleshooting Section
 
     private var audioTroubleshootingSection: some View {
-        Section("Audio") {
-            Button("Troubleshoot Audio\u{2026}") {
-                NotificationCenter.default.post(
-                    name: .openAudioTroubleshooting,
-                    object: nil
-                )
+        Section("config.title.audio") {
+            Button("audio.troubleshoot.button") {
+                showAudioWizard = true
             }
-            .help("Open audio diagnostics and troubleshooting for this bottle")
         }
     }
 

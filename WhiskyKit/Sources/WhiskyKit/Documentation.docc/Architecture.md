@@ -61,35 +61,38 @@ MyBottle/
 The ``Wine`` class provides the interface to the Wine runtime:
 
 - **Process Management**: Start and monitor Wine processes
-- **Environment Setup**: Configure environment variables for DirectX, Metal, and performance
-- **Logging**: Capture output and errors from Wine processes
-- **DXVK Integration**: Install and enable DXVK for Direct3D-to-Vulkan translation
+- **Environment Setup**: A layered ``EnvironmentBuilder`` resolves settings into environment variables, recording per-key provenance
+- **Logging**: Capture output and errors from Wine processes into per-run logs
 
-Key execution flow:
+Every entry point launches through the same door, so the full stack applies no matter where the click happened:
 
 ```
-runProgram(url, bottle)
+Program.launchWithUserMode(useTerminal:)
        │
        ▼
-┌──────────────────┐
-│ Enable DXVK if   │
-│ configured       │
-└────────┬─────────┘
-         │
+┌────────────────────┐
+│ LauncherFixes      │  detect the launcher, apply compatibility settings
+└────────┬───────────┘
          ▼
-┌──────────────────┐
-│ Construct Wine   │
-│ environment vars │
-└────────┬─────────┘
-         │
+┌────────────────────┐
+│ LaunchResolver     │  GameDB profile fills what the user left unset
+└────────┬───────────┘
          ▼
-┌──────────────────┐
-│ Execute wine64   │
-│ start /unix      │
-└────────┬─────────┘
-         │
+┌────────────────────┐
+│ syncAudioRegistry  │  wine reg, only when audio settings changed
+└────────┬───────────┘
          ▼
-   AsyncStream<ProcessOutput>
+┌────────────────────┐
+│ EnvironmentBuilder │  layered resolve, per-key provenance
+└────────┬───────────┘
+         ▼
+┌────────────────────┐
+│ Execute wine64     │
+│ start /unix        │
+└────────┬───────────┘
+         ▼
+  run log, then crash classification
+  (immediate check + wineserver-idle watcher)
 ```
 
 ### Program Discovery

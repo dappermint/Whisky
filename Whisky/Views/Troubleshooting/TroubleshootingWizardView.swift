@@ -28,6 +28,9 @@ struct TroubleshootingWizardView: View {
     let bottle: Bottle
     let program: Program?
     let entryContext: EntryContext
+    /// Skips the symptom grid straight into this category's flow, for entry
+    /// points that already know what hurts (the audio section's button).
+    let preselectedCategory: SymptomCategory?
 
     @StateObject private var engine: TroubleshootingFlowEngine
     @Environment(\.dismiss) private var dismiss
@@ -39,10 +42,16 @@ struct TroubleshootingWizardView: View {
 
     private let sessionStore = TroubleshootingSessionStore()
 
-    init(bottle: Bottle, program: Program?, entryContext: EntryContext) {
+    init(
+        bottle: Bottle,
+        program: Program?,
+        entryContext: EntryContext,
+        preselectedCategory: SymptomCategory? = nil
+    ) {
         self.bottle = bottle
         self.program = program
         self.entryContext = entryContext
+        self.preselectedCategory = preselectedCategory
 
         let store = TroubleshootingSessionStore()
         let engine = TroubleshootingFlowEngine(
@@ -274,6 +283,8 @@ extension TroubleshootingWizardView {
                 // Pre-populate with launch crash category
                 engine.selectCategory(.launchCrash)
                 _ = evidence
+            } else if let preselectedCategory {
+                engine.selectCategory(preselectedCategory)
             }
         }
     }

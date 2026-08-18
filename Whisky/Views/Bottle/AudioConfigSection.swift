@@ -38,9 +38,6 @@ struct AudioConfigSection: View {
     /// Debounce timer for Bluetooth device change events.
     @State private var debounceTask: Task<Void, Never>?
 
-    /// The troubleshooting engine, created when the wizard opens.
-    @State private var troubleshootingEngine: AudioTroubleshootingEngine?
-
     var body: some View {
         Section("Audio") {
             // 1. Status line
@@ -93,29 +90,21 @@ struct AudioConfigSection: View {
             }
 
             // 8. Troubleshooting link
-            Button("Audio Troubleshooting\u{2026}") {
-                openTroubleshootingWizard()
+            Button("audio.troubleshoot.button") {
+                showTroubleshootingWizard = true
             }
         }
         .animation(.default, value: advancedMode)
         .onAppear {
             startDeviceListening()
         }
-        .onReceive(NotificationCenter.default.publisher(for: .openAudioTroubleshooting)) { _ in
-            openTroubleshootingWizard()
-        }
         .sheet(isPresented: $showTroubleshootingWizard) {
-            if let engine = troubleshootingEngine {
-                AudioTroubleshootingWizardView(
-                    engine: engine,
-                    onDismiss: {
-                        showTroubleshootingWizard = false
-                    },
-                    onOpenAdvanced: {
-                        advancedMode = true
-                    }
-                )
-            }
+            TroubleshootingWizardView(
+                bottle: bottle,
+                program: nil,
+                entryContext: .bottleDiagnostics(bottleURL: bottle.url),
+                preselectedCategory: .audio
+            )
         }
     }
 }
@@ -192,23 +181,6 @@ extension AudioConfigSection {
                 break
             }
         }
-    }
-}
-
-// MARK: - Troubleshooting Wizard
-
-extension AudioConfigSection {
-    private func openTroubleshootingWizard() {
-        let probes: [any AudioProbe] = [
-            CoreAudioDeviceProbe(monitor: monitor),
-            WineRegistryAudioProbe(bottle: bottle),
-            WineAudioTestProbe(
-                bottle: bottle,
-                testExeURL: Bundle.main.url(forResource: "WhiskyAudioTest", withExtension: "exe")
-            )
-        ]
-        troubleshootingEngine = AudioTroubleshootingEngine(probes: probes)
-        showTroubleshootingWizard = true
     }
 }
 
