@@ -59834,6 +59834,22 @@
         }
       }
     },
+    "library.card.settingsFallback" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't pick this game's program. Opening the bottle instead."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't pick this game's program. Opening the bottle instead."
+          }
+        }
+      }
+    },
     "library.card.unhide" : {
       "localizations" : {
         "en" : {

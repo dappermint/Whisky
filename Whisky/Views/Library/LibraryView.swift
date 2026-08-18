@@ -202,12 +202,27 @@ struct LibraryView: View {
 
     private func openSettings(for row: LibraryRow) {
         guard let bottle = bottles.first(where: { $0.url == row.item.bottleURL }) else { return }
-        if let program = settingsProgram(for: row, in: bottle) {
-            settingsTarget = LibrarySettingsTarget(bottle: bottle, program: program, id: program.url)
-        } else {
-            // No single executable speaks for this game; the bottle view has
-            // the full list.
-            selectedBottle = row.item.bottleURL
+        Task {
+            // Steam resolution reads bottle.programs, which stays empty until
+            // something scans the bottle. A session that went straight to the
+            // library has never scanned, so the sheet would silently fall
+            // through to the bottle every time.
+            if row.item.programURL == nil, bottle.programs.isEmpty {
+                await bottle.updateInstalledPrograms()
+            }
+            if let program = settingsProgram(for: row, in: bottle) {
+                settingsTarget = LibrarySettingsTarget(
+                    bottle: bottle, program: program, id: program.url
+                )
+            } else {
+                // No single executable speaks for this game; the bottle view
+                // has the full list. Say so instead of switching wordlessly.
+                model.toast = ToastData(
+                    message: String(localized: "library.card.settingsFallback"),
+                    style: .info
+                )
+                selectedBottle = row.item.bottleURL
+            }
         }
     }
 
