@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Ways to launch without opening the window. Right-clicking Whisky in the Dock
+  lists the pinned games. `whisky://launch?pin=Name` and
+  `whisky://launch?steam=12345` start a game from Shortcuts, Raycast or a
+  stream deck, with `&bottle=Name` to pick when two bottles match. Dropping an
+  installer or exe from Finder anywhere on the window opens the run flow.
+
+### Changed
+- Whisky tells macOS it is a games app, so the Apps window and the App Store
+  category file it under Games rather than Utilities.
+
+### Fixed
+- The crash banner's View Diagnosis button opens the diagnosis it announced
+  instead of only dismissing the banner. The launcher section's View
+  Diagnostics and the missing-dependency Install button had the same problem,
+  posting notifications nothing observed; both now do what they say, and
+  Troubleshoot finds the right bottle instead of asking every time.
+
+### Removed
+- ClickOnce support. Games do not arrive as `.appref-ms` deployments, so the
+  detection pass, the badge, the context menu and the .NET auto-recommendation
+  are gone. A prefix containing ClickOnce artifacts still scans cleanly.
+- The Sparkle updater. It was linked and delegated but never constructed, with
+  no feed to check. Updates ship through the Homebrew cask.
+
 ### Fixed
 - A new bottle is usable the moment it finishes. The spinner beside its name kept
   running after creation had completed and only a relaunch cleared it.
