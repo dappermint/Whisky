@@ -120,13 +120,14 @@ final class LibraryModel: ObservableObject {
             // off the main actor, and it needs nothing but the bottle URL.
             let pinned = PinnedLibrarySource.items(inBottleAt: url, settings: bottle.settings)
             let steam = await Task.detached { SteamLibrarySource.entries(inBottleAt: url) }.value
+            let records = GameRecordStore(bottleURL: url).records()
 
             for item in LibraryCatalogue.merge([pinned, steam]) {
                 built.append(
                     LibraryRow(
                         item: item,
                         bottleName: showBottleName ? bottle.settings.name : nil,
-                        lastPlayed: lastPlayed(for: item, routed: routed)
+                        lastPlayed: lastPlayed(for: item, records: records, routed: routed)
                     )
                 )
             }
@@ -138,10 +139,17 @@ final class LibraryModel: ObservableObject {
     }
 
     /// When an entry was last started in Whisky.
+    ///
+    /// The game record is the source: it is stamped on every launch and keyed
+    /// by identity. The run log and the routing table cover launches from
+    /// before records existed, so nobody's history resets on update.
     private func lastPlayed(
-        for item: LibraryEntry, routed: [Int: Date]
+        for item: LibraryEntry, records: [GameRecordID: GameRecord], routed: [Int: Date]
     ) -> Date? {
-        switch item.launch {
+        if let stamped = records[item.recordID]?.lastPlayedInWhisky {
+            return stamped
+        }
+        return switch item.launch {
         case let .program(url):
             RunLogStore.load(for: url.lastPathComponent, in: item.bottleURL)
                 .entries.map(\.startTime).max()

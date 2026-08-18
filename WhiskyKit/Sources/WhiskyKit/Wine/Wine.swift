@@ -370,6 +370,11 @@ public class Wine {
         let prunedEntries = runLogHistory.append(runLogEntry)
         RunLogStore.save(runLogHistory, for: programName, in: bottle.url)
 
+        // Stamp the game record too: it is keyed by the exe's bottle-relative
+        // path where the run log is keyed by bare filename, so two Launch.exe
+        // in one bottle stop sharing a last-played.
+        GameRecordStore(bottleURL: bottle.url).recordLaunch(.pin(at: url, bottleURL: bottle.url))
+
         // Clean up log files for pruned entries
         for pruned in prunedEntries {
             let prunedLogURL = Self.logsFolder.appending(path: pruned.logFileName)
