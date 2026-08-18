@@ -573,11 +573,12 @@ final class LauncherDiagnosticsTests: XCTestCase {
         var env: [String: String] = [:]
         bottle.settings.environmentVariables(wineEnv: &env)
 
-        // Connection pooling fixes should always be applied when launcher compat is on
-        XCTAssertEqual(env["WINE_MAX_CONNECTIONS_PER_SERVER"], "10")
-        XCTAssertEqual(env["WINE_FORCE_HTTP11"], "1")
-        XCTAssertEqual(env["WINE_ENABLE_SSL"], "1")
-        XCTAssertEqual(env["WINE_SSL_VERSION_MIN"], "TLS1.2")
+        // These variables exist in no Wine or WineCX source; asserting their
+        // absence keeps them from coming back as reassuring decoration.
+        XCTAssertNil(env["WINE_MAX_CONNECTIONS_PER_SERVER"])
+        XCTAssertNil(env["WINE_FORCE_HTTP11"])
+        XCTAssertNil(env["WINE_ENABLE_SSL"])
+        XCTAssertNil(env["WINE_SSL_VERSION_MIN"])
     }
 }
 

@@ -94,21 +94,9 @@ struct GraphicsConfigSection: View {
                 Text("config.forceD3D11")
             }
 
-            // Sequoia Compatibility Mode -- always visible
-            Toggle(isOn: $bottle.settings.sequoiaCompatMode) {
-                VStack(alignment: .leading) {
-                    Text("config.sequoiaCompat")
-                    if resolvedBackend == .wined3d {
-                        Text("config.sequoiaCompat.d3dmetalOnly")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Text("config.sequoiaCompat.info")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
+            // The Sequoia compatibility toggle is gone: everything it set is a
+            // platform-layer fix applied on every supported macOS, so the
+            // switch changed nothing in either position.
 
             // "Advanced settings active" badge in Simple mode
             if !advancedMode, hasAdvancedSettingsConfigured {
