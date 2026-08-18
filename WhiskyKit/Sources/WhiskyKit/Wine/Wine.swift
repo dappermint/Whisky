@@ -1100,8 +1100,10 @@ public extension Wine {
 
     /// Classifies the output from a Wine process run for crash patterns.
     ///
-    /// Reads the tail of the log file (up to 500 lines / 256 KiB) and runs
-    /// classification on a background task to avoid blocking the UI.
+    /// Reads the head and the tail of the log, not the tail alone: missing-DLL
+    /// (`import_dll`) and backend-init failures are head-of-log events, and a
+    /// long session buries them under hours of output a tail-only window never
+    /// sees. Runs on a background task to avoid blocking the UI.
     ///
     /// - Parameters:
     ///   - logFileURL: URL to the Wine log file to analyze.
@@ -1115,41 +1117,59 @@ public extension Wine {
         classifier: CrashClassifier? = nil
     ) async -> CrashDiagnosis? {
         await Task.detached(priority: .utility) {
-            let maxBytesToRead = 256 * 1_024
-            let maxLines = 500
-
-            do {
-                let handle = try FileHandle(forReadingFrom: logFileURL)
-                defer { try? handle.close() }
-
-                let end = try handle.seekToEnd()
-                let start = end > UInt64(maxBytesToRead) ? end - UInt64(maxBytesToRead) : 0
-                try handle.seek(toOffset: start)
-
-                let data = try handle.readToEnd() ?? Data()
-                guard var text = String(data: data, encoding: .utf8), !text.isEmpty else {
-                    return nil
-                }
-
-                // Drop first partial line if reading from the middle
-                if start != 0, let firstNewline = text.firstIndex(of: "\n") {
-                    text = String(text[text.index(after: firstNewline)...])
-                }
-
-                // Limit to last N lines
-                let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
-                let logText: String = if lines.count > maxLines {
-                    lines.suffix(maxLines).joined(separator: "\n")
-                } else {
-                    lines.joined(separator: "\n")
-                }
-
-                let resolvedClassifier = classifier ?? CrashClassifier()
-                return resolvedClassifier.classify(log: logText, exitCode: exitCode)
-            } catch {
+            guard let logText = try? classificationWindow(of: logFileURL), !logText.isEmpty else {
                 return nil
             }
+            let resolvedClassifier = classifier ?? CrashClassifier()
+            return resolvedClassifier.classify(log: logText, exitCode: exitCode)
         }.value
+    }
+
+    /// The head and tail of a log, joined into the window classification reads.
+    private nonisolated static func classificationWindow(of logFileURL: URL) throws -> String? {
+        let maxTailBytes = 256 * 1_024
+        let maxHeadBytes = 64 * 1_024
+        let maxTailLines = 500
+        let maxHeadLines = 200
+
+        let handle = try FileHandle(forReadingFrom: logFileURL)
+        defer { try? handle.close() }
+        let end = try handle.seekToEnd()
+
+        if end <= UInt64(maxHeadBytes + maxTailBytes) {
+            try handle.seek(toOffset: 0)
+            let data = try handle.readToEnd() ?? Data()
+            guard let text = String(data: data, encoding: .utf8), !text.isEmpty else { return nil }
+            let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+            if lines.count <= maxHeadLines + maxTailLines {
+                return text
+            }
+            return (lines.prefix(maxHeadLines) + lines.suffix(maxTailLines)).joined(separator: "\n")
+        }
+
+        try handle.seek(toOffset: 0)
+        let headData = try handle.read(upToCount: maxHeadBytes) ?? Data()
+        var head = String(data: headData, encoding: .utf8) ?? ""
+        // Drop the trailing partial line of the head window.
+        if let lastNewline = head.lastIndex(of: "\n") {
+            head = String(head[..<lastNewline])
+        }
+        let headLines = head
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .prefix(maxHeadLines)
+
+        try handle.seek(toOffset: end - UInt64(maxTailBytes))
+        let tailData = try handle.readToEnd() ?? Data()
+        var tail = String(data: tailData, encoding: .utf8) ?? ""
+        // Drop the leading partial line of the tail window.
+        if let firstNewline = tail.firstIndex(of: "\n") {
+            tail = String(tail[tail.index(after: firstNewline)...])
+        }
+        let tailLines = tail
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .suffix(maxTailLines)
+
+        return (headLines + tailLines).joined(separator: "\n")
     }
 }
 

@@ -40,7 +40,10 @@ private let crashSignatures: Set<String> = [
     "device lost",
     "DEVICE_REMOVED",
     "DEVICE_HUNG",
-    "Fatal error"
+    "Fatal error",
+    // The head-of-log event behind "the game does nothing": a DLL the exe
+    // imports could not be loaded.
+    "import_dll"
 ]
 
 public extension Program {
@@ -120,17 +123,47 @@ public extension Program {
             // Track the log file URL for diagnostics
             settings.lastLogFileURL = result.logFileURL
 
-            // Trigger classification if non-zero exit or crash signatures detected in log
+            // The exit code and the log this instant belong to the `start
+            // /unix` stub, which returns seconds after launch, so this check
+            // only sees failures that happen immediately. Anything later is
+            // the watcher's job below.
             if result.exitCode != 0 || logContainsCrashSignatures(result.logFileURL) {
                 triggerCrashClassification(
                     logFileURL: result.logFileURL,
                     exitCode: result.exitCode
                 )
+            } else {
+                watchForLateCrash(logFileURL: result.logFileURL)
             }
 
             return .launchedSuccessfully(programName: self.name)
         } catch {
             return .launchFailed(programName: self.name, errorDescription: error.localizedDescription)
+        }
+    }
+
+    /// Watches for the session actually ending, then classifies its log.
+    ///
+    /// The bottle's wineserver going idle is the end-of-session signal, the
+    /// same one Discord presence uses, and this run's log keeps growing until
+    /// then because Wine's children inherit its file descriptor. Each launch
+    /// has its own log file, so concurrent watchers never double-report one
+    /// run. The probe is deliberately one interval late; the wineserver may
+    /// not be up yet at the moment of launch.
+    private func watchForLateCrash(logFileURL: URL) {
+        let bottle = self.bottle
+        Task {
+            while true {
+                try? await Task.sleep(for: .seconds(30))
+                if logContainsCrashSignatures(logFileURL) {
+                    triggerCrashClassification(logFileURL: logFileURL, exitCode: 1)
+                    return
+                }
+                // Checked after the scan, so a crash written between the last
+                // scan and the wineserver going down still gets one look.
+                let running = await Wine.isWineserverRunning(for: bottle)
+                if !running { return }
+            }
         }
     }
 
