@@ -44,10 +44,14 @@ enum LibraryEntryState: Equatable {
 /// size where it stays crisp.
 struct LibraryCard: View {
     let item: LibraryEntry
+    /// The resolved display name: a rename, a launcher's proper name, or the
+    /// source's. Resolved by ``LibraryRow`` so search and sort see the same one.
+    let title: String
     /// Only shown when there is more than one bottle, since with a single bottle
     /// the prefix is plumbing and naming it on every card is noise.
     let bottleName: String?
     let lastPlayed: Date?
+    let favourite: Bool
     let state: LibraryEntryState
     let launch: () -> Void
 
@@ -68,10 +72,6 @@ struct LibraryCard: View {
     private var foreground: Color {
         palette.deepened().prefersLightForeground ? .white : .black
     }
-
-    /// A launcher is named by what it is. A pin takes its name from the
-    /// executable, which is how the Steam client ends up on screen as "steam".
-    private var title: String { item.launcher?.displayName ?? item.name }
 
     var body: some View {
         Button(action: launch) {
@@ -146,13 +146,21 @@ struct LibraryCard: View {
                     statusView
                 }
                 Spacer(minLength: 8)
-                Text(title)
-                    .font(.headline)
-                    .lineLimit(1)
-                    // Tail, not middle: a game's name is recognisable from its
-                    // start, and "The Elder Scro...Special Edition" reads worse
-                    // than losing the edition suffix.
-                    .truncationMode(.tail)
+                HStack(spacing: 5) {
+                    Text(title)
+                        .font(.headline)
+                        .lineLimit(1)
+                        // Tail, not middle: a game's name is recognisable from
+                        // its start, and "The Elder Scro...Special Edition"
+                        // reads worse than losing the edition suffix.
+                        .truncationMode(.tail)
+                    if favourite {
+                        Image(systemName: "star.fill")
+                            .font(.caption)
+                            .foregroundStyle(.yellow)
+                            .accessibilityLabel("library.card.favorite")
+                    }
+                }
                 Text(subtitle)
                     .font(.caption)
                     .foregroundStyle(foreground.opacity(0.7))

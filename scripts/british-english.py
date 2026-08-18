@@ -46,6 +46,8 @@ SPELLINGS = [
     (r"\bbehavior(s)?\b", r"behaviour\1"),
     (r"\bBehavior(s)?\b", r"Behaviour\1"),
     (r"\bcatalog(s)?\b", r"catalogue\1"),
+    (r"\bfavorite(s)?\b", r"favourite\1"),
+    (r"\bFavorite(s)?\b", r"Favourite\1"),
     (r"\bcancel(ed|ing)\b", r"cancell\1"),
     (r"\bCancel(ed|ing)\b", r"Cancell\1"),
     (r"\bcenter(s|ed|ing)?\b", r"centre\1"),

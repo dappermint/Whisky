@@ -38,15 +38,19 @@ struct LibraryView: View {
     @Binding var refresh: Bool
 
     @AppStorage("librarySort") private var sort: LibrarySort = .recent
+    @AppStorage("libraryShowHidden") private var showHidden = false
 
     @StateObject private var model = LibraryModel()
     @State private var search: String = ""
+    @State private var renameTarget: LibraryRow?
+    @State private var renameText: String = ""
 
     private var bottles: [Bottle] { bottleVM.bottles.filter(\.isAvailable) }
 
     private var visible: [LibraryRow] {
-        guard !search.isEmpty else { return model.rows }
-        return model.rows.filter { $0.item.name.localizedCaseInsensitiveContains(search) }
+        let shown = showHidden ? model.rows : model.rows.filter { !$0.isHidden }
+        guard !search.isEmpty else { return shown }
+        return shown.filter { $0.name.localizedCaseInsensitiveContains(search) }
     }
 
     /// Every input that changes what the grid should contain. Pins live in
@@ -89,6 +93,24 @@ struct LibraryView: View {
         } message: {
             Text(model.launchError ?? "")
         }
+        .alert(
+            "library.rename.title",
+            isPresented: Binding(
+                get: { renameTarget != nil },
+                set: { if !$0 { renameTarget = nil } }
+            ),
+            presenting: renameTarget
+        ) { row in
+            TextField("library.rename.title", text: $renameText)
+            Button("library.rename.title") {
+                model.rename(row, to: renameText)
+            }
+            Button("button.cancel", role: .cancel) {}
+        } message: { _ in
+            // Clearing the field puts the source's own name back, which is the
+            // undo for a rename.
+            Text("library.rename.message")
+        }
     }
 
     private var sortMenu: some ToolbarContent {
@@ -100,6 +122,8 @@ struct LibraryView: View {
                     }
                 }
                 .pickerStyle(.inline)
+                Divider()
+                Toggle("library.showHidden", isOn: $showHidden)
             } label: {
                 Label("library.sort", systemImage: "arrow.up.arrow.down")
             }
@@ -119,11 +143,16 @@ struct LibraryView: View {
                 ForEach(visible) { row in
                     LibraryCard(
                         item: row.item,
+                        title: row.name,
                         bottleName: row.bottleName,
                         lastPlayed: row.lastPlayed,
+                        favourite: row.isFavourite,
                         state: model.state(for: row.item),
                         launch: { model.launch(row, bottles: bottles) }
                     )
+                    // Dimmed rather than gone under Show Hidden, so hiding is
+                    // visibly a state and not a deletion.
+                    .opacity(row.isHidden ? 0.55 : 1)
                     .contextMenu { menu(for: row) }
                 }
             }
@@ -136,6 +165,17 @@ struct LibraryView: View {
         Button("button.run") { model.launch(row, bottles: bottles) }
         if model.state(for: row.item) == .running {
             Button("library.card.stop") { model.stop(row, bottles: bottles) }
+        }
+        Divider()
+        Button(row.isFavourite ? "library.card.removeFavorite" : "library.card.addFavorite") {
+            model.setFavourite(row, !row.isFavourite)
+        }
+        Button("library.card.rename") {
+            renameText = row.name
+            renameTarget = row
+        }
+        Button(row.isHidden ? "library.card.unhide" : "library.card.hide") {
+            model.setHidden(row, !row.isHidden)
         }
         Divider()
         if case let .program(url) = row.item.launch {
