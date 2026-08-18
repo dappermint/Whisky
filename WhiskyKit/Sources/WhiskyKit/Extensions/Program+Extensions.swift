@@ -93,6 +93,8 @@ public extension Program {
         }
 
         // Normal Wine launch with program-specific settings
+        await Wine.syncAudioRegistry(bottle: bottle)
+
         let arguments = settings.arguments.split { $0.isWhitespace }.map(String.init)
         let environment = generateEnvironment()
 
