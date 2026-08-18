@@ -62,7 +62,7 @@ struct ConfigView: View {
         }
     }
 
-    @AppStorage("wineSectionExpanded") private var wineSectionExpanded: Bool = true
+    @AppStorage("wineSectionExpanded") private var wineSectionExpanded: Bool = false
     @AppStorage("performanceSectionExpanded") private var performanceSectionExpanded: Bool = true
     @AppStorage("launcherSectionExpanded") private var launcherSectionExpanded: Bool = false
     @AppStorage("inputSectionExpanded") private var inputSectionExpanded: Bool = false
@@ -71,6 +71,20 @@ struct ConfigView: View {
 
     var body: some View {
         Form {
+            // What a game feels first comes first; the Wine plumbing that
+            // built this screen's reputation sits below, collapsed.
+            GraphicsConfigSection(bottle: bottle)
+            AudioConfigSection(bottle: bottle)
+            PerformanceConfigSection(bottle: bottle, isExpanded: $performanceSectionExpanded)
+            ResolutionConfigSection(bottle: bottle)
+            InputConfigSection(bottle: bottle, isExpanded: $inputSectionExpanded)
+            LauncherConfigSection(
+                bottle: bottle,
+                isExpanded: $launcherSectionExpanded,
+                onViewDiagnostics: loadLatestDiagnosisAndView
+            )
+            DiscordConfigSection(bottle: bottle)
+            DependencyConfigSection(bottle: bottle)
             WineConfigSection(
                 bottle: bottle,
                 isExpanded: $wineSectionExpanded,
@@ -86,19 +100,7 @@ struct ConfigView: View {
                 onRetryRetinaMode: loadRetinaMode,
                 onRetryDpi: loadDpi
             )
-            LauncherConfigSection(
-                bottle: bottle,
-                isExpanded: $launcherSectionExpanded,
-                onViewDiagnostics: loadLatestDiagnosisAndView
-            )
-            InputConfigSection(bottle: bottle, isExpanded: $inputSectionExpanded)
-            GraphicsConfigSection(bottle: bottle)
-            AudioConfigSection(bottle: bottle)
-            DiscordConfigSection(bottle: bottle)
-            ResolutionConfigSection(bottle: bottle)
-            PerformanceConfigSection(bottle: bottle, isExpanded: $performanceSectionExpanded)
             DLLOverrideConfigSection(bottle: bottle, isExpanded: $dllOverrideSectionExpanded)
-            DependencyConfigSection(bottle: bottle)
             gameConfigRevertSection
             Section("Diagnostics") {
                 Text("Analyze Wine crash output for troubleshooting guidance")
