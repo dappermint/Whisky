@@ -8,6 +8,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Library cards are yours to arrange: rename a game, mark it a favourite, or
+  hide it. Favourites sort first, hidden cards sit behind Show Hidden, and a
+  rename follows the game rather than the file it happens to be.
+- Game Settings in a card's right-click menu opens the game's own settings,
+  the same form the bottle's Programs tab shows. A Steam game finds the
+  executable that speaks for it; when nothing single does, the bottle opens
+  instead.
+- Games launch from Spotlight. Every visible library entry is indexed by name,
+  and picking one starts it through the same whisky:// launching the url
+  scheme uses. Renames and hides keep the index current.
+- Why These Settings, on every program's settings page: the launch plan's
+  notes and each environment variable the next launch will carry, labeled
+  with the layer that set it and the reason that layer recorded.
+- A crash while Whisky is in the background lands in Notification Center, and
+  clicking it opens the diagnosis. Audio device alerts go there too when a
+  game is frontmost, with a Settings toggle to turn them off entirely.
+- Cmd-N creates a bottle again, and macOS Game Mode can engage for fullscreen
+  games now that Whisky declares it.
+
+### Changed
+- Every way of starting a program goes through one launch door, so launcher
+  fixes, the game database profile and your own overrides apply whether the
+  click came from the library, a pin, the bottle's run panel, a file drop or
+  the cli. Known games get their recommended profile on direct runs too, not
+  only through Steam.
+- The audio driver and latency preset actually reach the Wine registry,
+  synced at launch when they changed. They were settings-file decoration
+  before.
+- Troubleshooting fixes do what their cards say. The four fixes that had no
+  implementation are real or gone, winetricks installs run from the card and
+  only confirm once the verb lands, the audio buffer fix speaks the app's own
+  presets, and a flow referencing an unimplemented fix fails validation
+  instead of shipping a dead Apply button.
+- The troubleshooting wizard is translated. Every other language saw
+  hardcoded English in the one surface built for someone whose game is
+  broken.
+- Audio troubleshooting opens the guided wizard directly in its audio flow
+  instead of a separate wizard running a duplicate engine.
+- The bottle's Configuration screen leads with graphics, audio and
+  performance; the Wine plumbing follows, collapsed by default.
+- An empty library teaches adding a game: an Add a Game button opens the same
+  flow a Finder drop lands in, and the copy says drops work anywhere on the
+  window.
+- Whisky no longer claims system-wide ownership of .bat and .msi files. It
+  stays the app for .exe.
+
+### Fixed
+- A pinned executable that lives inside a Steam game's install folder merges
+  into the Steam card instead of showing the game twice; matching is by
+  location, not by name, so "Game" can never claim "Game II".
+- Crashes are classified when the session ends rather than seconds after
+  launch, and the classifier reads the head of long logs, where loader errors
+  actually appear.
+- Settings that did nothing were wired or removed: the shader cache toggle
+  controls the cache DXVK actually reads, a dxvk.conf in the bottle is picked
+  up at launch, and the invented network tuning variables and the Sequoia
+  compatibility toggle are gone, since the real fixes ship unconditionally.
+- Recommended graphics backend uses the same DXMT gate as the picker, so it
+  can no longer choose a backend the installed runtime cannot deliver.
+- Diagnosis remediation cards have a working Apply everywhere they appear,
+  and a fix that cannot be performed is recorded as failed rather than
+  applied.
+
+### Removed
+- The standalone audio troubleshooting engine and wizard, folded into the
+  guided troubleshooting wizard.
+- The unimplemented install-dependency fix and the unreferenced flow fragment
+  that carried it.
+- A release script that assumed signing credentials the project does not
+  have; releases ship through CI.
+
+### Added
 - Ways to launch without opening the window. Right-clicking Whisky in the Dock
   lists the pinned games. `whisky://launch?pin=Name` and
   `whisky://launch?steam=12345` start a game from Shortcuts, Raycast or a
