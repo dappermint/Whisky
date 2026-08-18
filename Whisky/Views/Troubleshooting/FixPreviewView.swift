@@ -56,9 +56,9 @@ struct FixPreviewView: View {
                 .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 1)
         )
         .onAppear(perform: loadPreview)
-        .alert("Confirm Fix", isPresented: $showConfirmation) {
-            Button("Cancel", role: .cancel) {}
-            Button("Apply") { applyFix() }
+        .alert("troubleshooting.fix.confirmTitle", isPresented: $showConfirmation) {
+            Button("button.cancel", role: .cancel) {}
+            Button("troubleshooting.fix.apply") { applyFix() }
         } message: {
             Text(confirmationMessage)
         }
@@ -140,7 +140,7 @@ extension FixPreviewView {
                 .clipShape(RoundedRectangle(cornerRadius: 4))
             }
 
-            Text("Scope: \(preview.scope)")
+            Text(String(format: String(localized: "troubleshooting.fix.scope %@"), preview.scope))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -156,14 +156,14 @@ extension FixPreviewView {
                 Image(systemName: "arrow.uturn.backward.circle")
                     .foregroundStyle(.green)
                     .font(.caption)
-                Text("This change can be undone")
+                Text("troubleshooting.fix.reversible")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
                 Image(systemName: "exclamationmark.triangle")
                     .foregroundStyle(.orange)
                     .font(.caption)
-                Text("This action cannot be undone")
+                Text("troubleshooting.fix.irreversible")
                     .font(.caption)
                     .fontWeight(.medium)
                     .foregroundStyle(.orange)
@@ -177,7 +177,7 @@ extension FixPreviewView {
 extension FixPreviewView {
     private var actionButtons: some View {
         HStack {
-            Button("Skip for now") {
+            Button("troubleshooting.fix.skip") {
                 engine.skipStep()
             }
             .buttonStyle(.bordered)
@@ -195,7 +195,7 @@ extension FixPreviewView {
                     ProgressView()
                         .controlSize(.small)
                 } else {
-                    Text("Apply Fix")
+                    Text("troubleshooting.fix.apply")
                 }
             }
             .buttonStyle(.borderedProminent)
@@ -205,10 +205,12 @@ extension FixPreviewView {
 
     private var confirmationMessage: String {
         if let preview = fixPreview {
-            "This will change \(preview.settingName) from "
-                + "\"\(preview.currentValue)\" to \"\(preview.newValue)\"."
+            String(
+                format: String(localized: "troubleshooting.fix.confirmChange %@ %@ %@"),
+                preview.settingName, preview.currentValue, preview.newValue
+            )
         } else {
-            "Are you sure you want to apply this fix?"
+            String(localized: "troubleshooting.fix.confirm")
         }
     }
 }

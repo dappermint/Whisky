@@ -51,11 +51,11 @@ extension EscalationView {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
                     .font(.title2)
-                Text("Could Not Resolve Automatically")
+                Text("troubleshooting.escalation.title")
                     .font(.title3)
                     .fontWeight(.semibold)
             }
-            Text("Automated troubleshooting was unable to resolve the issue. Here are some next steps.")
+            Text("troubleshooting.escalation.description")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -69,7 +69,7 @@ extension EscalationView {
     private var fixAttemptsSummary: some View {
         if !engine.session.fixAttempts.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
-                Text("What was tried:")
+                Text("troubleshooting.escalation.whatWasTried")
                     .font(.caption)
                     .fontWeight(.medium)
                     .foregroundStyle(.secondary)
@@ -138,9 +138,8 @@ extension EscalationView {
 extension EscalationView {
     private var enhancedDiagnosticsOption: some View {
         escalationButton(
-            title: "Run Enhanced Diagnostics",
-            description: "Enable verbose Wine logging (WINEDEBUG) for this program's "
-                + "next run. The detailed log helps diagnose the issue.",
+            title: "troubleshooting.escalation.enhancedDiag",
+            description: "troubleshooting.escalation.enhancedDiag.description",
             sfSymbol: "text.magnifyingglass",
             action: runEnhancedDiagnostics
         )
@@ -172,9 +171,8 @@ extension EscalationView {
     private var exportDiagnosticsOption: some View {
         VStack(alignment: .leading, spacing: 4) {
             escalationButton(
-                title: "Export Diagnostics",
-                description: "Create a ZIP bundle with findings, fix history, "
-                    + "and relevant logs for sharing.",
+                title: "troubleshooting.escalation.export",
+                description: "troubleshooting.escalation.export.description",
                 sfSymbol: "square.and.arrow.up",
                 action: exportDiagnostics
             )
@@ -183,7 +181,7 @@ extension EscalationView {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.green)
                         .font(.caption2)
-                    Text("Exported to: \(exportedPath)")
+                    Text(String(format: String(localized: "troubleshooting.escalation.exportedTo %@"), exportedPath))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -230,7 +228,7 @@ extension EscalationView {
 
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(lines.joined(separator: "\n"), forType: .string)
-        exportedPath = "Clipboard (ready to paste)"
+        exportedPath = String(localized: "troubleshooting.escalation.clipboardReady")
     }
 }
 
@@ -239,8 +237,8 @@ extension EscalationView {
 extension EscalationView {
     private var supportIssueOption: some View {
         escalationButton(
-            title: "Open Support Issue Draft",
-            description: "Copy a pre-filled summary to clipboard for pasting into a GitHub issue.",
+            title: "troubleshooting.escalation.supportDraft",
+            description: "troubleshooting.escalation.supportDraft.description",
             sfSymbol: "doc.on.clipboard",
             action: copyIssueDraft
         )
@@ -282,8 +280,8 @@ extension EscalationView {
     private var retryOption: some View {
         VStack(alignment: .leading, spacing: 4) {
             escalationButton(
-                title: "Retry from Step\u{2026}",
-                description: "Go back to a previous step and try a different path.",
+                title: "troubleshooting.escalation.retry",
+                description: "troubleshooting.escalation.retry.description",
                 sfSymbol: "arrow.counterclockwise",
                 action: { showRetryPicker = true }
             )
@@ -298,7 +296,7 @@ extension EscalationView {
     private var retryStepPicker: some View {
         let steps = engine.session.stepHistory.filter { $0.title != nil }
         if steps.isEmpty {
-            Text("No previous steps available")
+            Text("troubleshooting.escalation.noPreviousSteps")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .padding(.leading, 44)
@@ -309,9 +307,12 @@ extension EscalationView {
                         retryFromStep(step, index: index)
                     } label: {
                         HStack(spacing: 6) {
-                            Text("Step \(index + 1):")
-                                .font(.caption)
-                                .fontWeight(.medium)
+                            Text(String(
+                                format: String(localized: "troubleshooting.escalation.stepNumber %d"),
+                                index + 1
+                            ))
+                            .font(.caption)
+                            .fontWeight(.medium)
                             Text(step.title ?? step.nodeId)
                                 .font(.caption)
                         }
@@ -338,8 +339,8 @@ extension EscalationView {
 
 extension EscalationView {
     private func escalationButton(
-        title: String,
-        description: String,
+        title: LocalizedStringKey,
+        description: LocalizedStringKey,
         sfSymbol: String,
         action: @escaping () -> Void
     ) -> some View {

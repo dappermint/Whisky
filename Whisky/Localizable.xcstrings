@@ -81501,6 +81501,26 @@
         }
       }
     },
+    "troubleshooting.branch.pathChangedGeneric" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The troubleshooting path has been updated based on the check results."
+          }
+        }
+      }
+    },
+    "troubleshooting.branch.pathChangedReason %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Path updated: %@"
+          }
+        }
+      }
+    },
     "troubleshooting.check.alreadyConfigured" : {
       "localizations" : {
         "ar" : {
@@ -82495,6 +82515,26 @@
         }
       }
     },
+    "troubleshooting.escalation.clipboardReady" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clipboard (ready to paste)"
+          }
+        }
+      }
+    },
+    "troubleshooting.escalation.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automated troubleshooting was unable to resolve the issue. Here are some next steps."
+          }
+        }
+      }
+    },
     "troubleshooting.escalation.enhancedDiag" : {
       "localizations" : {
         "ar" : {
@@ -82633,6 +82673,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "執行強化診斷"
+          }
+        }
+      }
+    },
+    "troubleshooting.escalation.enhancedDiag.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable verbose Wine logging (WINEDEBUG) for this program's next run. The detailed log helps diagnose the issue."
           }
         }
       }
@@ -82779,6 +82829,36 @@
         }
       }
     },
+    "troubleshooting.escalation.export.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy a summary of findings, fix history, and environment details to the clipboard for sharing."
+          }
+        }
+      }
+    },
+    "troubleshooting.escalation.exportedTo %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exported to: %@"
+          }
+        }
+      }
+    },
+    "troubleshooting.escalation.noPreviousSteps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No previous steps available"
+          }
+        }
+      }
+    },
     "troubleshooting.escalation.retry" : {
       "localizations" : {
         "ar" : {
@@ -82917,6 +82997,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "從指定步驟重試…"
+          }
+        }
+      }
+    },
+    "troubleshooting.escalation.retry.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go back to a previous step and try a different path."
+          }
+        }
+      }
+    },
+    "troubleshooting.escalation.stepNumber %d" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step %d:"
           }
         }
       }
@@ -83063,6 +83163,16 @@
         }
       }
     },
+    "troubleshooting.escalation.supportDraft.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy a pre-filled summary to the clipboard for pasting into a GitHub issue."
+          }
+        }
+      }
+    },
     "troubleshooting.escalation.title" : {
       "localizations" : {
         "ar" : {
@@ -83201,6 +83311,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "無法自動解決"
+          }
+        }
+      }
+    },
+    "troubleshooting.escalation.whatWasTried" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What was tried:"
           }
         }
       }
@@ -83489,6 +83609,16 @@
         }
       }
     },
+    "troubleshooting.fix.confirmChange %@ %@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This will change %1$@ from \"%2$@\" to \"%3$@\"."
+          }
+        }
+      }
+    },
     "troubleshooting.fix.confirmHighImpact" : {
       "localizations" : {
         "ar" : {
@@ -83627,6 +83757,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "這是影響較大的變更。確定要繼續嗎？"
+          }
+        }
+      }
+    },
+    "troubleshooting.fix.confirmTitle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm Fix"
           }
         }
       }
@@ -84195,6 +84335,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "此變更可以還原"
+          }
+        }
+      }
+    },
+    "troubleshooting.fix.scope %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scope: %@"
           }
         }
       }
@@ -84905,6 +85055,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "匯出工作階段報告"
+          }
+        }
+      }
+    },
+    "troubleshooting.history.fixesAttempted" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fixes attempted:"
           }
         }
       }
@@ -86187,6 +86347,16 @@
         }
       }
     },
+    "troubleshooting.resolved.changesApplied" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changes applied:"
+          }
+        }
+      }
+    },
     "troubleshooting.resolved.description" : {
       "localizations" : {
         "ar" : {
@@ -86751,6 +86921,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "捨棄"
+          }
+        }
+      }
+    },
+    "troubleshooting.resume.lastUpdated" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last updated:"
           }
         }
       }
@@ -87607,6 +87787,16 @@
         }
       }
     },
+    "troubleshooting.symptom.audio.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No sound, crackling, popping, or wrong output device"
+          }
+        }
+      }
+    },
     "troubleshooting.symptom.controllerInput" : {
       "localizations" : {
         "ar" : {
@@ -87745,6 +87935,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "控制器/輸入問題"
+          }
+        }
+      }
+    },
+    "troubleshooting.symptom.controllerInput.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controller not detected or buttons mapped incorrectly"
           }
         }
       }
@@ -87891,6 +88091,16 @@
         }
       }
     },
+    "troubleshooting.symptom.graphics.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Black screen, flickering, visual artifacts, or low frame rate"
+          }
+        }
+      }
+    },
     "troubleshooting.symptom.installDependencies" : {
       "localizations" : {
         "ar" : {
@@ -88029,6 +88239,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "安裝/相依項目問題"
+          }
+        }
+      }
+    },
+    "troubleshooting.symptom.installDependencies.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Missing .NET, VC++, DirectX, or Winetricks components"
           }
         }
       }
@@ -88175,6 +88395,16 @@
         }
       }
     },
+    "troubleshooting.symptom.launchCrash.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Program fails to start or crashes within seconds"
+          }
+        }
+      }
+    },
     "troubleshooting.symptom.launcherIssues" : {
       "localizations" : {
         "ar" : {
@@ -88313,6 +88543,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "啟動器問題"
+          }
+        }
+      }
+    },
+    "troubleshooting.symptom.launcherIssues.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam, EA App, Epic Games, or Rockstar launcher problems"
           }
         }
       }
@@ -88459,6 +88699,16 @@
         }
       }
     },
+    "troubleshooting.symptom.networkDownload.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download timeouts, Steam stalls, or connection failures"
+          }
+        }
+      }
+    },
     "troubleshooting.symptom.other" : {
       "localizations" : {
         "ar" : {
@@ -88597,6 +88847,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "其他"
+          }
+        }
+      }
+    },
+    "troubleshooting.symptom.other.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe your issue and we will try to help"
           }
         }
       }
@@ -88743,6 +89003,16 @@
         }
       }
     },
+    "troubleshooting.symptom.performanceStability.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stuttering, frame drops, or hangs after playing for a while"
+          }
+        }
+      }
+    },
     "troubleshooting.symptom.title" : {
       "localizations" : {
         "ar" : {
@@ -88881,6 +89151,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "你遇到的是什麼問題？"
+          }
+        }
+      }
+    },
+    "troubleshooting.target.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select a bottle and optionally a program to troubleshoot."
+          }
+        }
+      }
+    },
+    "troubleshooting.target.noProgram" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No specific program (bottle-level)"
+          }
+        }
+      }
+    },
+    "troubleshooting.target.selectBottle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select a bottle"
           }
         }
       }
@@ -89591,6 +89891,56 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "這項修正解決問題了嗎？"
+          }
+        }
+      }
+    },
+    "troubleshooting.verify.undoLast" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo last fix"
+          }
+        }
+      }
+    },
+    "troubleshooting.wizard.close" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        }
+      }
+    },
+    "troubleshooting.wizard.runningChecks" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Running checks…"
+          }
+        }
+      }
+    },
+    "troubleshooting.wizard.skip" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip"
+          }
+        }
+      }
+    },
+    "troubleshooting.wizard.step %d" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step %d"
           }
         }
       }
