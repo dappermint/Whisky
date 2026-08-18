@@ -43804,6 +43804,38 @@
         }
       }
     },
+    "crash.banner.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crash detected: %@"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crash detected: %@"
+          }
+        }
+      }
+    },
+    "crash.banner.viewDiagnosis" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View Diagnosis"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View Diagnosis"
+          }
+        }
+      }
+    },
     "create.browse" : {
       "localizations" : {
         "ar" : {
@@ -60271,6 +60303,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Library"
+          }
+        }
+      }
+    },
+    "notification.crash.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whisky captured a diagnosis. Click to see what happened."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whisky captured a diagnosis. Click to see what happened."
+          }
+        }
+      }
+    },
+    "notification.crash.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ crashed"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ crashed"
           }
         }
       }

@@ -99,6 +99,11 @@ struct WhiskyApp: App {
                 ) { notification in
                     handleCrashDiagnosisNotification(notification)
                 }
+                .onReceive(
+                    NotificationCenter.default.publisher(for: CrashNotifier.openDiagnosis)
+                ) { notification in
+                    openDiagnosisFromUserNotification(notification)
+                }
                 .sheet(isPresented: $showDiagnosticsSheet) {
                     DiagnosticsPickerSheet()
                         .environmentObject(BottleVM.shared)
@@ -246,6 +251,18 @@ struct WhiskyApp: App {
             logFileURL: logFileURL
         )
 
+        // A game usually crashes while its own window is frontmost, so the
+        // banner above plays to an empty room; Notification Center is what
+        // actually reaches the person.
+        if !NSApp.isActive {
+            CrashNotifier.notify(
+                programName: programName,
+                category: diagnosis.primaryCategory,
+                programPath: programPath,
+                logFileURL: logFileURL
+            )
+        }
+
         // Auto-dismiss after 8 seconds
         Task {
             try? await Task.sleep(for: .seconds(8))
@@ -255,14 +272,34 @@ struct WhiskyApp: App {
         }
     }
 
+    /// A click on the crash notification: the diagnosis is re-derived from
+    /// the log it named, the same way the launcher section reopens one.
+    private func openDiagnosisFromUserNotification(_ notification: Notification) {
+        guard let programPath = notification.userInfo?[CrashNotifier.programPathKey] as? String,
+              let logFile = notification.userInfo?[CrashNotifier.logFileKey] as? String
+        else { return }
+
+        let logFileURL = URL(fileURLWithPath: logFile)
+        let programName = URL(fileURLWithPath: programPath).deletingPathExtension().lastPathComponent
+        Task {
+            guard let diagnosis = await Wine.classifyLastRun(logFileURL: logFileURL, exitCode: 1) else { return }
+            openDiagnosisFromCrash(CrashDiagnosisBannerState(
+                diagnosis: diagnosis,
+                programName: programName,
+                programPath: programPath,
+                logFileURL: logFileURL
+            ))
+        }
+    }
+
     private func crashDiagnosisBannerView(_ banner: CrashDiagnosisBannerState) -> some View {
         HStack {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.orange)
-            Text("Crash detected \u{2014} \(banner.programName)")
+            Text(String(format: String(localized: "crash.banner.title"), banner.programName))
                 .fontWeight(.medium)
             Spacer()
-            Button("View Diagnosis") {
+            Button("crash.banner.viewDiagnosis") {
                 openDiagnosisFromCrash(banner)
             }
             .buttonStyle(.bordered)

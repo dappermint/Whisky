@@ -19,6 +19,7 @@
 import Foundation
 import os
 import SwiftUI
+import UserNotifications
 import WhiskyKit
 
 private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "AppDelegate")
@@ -37,6 +38,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Crash notifications route their clicks through this delegate.
+        UNUserNotificationCenter.current().delegate = CrashNotificationDelegate.shared
+
         if !hasShownMoveToApplicationsAlert, !AppDelegate.insideAppsFolder {
             DispatchQueue.main.asyncAfter(deadline: .now()) {
                 NSApp.activate(ignoringOtherApps: true)
