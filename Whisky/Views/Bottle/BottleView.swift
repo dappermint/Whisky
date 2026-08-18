@@ -127,17 +127,20 @@ struct BottleView: View {
                                 Task(priority: .userInitiated) {
                                     if result == .OK {
                                         if let url = panel.urls.first {
+                                            Telemetry.capture(.firstProgramLaunchAttempted)
                                             do {
-                                                // Auto-detect launcher and apply fixes if compatibility mode enabled
-                                                // This completes synchronously on MainActor, ensuring settings are
-                                                // persisted before Wine.runProgram() reads them
-                                                LauncherFixes.detectAndApply(from: url, for: bottle)
-
-                                                Telemetry.capture(.firstProgramLaunchAttempted)
                                                 if url.pathExtension == "bat" {
                                                     try await Wine.runBatchFile(url: url, bottle: bottle)
                                                 } else {
-                                                    try await Wine.runProgram(at: url, bottle: bottle)
+                                                    // Through the one program door, which
+                                                    // carries overrides, launcher fixes and
+                                                    // the GameDB profile for every entry
+                                                    // point alike.
+                                                    let result = await Program(url: url, bottle: bottle)
+                                                        .launchWithUserMode(useTerminal: false)
+                                                    if case let .launchFailed(_, message) = result {
+                                                        throw LaunchPanelError.failed(message)
+                                                    }
                                                 }
                                                 await MainActor.run {
                                                     withAnimation {
@@ -150,7 +153,10 @@ struct BottleView: View {
                                                     }
                                                 }
                                             } catch {
-                                                let errDesc = error.localizedDescription
+                                                let errDesc = switch error {
+                                                case let LaunchPanelError.failed(message): message
+                                                default: error.localizedDescription
+                                                }
                                                 await MainActor.run {
                                                     withAnimation {
                                                         toast = ToastData(
@@ -304,4 +310,10 @@ extension BottleView {
             }
         }
     }
+}
+
+/// A launch failure reported by the program door, rethrown so the run panel's
+/// error path handles an exe and a batch file the same way.
+private enum LaunchPanelError: Error {
+    case failed(String)
 }

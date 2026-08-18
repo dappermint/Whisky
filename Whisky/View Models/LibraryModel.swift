@@ -281,20 +281,12 @@ extension LibraryModel {
     }
 
     private func launchProgram(at url: URL, in bottle: Bottle) {
-        // Through the bottle's own program list where possible, so the launch
-        // picks up that program's overrides rather than only the bottle's.
-        guard let program = bottle.programs.first(where: { $0.url == url }) else {
-            programLaunching.insert(url)
-            Task {
-                defer { programLaunching.remove(url) }
-                do {
-                    try await Wine.runProgram(at: url, bottle: bottle)
-                } catch {
-                    launchError = error.localizedDescription
-                }
-            }
-            return
-        }
+        // A scanned program where one exists, otherwise materialized from the
+        // URL: `bottle.programs` stays empty until a bottle view scans it, and
+        // the library is the landing screen, so most launches used to take a
+        // bare fallback that carried no overrides at all.
+        let program = bottle.programs.first(where: { $0.url == url })
+            ?? Program(url: url, bottle: bottle)
 
         programLaunching.insert(url)
         Telemetry.capture(.firstProgramLaunchAttempted)

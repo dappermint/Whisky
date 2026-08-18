@@ -44,11 +44,16 @@ private let crashSignatures: Set<String> = [
 ]
 
 public extension Program {
+    /// Fire-and-forget launch for surfaces with nowhere to put a result: the
+    /// failure is shown from here. A thin adapter over
+    /// ``launchWithUserMode(useTerminal:)``, never a second launch path.
     func run() {
-        if NSEvent.modifierFlags.contains(.shift) {
-            self.runInTerminal()
-        } else {
-            self.runInWine()
+        let useTerminal = NSEvent.modifierFlags.contains(.shift)
+        Task {
+            let result = await launchWithUserMode(useTerminal: useTerminal)
+            if case let .launchFailed(_, errorDescription) = result {
+                showRunError(message: errorDescription)
+            }
         }
     }
 
@@ -92,14 +97,24 @@ public extension Program {
             return .launchedInTerminal(programName: self.name)
         }
 
-        // Normal Wine launch with program-specific settings
+        // This is the one door every direct run goes through, so the full
+        // stack is assembled here and no entry point can launch with less:
+        // launcher fixes, then the GameDB profile filling whatever the user's
+        // own overrides left unset.
+        LauncherFixes.detectAndApply(from: url, for: bottle)
+        let plan = LaunchResolver.plan(forProgramAt: url, userOverrides: settings.overrides)
+        for note in plan.provenance {
+            Logger.wineKit.info("\(self.name, privacy: .public) launch plan: \(note, privacy: .public)")
+        }
+
         let arguments = settings.arguments.split { $0.isWhitespace }.map(String.init)
         let environment = generateEnvironment()
 
         do {
             let result = try await Wine.runProgram(
                 at: self.url, args: arguments, bottle: self.bottle, environment: environment,
-                programOverrides: settings.overrides, programSettings: settings
+                programOverrides: plan.overrides, programSettings: settings,
+                gameProfileEnvironment: plan.gameProfileEnvironment
             )
 
             // Track the log file URL for diagnostics
@@ -318,34 +333,5 @@ public extension Program {
             return .autoCleared(contentType: contentType, sizeBytes: sizeBytes)
         }
         return .safe
-    }
-}
-
-extension Program {
-    func runInWine() {
-        let arguments = settings.arguments.split { $0.isWhitespace }.map(String.init)
-        let environment = generateEnvironment()
-
-        Task {
-            do {
-                let result = try await Wine.runProgram(
-                    at: self.url, args: arguments, bottle: self.bottle, environment: environment,
-                    programOverrides: settings.overrides, programSettings: settings
-                )
-
-                // Track the log file URL
-                settings.lastLogFileURL = result.logFileURL
-
-                // Trigger classification on non-zero exit or crash signatures
-                if result.exitCode != 0 || logContainsCrashSignatures(result.logFileURL) {
-                    triggerCrashClassification(
-                        logFileURL: result.logFileURL,
-                        exitCode: result.exitCode
-                    )
-                }
-            } catch {
-                self.showRunError(message: error.localizedDescription)
-            }
-        }
     }
 }

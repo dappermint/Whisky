@@ -81,41 +81,22 @@ struct FileOpenView: View {
 
     func run() {
         if let bottle = bottles.first(where: { $0.url == selection }) {
-            Task.detached(priority: .userInitiated) {
-                do {
-                    // Auto-detect launcher and apply fixes if compatibility mode enabled
-                    // This completes synchronously on MainActor, ensuring settings are
-                    // persisted before Wine.runProgram() reads them
-                    await MainActor.run {
-                        LauncherFixes.detectAndApply(from: fileURL, for: bottle)
-                        Telemetry.capture(.firstProgramLaunchAttempted)
+            Task(priority: .userInitiated) {
+                Telemetry.capture(.firstProgramLaunchAttempted)
+                if fileURL.pathExtension == "bat" {
+                    do {
+                        try await Wine.runBatchFile(url: fileURL, bottle: bottle)
+                    } catch {
+                        showLaunchFailure(error.localizedDescription)
                     }
-
-                    if fileURL.pathExtension == "bat" {
-                        try await Wine.runBatchFile(
-                            url: fileURL,
-                            bottle: bottle
-                        )
-                    } else {
-                        try await Wine.runProgram(at: fileURL, bottle: bottle)
-                    }
-                } catch {
-                    // Surface the failure on the presenting view's toast (the sheet
-                    // dismisses immediately, so a local toast wouldn't be seen) —
-                    // otherwise a launch error here, including DXMT's actionable
-                    // payloadMissing, vanishes silently.
-                    let errDesc = error.localizedDescription
-                    logger.error(
-                        "Failed to launch \(fileURL.lastPathComponent, privacy: .public): \(errDesc, privacy: .public)"
-                    )
-                    await MainActor.run {
-                        withAnimation {
-                            toast = ToastData(
-                                message: String(localized: "status.launchFailed \(errDesc)"),
-                                style: .error,
-                                autoDismiss: false
-                            )
-                        }
+                } else {
+                    // Through the one program door, so an exe opened from a
+                    // file pickup carries the same overrides, launcher fixes
+                    // and GameDB profile as one launched from the library.
+                    let result = await Program(url: fileURL, bottle: bottle)
+                        .launchWithUserMode(useTerminal: false)
+                    if case let .launchFailed(_, errorDescription) = result {
+                        showLaunchFailure(errorDescription)
                     }
                 }
             }
@@ -125,6 +106,22 @@ struct FileOpenView: View {
             // happen — but never leave the sheet stuck open on a stale selection.
             logger.error("Run requested but no bottle matched the selection")
             dismiss()
+        }
+    }
+
+    /// Surfaces a failure on the presenting view's toast: the sheet dismisses
+    /// immediately, so a local toast would not be seen, and a launch error
+    /// here (including DXMT's actionable payloadMissing) must not vanish.
+    private func showLaunchFailure(_ message: String) {
+        logger.error(
+            "Failed to launch \(fileURL.lastPathComponent, privacy: .public): \(message, privacy: .public)"
+        )
+        withAnimation {
+            toast = ToastData(
+                message: String(localized: "status.launchFailed \(message)"),
+                style: .error,
+                autoDismiss: false
+            )
         }
     }
 }
