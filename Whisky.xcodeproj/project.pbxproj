@@ -127,6 +127,7 @@
 		G1A2B3C4E5F60901A9B0C1D0 /* DependencyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = G1A2B3C4E5F60901A9B0C1D1 /* DependencyManager.swift */; };
 		AB5DECAF20260818000000D0 /* QuickLaunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB5DECAF20260818000000D1 /* QuickLaunch.swift */; };
 		AB5DECAF20260818000000D2 /* CrashNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB5DECAF20260818000000D3 /* CrashNotifier.swift */; };
+		AB5DECAF20260818000000D4 /* RemediationExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB5DECAF20260818000000D5 /* RemediationExecutor.swift */; };
 		G1A2B3C4E5F60901A9B0C1D2 /* Winetricks+Install.swift in Sources */ = {isa = PBXBuildFile; fileRef = G1A2B3C4E5F60901A9B0C1D3 /* Winetricks+Install.swift */; };
 		H1A2B3C4E5F61101A9B0C1D0 /* DependencyConfigSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1A2B3C4E5F61101A9B0C1D1 /* DependencyConfigSection.swift */; };
 		H1A2B3C4E5F61101A9B0C1D2 /* DependencyInstallSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1A2B3C4E5F61101A9B0C1D3 /* DependencyInstallSheet.swift */; };
@@ -322,6 +323,7 @@
 		G1A2B3C4E5F60901A9B0C1D1 /* DependencyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DependencyManager.swift; sourceTree = "<group>"; };
 		AB5DECAF20260818000000D1 /* QuickLaunch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickLaunch.swift; sourceTree = "<group>"; };
 		AB5DECAF20260818000000D3 /* CrashNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrashNotifier.swift; sourceTree = "<group>"; };
+		AB5DECAF20260818000000D5 /* RemediationExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemediationExecutor.swift; sourceTree = "<group>"; };
 		G1A2B3C4E5F60901A9B0C1D3 /* Winetricks+Install.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Winetricks+Install.swift"; sourceTree = "<group>"; };
 		H1A2B3C4E5F61101A9B0C1D1 /* DependencyConfigSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DependencyConfigSection.swift; sourceTree = "<group>"; };
 		H1A2B3C4E5F61101A9B0C1D3 /* DependencyInstallSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DependencyInstallSheet.swift; sourceTree = "<group>"; };
@@ -593,6 +595,7 @@
 				G1A2B3C4E5F60901A9B0C1D1 /* DependencyManager.swift */,
 				AB5DECAF20260818000000D1 /* QuickLaunch.swift */,
 				AB5DECAF20260818000000D3 /* CrashNotifier.swift */,
+				AB5DECAF20260818000000D5 /* RemediationExecutor.swift */,
 				F1A2B3C4E5F60801A9B0C1D0 /* ControllerMonitor.swift */,
 				I1A2B3C4E5F61201A9B0C1D1 /* SteamDownloadMonitor.swift */,
 				2B94A3D15B907CF55C906C9A /* SteamClientOrchestrator.swift */,
@@ -1058,6 +1061,7 @@
 				G1A2B3C4E5F60901A9B0C1D0 /* DependencyManager.swift in Sources */,
 				AB5DECAF20260818000000D0 /* QuickLaunch.swift in Sources */,
 				AB5DECAF20260818000000D2 /* CrashNotifier.swift in Sources */,
+				AB5DECAF20260818000000D4 /* RemediationExecutor.swift in Sources */,
 				G1A2B3C4E5F60901A9B0C1D2 /* Winetricks+Install.swift in Sources */,
 				H1A2B3C4E5F61101A9B0C1D0 /* DependencyConfigSection.swift in Sources */,
 				H1A2B3C4E5F61101A9B0C1D2 /* DependencyInstallSheet.swift in Sources */,

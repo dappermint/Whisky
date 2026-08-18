@@ -73,7 +73,8 @@ struct ProgramOverrideSettingsView: View {
                         logText: activeLogText,
                         programName: program.name,
                         bottleName: bottle.settings.name,
-                        timestamp: Date()
+                        timestamp: Date(),
+                        applyBottle: bottle
                     )
                     .frame(minWidth: 600, minHeight: 400)
                 }
