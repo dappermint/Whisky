@@ -50,6 +50,9 @@ public struct LibraryEntry: Identifiable, Hashable, Sendable {
     }
 
     public let id: String
+    /// The identity this entry's persisted state lives under, in the bottle's
+    /// ``GameRecordStore``.
+    public let recordID: GameRecordID
     public let name: String
     /// The executable to read an icon out of, when there is one.
     public let iconURL: URL?
@@ -66,20 +69,31 @@ public struct LibraryEntry: Identifiable, Hashable, Sendable {
     /// account, a store and an update. It is not what somebody scanning the grid
     /// is looking for, so it is labelled and sorted below the games.
     public let launcher: LauncherType?
+    /// Where the source says this game is installed, when it knows. What lets
+    /// a pin and a store entry be recognised as the same game.
+    public let installURL: URL?
 
     public var isLauncher: Bool { launcher != nil }
 
+    /// The executable this entry runs directly, for entries that run one.
+    public var programURL: URL? {
+        if case let .program(url) = launch { url } else { nil }
+    }
+
     public init(
         id: String,
+        recordID: GameRecordID,
         name: String,
         iconURL: URL?,
         artworkURL: URL? = nil,
         bottleURL: URL,
         source: LibrarySourceID,
         launch: Launch,
-        launcher: LauncherType? = nil
+        launcher: LauncherType? = nil,
+        installURL: URL? = nil
     ) {
         self.id = id
+        self.recordID = recordID
         self.name = name
         self.iconURL = iconURL
         self.artworkURL = artworkURL
@@ -87,6 +101,28 @@ public struct LibraryEntry: Identifiable, Hashable, Sendable {
         self.source = source
         self.launch = launch
         self.launcher = launcher
+        self.installURL = installURL
+    }
+
+    /// This entry wearing the name a pin gave the same game.
+    ///
+    /// Everything that makes the entry a store game stays: the identity, the
+    /// launch route, the artwork. The name is the pin's because the person
+    /// typed it, and the pin's executable backs up the icon for a store entry
+    /// whose own icon was never cached.
+    func named(after pin: LibraryEntry) -> LibraryEntry {
+        LibraryEntry(
+            id: id,
+            recordID: recordID,
+            name: pin.name,
+            iconURL: iconURL ?? pin.iconURL,
+            artworkURL: artworkURL,
+            bottleURL: bottleURL,
+            source: source,
+            launch: launch,
+            launcher: launcher,
+            installURL: installURL
+        )
     }
 }
 
@@ -108,6 +144,7 @@ public enum PinnedLibrarySource: LibrarySource {
             guard let programURL = pin.url else { return nil }
             return LibraryEntry(
                 id: "pinned:\(programURL.path(percentEncoded: false))",
+                recordID: .pin(at: programURL, bottleURL: url),
                 name: pin.name,
                 iconURL: programURL,
                 bottleURL: url,
@@ -142,12 +179,14 @@ public enum SteamLibrarySource: LibrarySource {
                 // diffing rather than merely looking odd. A pin is already
                 // scoped: its id carries the executable's full path.
                 id: "steam:\(url.path(percentEncoded: false)):\(game.appId)",
+                recordID: .steam(appID: game.appId),
                 name: game.name,
                 iconURL: steamRoot.flatMap { iconURL(appID: game.appId, steamRoot: $0) },
                 artworkURL: steamRoot.flatMap { artworkURL(appID: game.appId, steamRoot: $0) },
                 bottleURL: url,
                 source: id,
-                launch: .steam(appID: game.appId)
+                launch: .steam(appID: game.appId),
+                installURL: game.installURL
             )
         }
     }
@@ -221,25 +260,47 @@ public enum LibraryCatalogue {
         merge(sources.map { $0.items(inBottleAt: url, settings: settings) })
     }
 
-    /// Collapses groups of entries, earlier groups winning.
+    /// Collapses a pin and a store entry that are the same game into one card.
     ///
-    /// A Steam game that has also been pinned appears once, as the pin, because
-    /// the pin is the entry the person made themselves. Exposed separately so a
-    /// caller that gathered its groups from different actors can still merge
-    /// them the same way.
+    /// Sameness is identity, not the names matching: a pin whose executable
+    /// lives inside a store game's install directory is that game. The card
+    /// keeps the store entry's launch route and artwork and the pin's name,
+    /// where matching on names silently traded both away, and a pin the names
+    /// happened to collide with stayed hidden. A store game absorbs one pin;
+    /// a second pin into the same install (an editor, a mod tool) is its own
+    /// deliberate entry and stays. Exposed separately so a caller that
+    /// gathered its groups from different actors can still merge them the
+    /// same way.
     public static func merge(_ groups: [[LibraryEntry]]) -> [LibraryEntry] {
-        var seenNames = Set<String>()
-        var items: [LibraryEntry] = []
+        let all = groups.flatMap { $0 }
+        var absorbedPins = Set<String>()
+        var pinFor: [String: LibraryEntry] = [:]
 
-        for group in groups {
-            for item in group {
-                let key = item.name.lowercased()
-                guard !seenNames.contains(key) else { continue }
-                seenNames.insert(key)
-                items.append(item)
-            }
+        for store in all where store.installURL != nil {
+            guard let installURL = store.installURL,
+                  let pin = all.first(where: { candidate in
+                      candidate.source == .pinned
+                          && candidate.bottleURL == store.bottleURL
+                          && !absorbedPins.contains(candidate.id)
+                          && candidate.programURL.map { isPath($0, under: installURL) } == true
+                  })
+            else { continue }
+            absorbedPins.insert(pin.id)
+            pinFor[store.id] = pin
         }
 
-        return items
+        return all.compactMap { item in
+            if absorbedPins.contains(item.id) { return nil }
+            if let pin = pinFor[item.id] { return item.named(after: pin) }
+            return item
+        }
+    }
+
+    /// Whether `url` points inside `root`, on path components rather than on
+    /// string prefixes, so `…/Game` never claims `…/Game II`.
+    static func isPath(_ url: URL, under root: URL) -> Bool {
+        let path = url.standardizedFileURL.pathComponents
+        let rootPath = root.standardizedFileURL.pathComponents
+        return path.count > rootPath.count && Array(path.prefix(rootPath.count)) == rootPath
     }
 }

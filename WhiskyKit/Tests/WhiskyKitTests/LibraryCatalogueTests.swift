@@ -89,10 +89,113 @@ struct LibraryCatalogueTests {
         #expect(items.map(\.name) == ["Fine"])
     }
 
-    @Test("Sources are registered in order, and pins win a name collision")
-    func pinsWinCollisions() {
+    @Test("Sources are registered, pins first")
+    func sourcesAreRegistered() {
         #expect(LibraryCatalogue.sources.count >= 2)
         #expect(LibraryCatalogue.sources.first?.id == .pinned)
+    }
+
+    private func steamEntry(
+        appID: Int, name: String, bottle: URL, installDir: String
+    ) -> LibraryEntry {
+        let install = bottle.appending(
+            path: "drive_c/Program Files (x86)/Steam/steamapps/common/\(installDir)"
+        )
+        return LibraryEntry(
+            id: "steam:\(bottle.path(percentEncoded: false)):\(appID)",
+            recordID: .steam(appID: appID),
+            name: name,
+            iconURL: nil,
+            artworkURL: install.appending(path: "header.jpg"),
+            bottleURL: bottle,
+            source: .steam,
+            launch: .steam(appID: appID),
+            installURL: install
+        )
+    }
+
+    private func pinEntry(_ name: String, exe: String, bottle: URL) -> LibraryEntry {
+        let url = bottle.appending(path: exe)
+        return LibraryEntry(
+            id: "pinned:\(url.path(percentEncoded: false))",
+            recordID: .pin(at: url, bottleURL: bottle),
+            name: name,
+            iconURL: url,
+            bottleURL: bottle,
+            source: .pinned,
+            launch: .program(url)
+        )
+    }
+
+    @Test("A pin inside a Steam game's install is that game, once, with the pin's name")
+    func pinInsideInstallMerges() throws {
+        let bottle = URL(fileURLWithPath: "/tmp/whisky-library-test/Bottle")
+        let pin = pinEntry(
+            "ready or not (dx11)",
+            exe: "drive_c/Program Files (x86)/Steam/steamapps/common/Ready Or Not/ReadyOrNot.exe",
+            bottle: bottle
+        )
+        let steam = steamEntry(appID: 1_144_200, name: "Ready Or Not", bottle: bottle, installDir: "Ready Or Not")
+
+        let merged = LibraryCatalogue.merge([[pin], [steam]])
+
+        let card = try #require(merged.first)
+        #expect(merged.count == 1)
+        // The store identity carries the launch route and the art; the name is
+        // the one the person typed.
+        #expect(card.recordID == .steam(appID: 1_144_200))
+        #expect(card.launch == .steam(appID: 1_144_200))
+        #expect(card.artworkURL != nil)
+        #expect(card.name == "ready or not (dx11)")
+    }
+
+    @Test("Matching names alone no longer collapse a pin and a store entry")
+    func nameCollisionAloneDoesNotMerge() {
+        let bottle = URL(fileURLWithPath: "/tmp/whisky-library-test/Bottle")
+        // Same display name, but the pin points outside the install dir: two
+        // different things the person can launch, so two cards.
+        let pin = pinEntry("Ready Or Not", exe: "drive_c/Other/ReadyOrNot.exe", bottle: bottle)
+        let steam = steamEntry(appID: 1_144_200, name: "Ready Or Not", bottle: bottle, installDir: "Ready Or Not")
+
+        #expect(LibraryCatalogue.merge([[pin], [steam]]).count == 2)
+    }
+
+    @Test("A second pin into the same install stays its own entry")
+    func secondPinIntoInstallStays() {
+        let bottle = URL(fileURLWithPath: "/tmp/whisky-library-test/Bottle")
+        let game = pinEntry(
+            "Ready or Not",
+            exe: "drive_c/Program Files (x86)/Steam/steamapps/common/Ready Or Not/ReadyOrNot.exe",
+            bottle: bottle
+        )
+        let editor = pinEntry(
+            "RoN Mod Tools",
+            exe: "drive_c/Program Files (x86)/Steam/steamapps/common/Ready Or Not/ModTools.exe",
+            bottle: bottle
+        )
+        let steam = steamEntry(appID: 1_144_200, name: "Ready Or Not", bottle: bottle, installDir: "Ready Or Not")
+
+        let merged = LibraryCatalogue.merge([[game, editor], [steam]])
+
+        #expect(merged.count == 2)
+        #expect(merged.contains { $0.name == "RoN Mod Tools" && $0.launch == .program(
+            bottle.appending(
+                path: "drive_c/Program Files (x86)/Steam/steamapps/common/Ready Or Not/ModTools.exe"
+            )
+        ) })
+    }
+
+    @Test("An install dir never claims its sibling with a longer name")
+    func installDirMatchesWholeComponents() {
+        let bottle = URL(fileURLWithPath: "/tmp/whisky-library-test/Bottle")
+        let pin = pinEntry(
+            "Game II",
+            exe: "drive_c/Program Files (x86)/Steam/steamapps/common/Game II/game2.exe",
+            bottle: bottle
+        )
+        let steam = steamEntry(appID: 1, name: "Game", bottle: bottle, installDir: "Game")
+
+        #expect(LibraryCatalogue.merge([[pin], [steam]]).count == 2)
     }
 
     @Test("Steam artwork resolves the folder layout, then the flat one")
