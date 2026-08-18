@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Game Settings on a library card resolves the game's program before deciding
+  anything, scanning the bottle on demand when needed. It used to fall through
+  to selecting the bottle whenever the bottle had not been opened that
+  session, silently; the genuine fallback now says why it went there.
+
 ### Added
 - Library cards are yours to arrange: rename a game, mark it a favourite, or
   hide it. Favourites sort first, hidden cards sit behind Show Hidden, and a
