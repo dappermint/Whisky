@@ -53,6 +53,8 @@
 			</array>
 		</dict>
 	</array>
+	<key>GCSupportsGameMode</key>
+	<true/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

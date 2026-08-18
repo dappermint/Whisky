@@ -147,6 +147,7 @@ final class LibraryModel: ObservableObject {
         }
 
         rows = sorted(built)
+        SpotlightIndexer.reindex(rows: rows)
     }
 
     /// When an entry was last started in Whisky.
@@ -245,6 +246,9 @@ extension LibraryModel {
             record: store.record(for: row.item.recordID)
         )
         rows = sorted(rows)
+        // Renames and hides must reach Spotlight, or a hidden game keeps
+        // launching from search under its old name.
+        SpotlightIndexer.reindex(rows: rows)
     }
 }
 

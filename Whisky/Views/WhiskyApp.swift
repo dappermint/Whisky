@@ -166,7 +166,14 @@ struct WhiskyApp: App {
                     }
                 }
             }
-            CommandGroup(replacing: .newItem) {}
+            CommandGroup(replacing: .newItem) {
+                // Cmd-N was deleted with the stock New menu; a launcher's
+                // most natural new thing is a bottle.
+                Button("button.createBottle") {
+                    NotificationCenter.default.post(name: .whiskyCreateBottle, object: nil)
+                }
+                .keyboardShortcut("n", modifiers: [.command])
+            }
             CommandGroup(after: .newItem) {
                 Button("open.bottle") {
                     let panel = NSOpenPanel()

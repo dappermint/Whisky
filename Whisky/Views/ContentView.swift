@@ -17,6 +17,7 @@
 //
 
 import AppKit
+import CoreSpotlight
 import SemanticVersion
 import SwiftUI
 import UniformTypeIdentifiers
@@ -177,9 +178,18 @@ struct ContentView: View {
             }
         }
         .handlesExternalEvents(preferring: [], allowing: ["*"])
+        .onReceive(NotificationCenter.default.publisher(for: .whiskyCreateBottle)) { _ in
+            showBottleCreation = true
+        }
         .onOpenURL { url in
             if QuickLaunch.handle(url) { return }
             openedFileURL = url
+        }
+        .onContinueUserActivity(CSSearchableItemActionType) { activity in
+            guard let id = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String,
+                  let url = URL(string: id)
+            else { return }
+            _ = QuickLaunch.handle(url)
         }
         .dropDestination(for: URL.self) { urls, _ in
             // A Finder drop of anything the Run panel would accept opens the
@@ -241,4 +251,10 @@ struct ContentView: View {
             }
         }
     }
+}
+
+extension Notification.Name {
+    /// Posted by the File menu's Cmd-N so the window's own sheet state can
+    /// present bottle creation.
+    static let whiskyCreateBottle = Notification.Name("com.dappermint.WhiskyPreview.createBottle")
 }
