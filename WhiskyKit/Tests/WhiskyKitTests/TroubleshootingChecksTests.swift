@@ -269,4 +269,30 @@ final class TroubleshootingChecksTests: XCTestCase {
         XCTAssertEqual(decoded.winetricksVerbs, ["vcrun2019"])
         XCTAssertTrue(decoded.equivalentVerbs.isEmpty)
     }
+
+    // MARK: - Windows version and build number
+
+    func testEachVersionAcceptsItsOwnDefaultBuild() {
+        for version in WinVersion.allCases {
+            XCTAssertTrue(
+                version.accepts(build: version.defaultBuild),
+                "\(version.pretty()) rejects the build Wine writes for it"
+            )
+        }
+    }
+
+    func testABuildFromAnotherVersionIsRefused() {
+        // The pair that started this: a prefix on Windows 7 carrying a build
+        // number from Windows 11.
+        XCTAssertFalse(WinVersion.win7.accepts(build: 22_100))
+        XCTAssertFalse(WinVersion.win11.accepts(build: 7_601))
+        XCTAssertFalse(WinVersion.win10.accepts(build: 22_000))
+    }
+
+    func testNewerBuildsOfTheSameVersionAreAccepted() {
+        // Windows 11 24H2 and Windows 10 22H2, which people do set by hand.
+        XCTAssertTrue(WinVersion.win11.accepts(build: 26_100))
+        XCTAssertTrue(WinVersion.win10.accepts(build: 19_045))
+        XCTAssertTrue(WinVersion.win7.accepts(build: 7_600))
+    }
 }

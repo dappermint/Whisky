@@ -969,9 +969,11 @@ extension Wine {
 }
 
 /// Errors that can occur during Wine interface operations.
-enum WineInterfaceError: Error {
+public enum WineInterfaceError: Error {
     /// The response from Wine was invalid or could not be parsed.
     case invalidResponse
+    /// A build number was asked for that the bottle's Windows version cannot carry.
+    case buildVersionMismatch(WinVersion, Int)
 }
 
 // MARK: - Logging Support

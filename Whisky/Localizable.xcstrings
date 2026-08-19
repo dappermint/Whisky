@@ -31685,6 +31685,154 @@
         }
       }
     },
+    "config.buildVersion.mismatch %@ %lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ reports build %2$lld. A build from another version makes programs read the wrong Windows."
+          }
+        }
+      }
+    },
     "config.cleanup" : {
       "localizations" : {
         "ar" : {

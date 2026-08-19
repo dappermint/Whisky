@@ -123,8 +123,20 @@ public extension Wine {
         return String(value)
     }
 
+    /// Writes the build number reported by the prefix.
+    ///
+    /// Refuses a build the bottle's Windows version cannot carry: the version
+    /// and the build are read together by everything that asks what Windows
+    /// this is, and a pair that disagrees is worse than either alone.
+    ///
+    /// - Throws: ``WineInterfaceError/buildVersionMismatch(_:_:)`` when the
+    ///   number belongs to a different Windows version.
     @MainActor
     static func changeBuildVersion(bottle: Bottle, version: Int) async throws {
+        let windowsVersion = bottle.settings.windowsVersion
+        guard windowsVersion.accepts(build: version) else {
+            throw WineInterfaceError.buildVersionMismatch(windowsVersion, version)
+        }
         try await addRegistryKey(
             bottle: bottle,
             key: RegistryKey.currentVersion.rawValue,
