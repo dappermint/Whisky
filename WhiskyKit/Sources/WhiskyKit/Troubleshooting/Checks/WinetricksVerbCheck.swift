@@ -39,14 +39,22 @@ public struct WinetricksVerbCheck: TroubleshootingCheck {
             )
         }
 
-        let expectedVerbs = verbsParam.split(separator: ",").map {
-            $0.trimmingCharacters(in: .whitespaces)
+        // A requirement can name alternatives with `|`, as in
+        // `vcrun2022|vcrun2019`: either satisfies it, and the first is what gets
+        // installed when neither is there. Without this, moving the default from
+        // one Visual C++ redistributable to the next reports every prefix that
+        // has the older one as missing it.
+        let requirements = verbsParam.split(separator: ",").map {
+            $0.split(separator: "|").map { $0.trimmingCharacters(in: .whitespaces) }
         }
+        let expectedVerbs = requirements.compactMap(\.first)
 
         let cache = WinetricksVerbCache.load(from: context.bottleURL)
         let installedVerbs = cache?.installedVerbs ?? []
 
-        let missingVerbs = expectedVerbs.filter { !installedVerbs.contains($0) }
+        let missingVerbs = requirements
+            .filter { alternatives in !alternatives.contains(where: installedVerbs.contains) }
+            .compactMap(\.first)
 
         var evidence = [
             "expected": expectedVerbs.joined(separator: ", "),

@@ -60,8 +60,12 @@ enum DependencyManager {
 
         return definitions.map { definition in
             let requiredVerbs = definition.winetricksVerbs
-            let installed = requiredVerbs.filter { installedVerbs.contains($0) }
-            let missing = requiredVerbs.filter { !installedVerbs.contains($0) }
+            // An equivalent already in the prefix satisfies the whole
+            // definition, so moving the default from vcrun2019 to vcrun2022
+            // does not report every existing bottle as missing it.
+            let hasEquivalent = definition.equivalentVerbs.contains(where: installedVerbs.contains)
+            let installed = hasEquivalent ? requiredVerbs : requiredVerbs.filter(installedVerbs.contains)
+            let missing = hasEquivalent ? [] : requiredVerbs.filter { !installedVerbs.contains($0) }
 
             let installStatus: DependencyInstallStatus = if missing.isEmpty {
                 .installed

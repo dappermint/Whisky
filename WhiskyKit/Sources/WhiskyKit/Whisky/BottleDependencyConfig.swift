@@ -46,7 +46,7 @@ public enum DependencyCategory: String, Codable, CaseIterable, Sendable {
 /// ```swift
 /// let vcRuntime = DependencyDefinition.standardDependencies.first { $0.id == "vcruntime" }
 /// // vcRuntime?.displayName == "Visual C++ Runtime"
-/// // vcRuntime?.winetricksVerbs == ["vcrun2019"]
+/// // vcRuntime?.winetricksVerbs == ["vcrun2022"]
 /// ```
 public struct DependencyDefinition: Codable, Identifiable, Sendable {
     /// Stable identifier (e.g. "vcruntime", "dotnet48", "directx").
@@ -57,6 +57,10 @@ public struct DependencyDefinition: Codable, Identifiable, Sendable {
     public let description: String
     /// The winetricks verb names required to install this dependency.
     public let winetricksVerbs: [String]
+    /// Verbs that already provide what this dependency installs, so a prefix
+    /// carrying one of them counts as satisfied. A newer redistributable
+    /// replacing an older one is the case this exists for.
+    public let equivalentVerbs: [String]
     /// The functional category this dependency belongs to.
     public let category: DependencyCategory
     /// Rough time estimate for installation, shown in the UI.
@@ -68,7 +72,8 @@ public struct DependencyDefinition: Codable, Identifiable, Sendable {
         description: String,
         winetricksVerbs: [String],
         category: DependencyCategory,
-        estimatedInstallMinutes: Int
+        estimatedInstallMinutes: Int,
+        equivalentVerbs: [String] = []
     ) {
         self.id = id
         self.displayName = displayName
@@ -76,6 +81,19 @@ public struct DependencyDefinition: Codable, Identifiable, Sendable {
         self.winetricksVerbs = winetricksVerbs
         self.category = category
         self.estimatedInstallMinutes = estimatedInstallMinutes
+        self.equivalentVerbs = equivalentVerbs
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        displayName = try container.decode(String.self, forKey: .displayName)
+        description = try container.decode(String.self, forKey: .description)
+        winetricksVerbs = try container.decode([String].self, forKey: .winetricksVerbs)
+        category = try container.decode(DependencyCategory.self, forKey: .category)
+        estimatedInstallMinutes = try container.decode(Int.self, forKey: .estimatedInstallMinutes)
+        // Absent in definitions written before equivalents existed.
+        equivalentVerbs = try container.decodeIfPresent([String].self, forKey: .equivalentVerbs) ?? []
     }
 }
 
@@ -90,9 +108,12 @@ extension DependencyDefinition {
             id: "vcruntime",
             displayName: "Visual C++ Runtime",
             description: "Required by most Windows games and applications",
-            winetricksVerbs: ["vcrun2019"],
+            // 2022 is the redistributable Microsoft still ships, and it carries
+            // the 2015-2019 runtimes with it, so it covers what vcrun2019 did.
+            winetricksVerbs: ["vcrun2022"],
             category: .runtime,
-            estimatedInstallMinutes: 2
+            estimatedInstallMinutes: 2,
+            equivalentVerbs: ["vcrun2019"]
         ),
         DependencyDefinition(
             id: "dotnet48",

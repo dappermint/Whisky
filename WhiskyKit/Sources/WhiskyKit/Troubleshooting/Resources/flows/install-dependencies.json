@@ -11,7 +11,7 @@
       "description": "Scanning for commonly required runtime components: Visual C++, .NET, DirectX, and DXVK.",
       "checkId": "winetricks.verb_check",
       "params": {
-        "verbs": "vcrun2019,dotnet48,d3dx9,dxvk"
+        "verbs": "vcrun2022|vcrun2019,dotnet48,d3dx9,dxvk"
       },
       "on": {
         "pass": "check_game_config",

@@ -68,7 +68,7 @@ struct PerformanceConfigSection: View {
             if !bottle.settings.vcRedistInstalled {
                 Button {
                     Task {
-                        await Winetricks.runCommand(command: "vcrun2019", bottle: bottle)
+                        await Winetricks.runCommand(command: "vcrun2022", bottle: bottle)
                         bottle.settings.vcRedistInstalled = true
                     }
                 } label: {

@@ -195,4 +195,78 @@ final class TroubleshootingChecksTests: XCTestCase {
         XCTAssertEqual(result.outcome, .fail)
         XCTAssertEqual(result.evidence["programName"], "definitely-not-a-real-game-zzz.exe")
     }
+
+    // MARK: - WinetricksVerbCheck alternatives
+
+    /// Builds a context whose bottle directory exists, so a verb cache can be
+    /// written into it.
+    private func makeBottleContext() throws -> CheckContext {
+        let bottleURL = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: bottleURL, withIntermediateDirectories: true)
+        let preflight = PreflightData(
+            bottleURL: bottleURL,
+            bottleName: "Test Bottle",
+            programName: nil,
+            launcherType: nil,
+            isWineserverRunning: false,
+            processCount: 0,
+            graphicsBackend: "dxmt"
+        )
+        return CheckContext(
+            bottleURL: bottleURL,
+            bottleName: "Test Bottle",
+            preflight: preflight,
+            session: TroubleshootingSession(bottleURL: bottleURL)
+        )
+    }
+
+    func testEitherVisualCPlusPlusRuntimeSatisfiesTheRequirement() async throws {
+        let context = try makeBottleContext()
+        defer { try? FileManager.default.removeItem(at: context.bottleURL) }
+        try WinetricksVerbCache.save(
+            WinetricksVerbCache(installedVerbs: ["vcrun2019", "dotnet48"]), to: context.bottleURL
+        )
+
+        let result = await WinetricksVerbCheck().run(
+            params: ["verbs": "vcrun2022|vcrun2019,dotnet48"], context: context
+        )
+
+        XCTAssertEqual(result.outcome, .alreadyConfigured)
+        XCTAssertNil(result.evidence["missing"])
+    }
+
+    func testMissingRequirementReportsTheVerbToInstall() async throws {
+        let context = try makeBottleContext()
+        defer { try? FileManager.default.removeItem(at: context.bottleURL) }
+        try WinetricksVerbCache.save(WinetricksVerbCache(installedVerbs: ["dotnet48"]), to: context.bottleURL)
+
+        let result = await WinetricksVerbCheck().run(
+            params: ["verbs": "vcrun2022|vcrun2019,dotnet48"], context: context
+        )
+
+        XCTAssertEqual(result.outcome, .fail)
+        // The fix installs what this string names, so it has to be one verb
+        // rather than the alternatives that were looked for.
+        XCTAssertEqual(result.evidence["missing"], "vcrun2022")
+    }
+
+    func testAnEquivalentVerbSatisfiesTheDependencyDefinition() {
+        let vcruntime = DependencyDefinition.standardDependencies.first { $0.id == "vcruntime" }
+
+        XCTAssertEqual(vcruntime?.winetricksVerbs, ["vcrun2022"])
+        XCTAssertEqual(vcruntime?.equivalentVerbs, ["vcrun2019"])
+    }
+
+    func testDependencyDefinitionDecodesWithoutEquivalents() throws {
+        let json = """
+        {
+          "id": "vcruntime", "displayName": "Visual C++ Runtime", "description": "old payload",
+          "winetricksVerbs": ["vcrun2019"], "category": "Runtime", "estimatedInstallMinutes": 2
+        }
+        """
+        let decoded = try JSONDecoder().decode(DependencyDefinition.self, from: Data(json.utf8))
+
+        XCTAssertEqual(decoded.winetricksVerbs, ["vcrun2019"])
+        XCTAssertTrue(decoded.equivalentVerbs.isEmpty)
+    }
 }

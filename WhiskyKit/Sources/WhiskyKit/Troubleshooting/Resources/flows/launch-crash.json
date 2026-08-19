@@ -75,7 +75,7 @@
       "description": "The crash suggests a memory access violation. Checking for common Winetricks fixes.",
       "checkId": "winetricks.verb_check",
       "params": {
-        "verbs": "vcrun2019,dotnet48,d3dcompiler_47"
+        "verbs": "vcrun2022|vcrun2019,dotnet48,d3dcompiler_47"
       },
       "on": {
         "pass": "escalate",

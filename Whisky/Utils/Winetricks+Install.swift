@@ -50,12 +50,13 @@ extension Winetricks {
     ///   - verb: The winetricks verb name to install (e.g. "vcrun2019").
     ///   - bottle: The bottle whose prefix to install into.
     ///   - timeout: Maximum time in seconds before the process is terminated.
-    ///     Defaults to 600 seconds (10 minutes).
+    ///     Defaults to 1800 seconds. dotnet48 alone is a 10 minute job on a
+    ///     good day, and the old 600 killed it mid-install.
     /// - Returns: An ``AsyncStream`` of progress events.
     static func installVerb(
         _ verb: String,
         for bottle: Bottle,
-        timeout: TimeInterval = 600
+        timeout: TimeInterval = 1_800
     ) -> AsyncStream<WinetricksInstallProgress> {
         AsyncStream { continuation in
             Task {
@@ -102,7 +103,11 @@ extension Winetricks {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         let winetricksPath = resourcesURL.appending(path: "winetricks").path(percentEncoded: false)
-        process.arguments = ["bash", winetricksPath, verb]
+        // -q is not a nicety: with no tty behind it, any prompt winetricks
+        // raises reads EOF and it quits with "Operation cancelled". Microsoft
+        // reissuing vc_redist.x86.exe made vcrun2019 prompt on a checksum
+        // mismatch, and that is exactly how it failed.
+        process.arguments = ["bash", winetricksPath, "-q", verb]
         process.environment = [
             "WINEPREFIX": bottleURL.path(percentEncoded: false),
             "WINE": "wine64",
@@ -165,6 +170,7 @@ extension Winetricks {
         let stderrPipe = Pipe()
         process.standardOutput = stdoutPipe
         process.standardError = stderrPipe
+        process.standardInput = FileHandle.nullDevice
         attachOutputHandlers(stdout: stdoutPipe, stderr: stderrPipe, continuation: continuation)
 
         do {
