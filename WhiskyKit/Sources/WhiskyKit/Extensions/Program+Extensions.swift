@@ -88,12 +88,16 @@ public extension Program {
     }
 
     /// Launches the program respecting user's modifier key preference and returns the result.
-    /// - Parameter useTerminal: Whether to launch in Terminal mode (e.g., Shift was held).
-    ///   **Important:** Capture `NSEvent.modifierFlags.contains(.shift)` synchronously at the call site,
-    ///   before entering any async context, to avoid race conditions with key state.
+    /// - Parameters:
+    ///   - useTerminal: Whether to launch in Terminal mode (e.g., Shift was held).
+    ///     **Important:** Capture `NSEvent.modifierFlags.contains(.shift)` synchronously at the call site,
+    ///     before entering any async context, to avoid race conditions with key state.
+    ///   - debugEnvironment: Variables for this launch only, never written to settings.
+    ///     The debug window sends its `WINEDEBUG` here so a channel picked for one
+    ///     run does not become the program's permanent configuration.
     /// - Returns: LaunchResult indicating success, terminal launch, or failure
     @MainActor
-    func launchWithUserMode(useTerminal: Bool) async -> LaunchResult {
+    func launchWithUserMode(useTerminal: Bool, debugEnvironment: [String: String] = [:]) async -> LaunchResult {
         // Check for terminal mode (typically shift-click)
         if useTerminal {
             self.runInTerminal()
@@ -113,7 +117,8 @@ public extension Program {
         await Wine.syncAudioRegistry(bottle: bottle)
 
         let arguments = settings.arguments.split { $0.isWhitespace }.map(String.init)
-        let environment = generateEnvironment()
+        var environment = generateEnvironment()
+        environment.merge(debugEnvironment) { _, oneOff in oneOff }
 
         do {
             let result = try await Wine.runProgram(

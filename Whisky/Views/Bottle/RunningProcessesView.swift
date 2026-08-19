@@ -27,8 +27,14 @@ struct RunningProcessesView: View {
     @State private var showForceStopConfirmation: Bool = false
     @State private var showingDetail: Bool = false
 
-    init(bottle: Bottle) {
+    /// The window this pane names. A pane inside a split view still writes the
+    /// window's title, and it wins over anything the container sets, so the
+    /// Debug window passes its own name in rather than fighting for it.
+    private let windowTitle: LocalizedStringKey
+
+    init(bottle: Bottle, windowTitle: LocalizedStringKey = "tab.processes") {
         self.bottle = bottle
+        self.windowTitle = windowTitle
         _viewModel = StateObject(wrappedValue: ProcessesViewModel(bottle: bottle))
     }
 
@@ -43,7 +49,7 @@ struct RunningProcessesView: View {
                 shutdownOverlay
             }
         }
-        .navigationTitle("tab.processes")
+        .navigationTitle(windowTitle)
         .toolbar { processToolbar }
         .toast($toast)
         .onAppear { viewModel.startPolling() }

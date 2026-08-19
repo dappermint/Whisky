@@ -38,6 +38,9 @@ struct WhiskyApp: App {
     /// Scene id for the main window, used to reopen it from the menu-bar extra.
     static let mainWindowID = "main"
 
+    /// Scene id for the Debug window.
+    static let debugWindowID = "debug"
+
     /// Opt-in: show a menu-bar extra and keep Whisky running after the main
     /// window closes (see `AppDelegate.applicationShouldTerminateAfterLastWindowClosed`).
     @AppStorage("showMenuBarExtra") private var showMenuBarExtra = false
@@ -58,6 +61,7 @@ struct WhiskyApp: App {
     @AppStorage("audioDeviceAlerts") private var audioDeviceAlerts = true
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @Environment(\.openURL) var openURL
+    @Environment(\.openWindow) var openWindow
 
     init() {
         Telemetry.startIfConsented()
@@ -200,6 +204,10 @@ struct WhiskyApp: App {
                 }
             }
             CommandGroup(after: .importExport) {
+                Button("debug.window.open") {
+                    openWindow(id: Self.debugWindowID)
+                }
+                .keyboardShortcut("B", modifiers: [.command, .shift])
                 Button("open.logs") {
                     WhiskyApp.openLogsFolder()
                 }
@@ -238,6 +246,12 @@ struct WhiskyApp: App {
                 .keyboardShortcut("T", modifiers: [.command, .shift])
             }
         }
+        Window("debug.window.title", id: Self.debugWindowID) {
+            DebugWindowView()
+                .environmentObject(BottleVM.shared)
+        }
+        .defaultSize(width: 900, height: 620)
+
         Settings {
             SettingsView()
         }

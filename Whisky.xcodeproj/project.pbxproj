@@ -129,6 +129,9 @@
 		AB5DECAF20260818000000D2 /* CrashNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB5DECAF20260818000000D3 /* CrashNotifier.swift */; };
 		AB5DECAF20260818000000D4 /* RemediationExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB5DECAF20260818000000D5 /* RemediationExecutor.swift */; };
 		AB5DECAF20260818000000D8 /* SpotlightIndexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB5DECAF20260818000000D9 /* SpotlightIndexer.swift */; };
+		AB5DECAF20260819000000DA /* DebugWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB5DECAF20260819000000DB /* DebugWindowView.swift */; };
+		AB5DECAF20260819000000DC /* DebugLogPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB5DECAF20260819000000DD /* DebugLogPane.swift */; };
+		AB5DECAF20260819000000DE /* DebugSessionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB5DECAF20260819000000DF /* DebugSessionModel.swift */; };
 		G1A2B3C4E5F60901A9B0C1D2 /* Winetricks+Install.swift in Sources */ = {isa = PBXBuildFile; fileRef = G1A2B3C4E5F60901A9B0C1D3 /* Winetricks+Install.swift */; };
 		H1A2B3C4E5F61101A9B0C1D0 /* DependencyConfigSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1A2B3C4E5F61101A9B0C1D1 /* DependencyConfigSection.swift */; };
 		H1A2B3C4E5F61101A9B0C1D2 /* DependencyInstallSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1A2B3C4E5F61101A9B0C1D3 /* DependencyInstallSheet.swift */; };
@@ -326,6 +329,9 @@
 		AB5DECAF20260818000000D3 /* CrashNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrashNotifier.swift; sourceTree = "<group>"; };
 		AB5DECAF20260818000000D5 /* RemediationExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemediationExecutor.swift; sourceTree = "<group>"; };
 		AB5DECAF20260818000000D9 /* SpotlightIndexer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightIndexer.swift; sourceTree = "<group>"; };
+		AB5DECAF20260819000000DB /* DebugWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugWindowView.swift; sourceTree = "<group>"; };
+		AB5DECAF20260819000000DD /* DebugLogPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLogPane.swift; sourceTree = "<group>"; };
+		AB5DECAF20260819000000DF /* DebugSessionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugSessionModel.swift; sourceTree = "<group>"; };
 		G1A2B3C4E5F60901A9B0C1D3 /* Winetricks+Install.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Winetricks+Install.swift"; sourceTree = "<group>"; };
 		H1A2B3C4E5F61101A9B0C1D1 /* DependencyConfigSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DependencyConfigSection.swift; sourceTree = "<group>"; };
 		H1A2B3C4E5F61101A9B0C1D3 /* DependencyInstallSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DependencyInstallSheet.swift; sourceTree = "<group>"; };
@@ -546,12 +552,22 @@
 			path = Settings;
 			sourceTree = "<group>";
 		};
+		AB5DECAF20260819000000E0 /* Debug */ = {
+			isa = PBXGroup;
+			children = (
+				AB5DECAF20260819000000DB /* DebugWindowView.swift */,
+				AB5DECAF20260819000000DD /* DebugLogPane.swift */,
+			);
+			path = Debug;
+			sourceTree = "<group>";
+		};
 		6E5197CD29D71FCD00CF655E /* Views */ = {
 			isa = PBXGroup;
 			children = (
 				C1A2B3C4E5F60601A9B0C1DA /* Audio */,
 				63FFDE822ADEFADF00178665 /* Common */,
 				D1A2B3C4E5F60504A9B0C1D6 /* Diagnostics */,
+				AB5DECAF20260819000000E0 /* Debug */,
 				E1A2B3C4E5F60701A9B0C1D4 /* GameDB */,
 				H1A2B3C4E5F61101A9B0C1D4 /* Install */,
 				J1A2B3C4E5F61301A9B0C1DA /* Troubleshooting */,
@@ -578,6 +594,7 @@
 				6E50D98429CD6066008C39F6 /* BottleVM+Diagnostics.swift */,
 				B1A2C3D4E5F60302A9B0C1D2 /* ProcessesViewModel.swift */,
 				D7B1C2E3F4A50801A9B0E1F2 /* LibraryModel.swift */,
+				AB5DECAF20260819000000DF /* DebugSessionModel.swift */,
 			);
 			path = "View Models";
 			sourceTree = "<group>";
@@ -1066,6 +1083,9 @@
 				AB5DECAF20260818000000D2 /* CrashNotifier.swift in Sources */,
 				AB5DECAF20260818000000D4 /* RemediationExecutor.swift in Sources */,
 				AB5DECAF20260818000000D8 /* SpotlightIndexer.swift in Sources */,
+				AB5DECAF20260819000000DA /* DebugWindowView.swift in Sources */,
+				AB5DECAF20260819000000DC /* DebugLogPane.swift in Sources */,
+				AB5DECAF20260819000000DE /* DebugSessionModel.swift in Sources */,
 				G1A2B3C4E5F60901A9B0C1D2 /* Winetricks+Install.swift in Sources */,
 				H1A2B3C4E5F61101A9B0C1D0 /* DependencyConfigSection.swift in Sources */,
 				H1A2B3C4E5F61101A9B0C1D2 /* DependencyInstallSheet.swift in Sources */,
