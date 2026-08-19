@@ -79,3 +79,19 @@ public enum WineDebugPreset: String, Codable, Sendable, CaseIterable {
         }
     }
 }
+
+extension WineDebugPreset {
+    /// Contributes this preset's channels at the ``EnvironmentLayer/featureRuntime``
+    /// layer, unless a user layer already owns `WINEDEBUG`.
+    ///
+    /// The picker is a default, not an instruction. Replacing a value someone
+    /// typed themselves sent a reporter in frankea/Whisky#218 chasing a log that
+    /// never carried the channels they had asked for.
+    ///
+    /// - Parameter builder: The environment builder to contribute to.
+    func applyIfUnset(in builder: inout EnvironmentBuilder) {
+        guard self != .normal else { return }
+        if let owner = builder.owner(of: "WINEDEBUG"), owner >= .bottleUser { return }
+        builder.set("WINEDEBUG", winedebugValue, layer: .featureRuntime, reason: "\(displayName) preset")
+    }
+}

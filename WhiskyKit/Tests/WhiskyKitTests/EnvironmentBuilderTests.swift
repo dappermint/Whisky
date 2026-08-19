@@ -92,4 +92,19 @@ final class EnvironmentBuilderTests: XCTestCase {
         XCTAssertTrue(result.provenance.activeLayers.contains(.programUser))
         XCTAssertFalse(result.provenance.activeLayers.contains(.platform))
     }
+
+    func testOwnerReportsHighestLayerHoldingTheKey() {
+        var builder = EnvironmentBuilder()
+        builder.set("WINEDEBUG", "fixme-all", layer: .base)
+        builder.set("WINEDEBUG", "+file", layer: .programUser)
+        XCTAssertEqual(builder.owner(of: "WINEDEBUG"), .programUser)
+        XCTAssertNil(builder.owner(of: "NOBODY_SET_THIS"))
+    }
+
+    func testOwnerCountsARemovalAsOwnership() {
+        var builder = EnvironmentBuilder()
+        builder.set("KEY", "a", layer: .base)
+        builder.remove("KEY", layer: .programUser)
+        XCTAssertEqual(builder.owner(of: "KEY"), .programUser)
+    }
 }

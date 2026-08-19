@@ -155,10 +155,8 @@ extension Wine {
             )
         }
 
-        // Layer 8: featureRuntime -- diagnostic WINEDEBUG preset override
-        if let preset = programSettings?.activeWineDebugPreset, preset != .normal {
-            builder.set("WINEDEBUG", preset.winedebugValue, layer: .featureRuntime)
-        }
+        // Layer 8: featureRuntime -- the diagnostic preset, which yields to a WINEDEBUG the user set
+        programSettings?.activeWineDebugPreset?.applyIfUnset(in: &builder)
 
         // Layer 9: callsiteOverride is left empty (populated by direct callers)
 

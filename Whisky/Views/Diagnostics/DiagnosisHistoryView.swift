@@ -206,6 +206,12 @@ extension DiagnosisHistoryView {
                     .foregroundStyle(.orange)
             }
 
+            if selectedPreset != .normal, program.settings.environment["WINEDEBUG"] != nil {
+                Label("diagnostics.preset.userWinedebug", systemImage: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             if selectedPreset != .normal, let onRerunWithPreset {
                 Button("Re-run with enhanced logging") {
                     onRerunWithPreset(selectedPreset)

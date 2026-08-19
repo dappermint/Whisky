@@ -135117,6 +135117,154 @@
         }
       }
     },
+    "diagnostics.preset.userWinedebug" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This program sets WINEDEBUG itself, so the preset is ignored for it."
+          }
+        }
+      }
+    },
     "wine.dxmt.error.payloadMissing" : {
       "extractionState" : "manual",
       "localizations" : {

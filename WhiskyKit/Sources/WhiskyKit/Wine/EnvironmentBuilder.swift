@@ -158,6 +158,17 @@ public struct EnvironmentBuilder: Sendable {
         layers[layer, default: [:]][key] = nil as String?
     }
 
+    /// The highest layer holding an entry for `key`, or nil if no layer touches it.
+    ///
+    /// A removal counts as an entry: the layer that removed the key still owns
+    /// the decision at its priority.
+    ///
+    /// - Parameter key: The environment variable name.
+    /// - Returns: The owning layer, or nil.
+    public func owner(of key: String) -> EnvironmentLayer? {
+        layers.keys.sorted().last { layers[$0]?.keys.contains(key) == true }
+    }
+
     /// Resolves all layers into a final environment dictionary and provenance.
     ///
     /// Layers are processed in order of their raw value (ascending). For each key,

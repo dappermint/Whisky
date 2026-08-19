@@ -62,6 +62,27 @@ struct GameProfileLayerTests {
         #expect(env["CONTESTED"] == "program-user")
         #expect(env["not a valid key!"] == nil)
     }
+
+    @Test("A WINEDEBUG the user typed survives the diagnostic preset")
+    @MainActor func userWinedebugBeatsPreset() throws {
+        let tempDir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let bottle = Bottle(bottleUrl: tempDir, inFlight: false, isAvailable: true)
+        var settings = ProgramSettings()
+        settings.activeWineDebugPreset = .dllLoad
+
+        let withUserValue = Wine.constructWineEnvironment(
+            for: bottle,
+            environment: ["WINEDEBUG": "+file"],
+            programSettings: settings
+        )
+        #expect(withUserValue["WINEDEBUG"] == "+file")
+
+        let presetOnly = Wine.constructWineEnvironment(for: bottle, programSettings: settings)
+        #expect(presetOnly["WINEDEBUG"] == WineDebugPreset.dllLoad.winedebugValue)
+    }
 }
 
 @Suite("LaunchResolver Tests")
