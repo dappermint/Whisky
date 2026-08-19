@@ -83,7 +83,12 @@ public enum SteamLauncher {
                 programOverrides: plan.overrides,
                 gameProfileEnvironment: plan.gameProfileEnvironment,
                 // the plan is the game's; steam.exe is only the vehicle
-                overridesApplyToDescendants: true
+                overridesApplyToDescendants: true,
+                // The client hands the game its own handles, so an attached
+                // client is what puts the game's output in the run's log. This
+                // task holds the call for the whole session, which is what the
+                // caller already expects of it.
+                keepAttached: true
             )
         }
     }

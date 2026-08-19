@@ -299,7 +299,8 @@ public class Wine {
         gameProfileEnvironment: [String: String] = [:],
         overridesApplyToDescendants: Bool = false,
         keepAttached: Bool = false,
-        onLogFile: (@MainActor (URL) -> Void)? = nil
+        onLogFile: (@MainActor (URL) -> Void)? = nil,
+        onStarted: (@MainActor () -> Void)? = nil
     ) async throws -> ProgramRunResult {
         // Note: Launcher detection and fix application happen before this method
         // is called, via LauncherFixes.detectAndApply from the app's run paths
@@ -424,8 +425,15 @@ public class Wine {
             directory: keepAttached ? url.deletingLastPathComponent() : nil,
             fileHandle: fileHandle
         ) {
-            if case let .terminated(code) = output {
+            switch output {
+            case .started:
+                // An attached run does not return until the program exits, so
+                // this is what tells a caller the launch itself worked.
+                onStarted?()
+            case let .terminated(code):
                 exitCode = code
+            case .message, .error:
+                break
             }
         }
 

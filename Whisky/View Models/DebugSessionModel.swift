@@ -105,12 +105,9 @@ final class DebugSessionModel: ObservableObject {
     /// Launches the selected program through the one launch door, with the
     /// picked channels as a one-off environment, and follows its log live.
     ///
-    /// Attached, so the program is this process's child rather than
-    /// wineserver's. Handed to wineserver it gets a console of its own and
-    /// writes nothing this window could read: the log fills with Wine's session
-    /// coming up and never with the program. The call lasts as long as the
-    /// program does, so the log arrives through ``follow(_:)`` at the start
-    /// rather than as a return value at the end.
+    /// The door returns once the program is running, so the log arrives through
+    /// ``follow(_:)`` and the exit through ``finish(programName:exitCode:)``
+    /// rather than as a return value.
     func launch() async {
         guard let program else { return }
         let programName = program.name
@@ -121,26 +118,35 @@ final class DebugSessionModel: ObservableObject {
         let result = await program.launchWithUserMode(
             useTerminal: false,
             debugEnvironment: ["WINEDEBUG": winedebugValue],
-            keepAttached: true,
             onLogFile: { [weak self] logURL in
                 self?.status = String(localized: "debug.status.running \(programName)")
                 self?.follow(logURL)
+            },
+            onExit: { [weak self] exitCode in
+                Task { await self?.finish(programName: programName, exitCode: exitCode) }
             }
         )
 
-        switch result {
-        case .launchedSuccessfully, .launchedInTerminal:
-            status = String(localized: "debug.status.finished \(programName)")
-        case let .launchFailed(_, errorDescription):
+        if case let .launchFailed(_, errorDescription) = result {
             status = errorDescription
+            stopFollowing()
         }
-        // The program is gone, so the file has stopped growing. Read what it
-        // wrote on the way out before letting go of it, then say so instead of
-        // leaving the streaming light on over a log nothing is writing.
+    }
+
+    /// Reads what the program wrote on its way out, then lets the log go.
+    ///
+    /// The tail polls, and a program's last lines land between the final poll
+    /// and its exit, so stopping on exit alone loses them.
+    private func finish(programName: String, exitCode: Int32) async {
         if let tail {
             await append(tail.drain())
         }
         stopFollowing()
+        status = exitCode == 0
+            ? String(localized: "debug.status.finished \(programName)")
+            // Int32 interpolates as %d and the catalog key says %lld, which is
+            // the difference between the string and its own name on screen.
+            : String(localized: "debug.status.exitedWithCode \(programName) \(Int(exitCode))")
     }
 
     /// Follows a log file, replacing whatever was being followed before.
