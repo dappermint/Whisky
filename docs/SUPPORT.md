@@ -7,11 +7,16 @@ best-effort and free. This page sets honest expectations and points you at the f
 
 Most problems already have an answer:
 
-1. **Make sure you're running this fork.** The default `brew install --cask whisky` installs the
-   **archived original** (last updated April 2025), *not* this fork. This fork is
-   `brew install --cask frankea/whisky/whisky`, or the DMG from
-   [Releases](https://github.com/frankea/Whisky/releases/latest). Check **Whisky → About** — bugs in
-   the archived original can't be fixed here.
+1. **Know which build you're running.** Check **Whisky → About**. There are three:
+   - `brew install --cask whisky` is the **archived original** (last updated April 2025). Bugs in it
+     can't be fixed anywhere.
+   - `brew install --cask frankea/whisky/whisky`, or the DMG from
+     [Releases](https://github.com/frankea/Whisky/releases/latest), is the maintained app. Issues
+     about it belong on that tracker.
+   - `brew install --cask dappermint/tap/whisky-preview` is **Whisky Preview**, a personal fork
+     numbered by calendar date rather than upstream's semver. It has no issue tracker. Reproduce
+     the problem on the maintained app above before reporting it, and if it only happens on
+     Preview, take it to the fork's maintainer rather than upstream's tracker.
 2. **Search [existing issues](https://github.com/frankea/Whisky/issues?q=is%3Aissue).**
 3. **Check the troubleshooting docs:**
    [Launcher](LauncherTroubleshooting.md) · [Steam](SteamCompatibility.md) · [Stability](StabilityTroubleshooting.md).

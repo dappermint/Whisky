@@ -219,8 +219,11 @@ struct WhiskyApp: App {
                         openURL(url)
                     }
                 }
+                // Issues are disabled on the preview repo, so reports go to
+                // upstream's tracker, where anything preview-only is out of
+                // scope. docs/SUPPORT.md tells people which is which.
                 Button("help.issues") {
-                    if let url = URL(string: "https://github.com/dappermint/Whisky/issues") {
+                    if let url = URL(string: "https://github.com/frankea/Whisky/issues") {
                         openURL(url)
                     }
                 }

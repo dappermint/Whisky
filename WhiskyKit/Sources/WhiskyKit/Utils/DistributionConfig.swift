@@ -28,9 +28,6 @@ public enum DistributionConfig {
     /// Base URL for GitHub Releases downloads
     public static let releasesBaseURL = "https://github.com/dappermint/Whisky/releases/download"
 
-    /// URL for the Sparkle appcast feed
-    public static let appcastURL = "\(baseURL)/appcast.xml"
-
     /// Constructs the download URL for Wine Libraries from GitHub Releases
     /// - Parameter version: The version string (e.g., "2.5.0")
     /// - Returns: The full URL to download Libraries.tar.gz from GitHub Releases
