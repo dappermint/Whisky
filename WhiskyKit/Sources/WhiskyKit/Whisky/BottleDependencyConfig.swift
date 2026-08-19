@@ -61,6 +61,15 @@ public struct DependencyDefinition: Codable, Identifiable, Sendable {
     /// carrying one of them counts as satisfied. A newer redistributable
     /// replacing an older one is the case this exists for.
     public let equivalentVerbs: [String]
+    /// Files this dependency leaves in the prefix, relative to `drive_c`.
+    ///
+    /// The verb log is not the only way a payload arrives: a game's own
+    /// installer ships the Visual C++ runtime, and Microsoft's redistributable
+    /// refuses to reinstall over an equal or newer version, exiting 1638. Wine
+    /// truncates that to 102 on the way out, winetricks does not recognise it,
+    /// and the dependency looks missing forever while its files sit right
+    /// there. Checked when no verb accounts for it.
+    public let probeFiles: [String]
     /// The functional category this dependency belongs to.
     public let category: DependencyCategory
     /// Rough time estimate for installation, shown in the UI.
@@ -73,7 +82,8 @@ public struct DependencyDefinition: Codable, Identifiable, Sendable {
         winetricksVerbs: [String],
         category: DependencyCategory,
         estimatedInstallMinutes: Int,
-        equivalentVerbs: [String] = []
+        equivalentVerbs: [String] = [],
+        probeFiles: [String] = []
     ) {
         self.id = id
         self.displayName = displayName
@@ -82,6 +92,7 @@ public struct DependencyDefinition: Codable, Identifiable, Sendable {
         self.category = category
         self.estimatedInstallMinutes = estimatedInstallMinutes
         self.equivalentVerbs = equivalentVerbs
+        self.probeFiles = probeFiles
     }
 
     public init(from decoder: Decoder) throws {
@@ -94,6 +105,7 @@ public struct DependencyDefinition: Codable, Identifiable, Sendable {
         estimatedInstallMinutes = try container.decode(Int.self, forKey: .estimatedInstallMinutes)
         // Absent in definitions written before equivalents existed.
         equivalentVerbs = try container.decodeIfPresent([String].self, forKey: .equivalentVerbs) ?? []
+        probeFiles = try container.decodeIfPresent([String].self, forKey: .probeFiles) ?? []
     }
 }
 
@@ -113,7 +125,11 @@ extension DependencyDefinition {
             winetricksVerbs: ["vcrun2022"],
             category: .runtime,
             estimatedInstallMinutes: 2,
-            equivalentVerbs: ["vcrun2019"]
+            equivalentVerbs: ["vcrun2019"],
+            probeFiles: [
+                "windows/system32/vcruntime140.dll",
+                "windows/system32/msvcp140.dll"
+            ]
         ),
         DependencyDefinition(
             id: "dotnet48",
@@ -129,7 +145,11 @@ extension DependencyDefinition {
             description: "DirectX 9/10/11 components for older games",
             winetricksVerbs: ["d3dx9", "d3dcompiler_47"],
             category: .directx,
-            estimatedInstallMinutes: 3
+            estimatedInstallMinutes: 3,
+            probeFiles: [
+                "windows/system32/d3dx9_43.dll",
+                "windows/system32/d3dcompiler_47.dll"
+            ]
         ),
         DependencyDefinition(
             id: "directx_audio",

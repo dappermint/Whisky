@@ -96,8 +96,7 @@ extension Winetricks {
     /// Configures and returns a Process for running a winetricks verb.
     private static func configureInstallProcess(
         verb: String,
-        bottleURL: URL,
-        runtime: String?,
+        environment: [String: String],
         resourcesURL: URL
     ) -> Process {
         let process = Process()
@@ -108,17 +107,7 @@ extension Winetricks {
         // reissuing vc_redist.x86.exe made vcrun2019 prompt on a checksum
         // mismatch, and that is exactly how it failed.
         process.arguments = ["bash", winetricksPath, "-q", verb]
-        process.environment = [
-            "WINEPREFIX": bottleURL.path(percentEncoded: false),
-            "WINE": "wine64",
-            "PATH": [
-                WhiskyWineInstaller.binFolder(for: runtime).path(percentEncoded: false),
-                resourcesURL.path(percentEncoded: false),
-                "/usr/bin",
-                "/bin"
-            ].joined(separator: ":"),
-            "HOME": NSHomeDirectory()
-        ]
+        process.environment = environment
         return process
     }
 
@@ -150,8 +139,6 @@ extension Winetricks {
     ) async {
         continuation.yield(.preparing)
 
-        let (bottleURL, runtime) = await MainActor.run { (bottle.url, bottle.settings.runtime) }
-
         guard let resourcesURL = Bundle.main.url(
             forResource: "cabextract",
             withExtension: nil
@@ -163,8 +150,11 @@ extension Winetricks {
             return
         }
 
+        let environment = await MainActor.run {
+            Winetricks.processEnvironment(for: bottle, resourcesURL: resourcesURL)
+        }
         let process = configureInstallProcess(
-            verb: verb, bottleURL: bottleURL, runtime: runtime, resourcesURL: resourcesURL
+            verb: verb, environment: environment, resourcesURL: resourcesURL
         )
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()
@@ -211,5 +201,33 @@ extension Winetricks {
         }
         process.waitUntilExit()
         timeoutTask.cancel()
+    }
+}
+
+// MARK: - Environment
+
+extension Winetricks {
+    /// The environment a winetricks process needs to talk to this bottle.
+    ///
+    /// Built from the same layers a launch uses, because the wineserver a
+    /// bottle already has running was started with those. Wine refuses to join
+    /// a server whose sync mode it does not share, so a winetricks run carrying
+    /// a bare environment dies at its first `wine cmd.exe` with "Server is
+    /// running with WINEMSYNC but this process is not", and winetricks reports
+    /// that as an empty `%AppData%` and stops. Which is to say: every verb
+    /// failed whenever a game or Steam was open.
+    @MainActor
+    static func processEnvironment(for bottle: Bottle, resourcesURL: URL) -> [String: String] {
+        var environment = Wine.constructWineEnvironment(for: bottle)
+        environment["WINEPREFIX"] = bottle.url.path(percentEncoded: false)
+        environment["WINE"] = "wine64"
+        environment["HOME"] = NSHomeDirectory()
+        environment["PATH"] = [
+            WhiskyWineInstaller.binFolder(for: bottle.settings.runtime).path(percentEncoded: false),
+            resourcesURL.path(percentEncoded: false),
+            "/usr/bin",
+            "/bin"
+        ].joined(separator: ":")
+        return environment
     }
 }

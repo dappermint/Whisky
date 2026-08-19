@@ -77,12 +77,7 @@ class Winetricks {
             showMissingResourcesAlert(command: command)
             return
         }
-        // Winetricks ships in the app bundle Resources alongside cabextract. Invoke it via
-        // `bash` (matching the headless install paths) so no executable bit is relied upon.
-        let winetricksPath = resourcesURL.appending(path: "winetricks").path(percentEncoded: false)
-        let binPath = WhiskyWineInstaller.binFolder(for: bottle.settings.runtime).path
-        // swiftlint:disable:next line_length
-        let winetricksCmd = #"PATH=\"\#(binPath):\#(resourcesURL.path(percentEncoded: false)):$PATH\" WINE=wine64 WINEPREFIX=\"\#(bottle.url.path)\" bash \"\#(winetricksPath)\" -q \#(command)"#
+        let winetricksCmd = terminalCommand(command: command, bottle: bottle, resourcesURL: resourcesURL)
 
         let script = """
         tell application "Terminal"
@@ -251,5 +246,27 @@ class Winetricks {
         }
 
         return categories
+    }
+}
+
+extension Winetricks {
+    /// The shell line Terminal runs for a verb.
+    ///
+    /// Winetricks ships in the app bundle Resources alongside cabextract, and is
+    /// invoked through `bash` so no executable bit is relied upon. The
+    /// environment is the one the headless path builds, for the same reason: a
+    /// bottle with a wineserver already up refuses processes that do not share
+    /// its sync mode.
+    @MainActor
+    static func terminalCommand(command: String, bottle: Bottle, resourcesURL: URL) -> String {
+        let winetricksPath = resourcesURL.appending(path: "winetricks").path(percentEncoded: false)
+        // The quotes are written escaped because this line is interpolated into
+        // an AppleScript string literal before Terminal ever sees it.
+        let exports = processEnvironment(for: bottle, resourcesURL: resourcesURL)
+            .sorted { $0.key < $1.key }
+            .filter { !$0.value.contains("\"") }
+            .map { #"\#($0.key)=\"\#($0.value)\""# }
+            .joined(separator: " ")
+        return #"\#(exports) bash \"\#(winetricksPath)\" -q \#(command)"#
     }
 }

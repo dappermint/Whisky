@@ -58,6 +58,8 @@ enum DependencyManager {
         let confidence: DependencyConfidence = fromCache ? .cached : .authoritative
         let now = Date()
 
+        let driveC = await MainActor.run { bottle.url.appending(path: "drive_c") }
+
         return definitions.map { definition in
             let requiredVerbs = definition.winetricksVerbs
             // An equivalent already in the prefix satisfies the whole
@@ -65,7 +67,20 @@ enum DependencyManager {
             // does not report every existing bottle as missing it.
             let hasEquivalent = definition.equivalentVerbs.contains(where: installedVerbs.contains)
             let installed = hasEquivalent ? requiredVerbs : requiredVerbs.filter(installedVerbs.contains)
-            let missing = hasEquivalent ? [] : requiredVerbs.filter { !installedVerbs.contains($0) }
+            var missing = hasEquivalent ? [] : requiredVerbs.filter { !installedVerbs.contains($0) }
+
+            // No verb accounts for it, so ask the prefix. A game's own
+            // installer, or a redistributable that refused to reinstall over a
+            // newer copy of itself, leaves the payload without leaving a verb.
+            var byProbe = false
+            if !missing.isEmpty, !definition.probeFiles.isEmpty {
+                byProbe = definition.probeFiles.allSatisfy { relativePath in
+                    FileManager.default.fileExists(
+                        atPath: driveC.appending(path: relativePath).path(percentEncoded: false)
+                    )
+                }
+                if byProbe { missing = [] }
+            }
 
             let installStatus: DependencyInstallStatus = if missing.isEmpty {
                 .installed
@@ -80,7 +95,9 @@ enum DependencyManager {
                 definition: definition,
                 status: installStatus,
                 lastChecked: now,
-                confidence: confidence
+                // A file on disk says the payload is there, not that winetricks
+                // put it there, which is a weaker claim than the verb log.
+                confidence: byProbe ? .heuristic : confidence
             )
         }
     }

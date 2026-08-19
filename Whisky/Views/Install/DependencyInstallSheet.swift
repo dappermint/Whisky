@@ -432,7 +432,16 @@ extension DependencyInstallSheet {
             }
 
             await runVerification()
-            await saveInstallAttempt(result)
+
+            // The installer's exit code is not the question, the payload is.
+            // Microsoft's redistributable exits 1638 when a newer copy is
+            // already there, wine truncates that to 102, and winetricks calls
+            // it a failure; the runtime is present either way.
+            let verified = await MainActor.run { verifyStatus == .installed }
+            if verified {
+                await MainActor.run { installResult = .success }
+            }
+            await saveInstallAttempt(verified ? .success : result)
         }
     }
 

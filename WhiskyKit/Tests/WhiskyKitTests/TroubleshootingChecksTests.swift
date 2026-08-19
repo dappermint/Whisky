@@ -320,4 +320,28 @@ final class TroubleshootingChecksTests: XCTestCase {
         XCTAssertEqual(WinVersion(currentVersion: "6.3", build: nil), .win81)
         XCTAssertEqual(WinVersion(currentVersion: "10.0", build: nil), .win10)
     }
+
+    func testTheVisualCPlusPlusDefinitionKnowsWhatItLeavesOnDisk() {
+        let vcruntime = DependencyDefinition.standardDependencies.first { $0.id == "vcruntime" }
+
+        // Microsoft's redistributable exits 1638 over a newer copy of itself,
+        // wine truncates that to 102, and winetricks records no verb. The files
+        // are the only remaining evidence that the runtime is there.
+        XCTAssertEqual(vcruntime?.probeFiles, [
+            "windows/system32/vcruntime140.dll",
+            "windows/system32/msvcp140.dll"
+        ])
+    }
+
+    func testDependencyDefinitionDecodesWithoutProbeFiles() throws {
+        let json = """
+        {
+          "id": "directx", "displayName": "DirectX", "description": "old payload",
+          "winetricksVerbs": ["d3dx9"], "category": "DirectX", "estimatedInstallMinutes": 3
+        }
+        """
+        let decoded = try JSONDecoder().decode(DependencyDefinition.self, from: Data(json.utf8))
+
+        XCTAssertTrue(decoded.probeFiles.isEmpty)
+    }
 }
