@@ -86,6 +86,16 @@ jobs:
             echo "Run ./scripts/british-english.py locally and commit the result."
             exit 1
           }
+      # The same trap in every other language: translations land per release,
+      # strings are added between them, and a German user reads
+      # `library.card.settings` rather than English.
+      - name: Check every locale carries every string
+        run: |
+          ./scripts/locale-coverage.py --check || {
+            echo ""
+            echo "Run ./scripts/locale-coverage.py locally and commit the result."
+            exit 1
+          }
       # The other two ways a key renders as its own raw text: an entry with
       # translations but no English source, and a key used in code that was
       # never added to the catalog. Both have shipped before.
