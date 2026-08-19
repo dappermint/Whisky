@@ -295,4 +295,29 @@ final class TroubleshootingChecksTests: XCTestCase {
         XCTAssertTrue(WinVersion.win10.accepts(build: 19_045))
         XCTAssertTrue(WinVersion.win7.accepts(build: 7_600))
     }
+
+    func testPrefixVersionIsReadFromWhatProgramsRead() {
+        // The pair that fooled every reader: 6.1 with a Windows 11 build. What
+        // programs get told is Windows 7, so that is what Whisky must show.
+        XCTAssertEqual(WinVersion(currentVersion: "6.1", build: 22_100), .win7)
+
+        XCTAssertEqual(WinVersion(currentVersion: "5.2", build: 3_790), .winXP)
+        XCTAssertEqual(WinVersion(currentVersion: "6.2", build: 9_200), .win8)
+        XCTAssertEqual(WinVersion(currentVersion: "6.3", build: 9_600), .win81)
+        XCTAssertEqual(WinVersion(currentVersion: "6.3", build: 19_045), .win10)
+        XCTAssertEqual(WinVersion(currentVersion: "6.3", build: 22_000), .win11)
+        XCTAssertEqual(WinVersion(currentVersion: "10.0", build: 26_100), .win11)
+    }
+
+    func testAnUnreadableVersionNamesNothing() {
+        XCTAssertNil(WinVersion(currentVersion: "4.0", build: 1_381))
+        XCTAssertNil(WinVersion(currentVersion: "", build: nil))
+    }
+
+    func testTheSixThreeFamilyFallsBackWithoutABuild() {
+        // 8.1, 10 and 11 all report 6.3, so a missing build can only be told
+        // apart by which key was there at all.
+        XCTAssertEqual(WinVersion(currentVersion: "6.3", build: nil), .win81)
+        XCTAssertEqual(WinVersion(currentVersion: "10.0", build: nil), .win10)
+    }
 }

@@ -29,6 +29,7 @@ struct WineConfigSection: View {
     @ObservedObject var bottle: Bottle
     @Binding var isExpanded: Bool
     @Binding var buildVersion: String
+    @Binding var windowsVersion: WinVersion
     @Binding var retinaModeState: RetinaModeState
     @Binding var dpiConfig: Int
     @Binding var winVersionLoadingState: LoadingState
@@ -51,7 +52,7 @@ struct WineConfigSection: View {
                 description: "config.winVersion.info",
                 loadingState: winVersionLoadingState
             ) {
-                Picker("config.winVersion", selection: $bottle.settings.windowsVersion) {
+                Picker("config.winVersion", selection: $windowsVersion) {
                     ForEach(WinVersion.allCases.reversed(), id: \.self) {
                         Text($0.pretty())
                     }

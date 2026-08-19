@@ -27,6 +27,9 @@ private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: 
 struct ConfigView: View {
     @ObservedObject var bottle: Bottle
     @State private var buildVersion: String = ""
+    /// The version shown in the picker. Seeded from the prefix rather than from
+    /// the settings file, and only written back once the prefix agrees.
+    @State private var windowsVersion: WinVersion = .win10
     @State private var retinaModeState: RetinaModeState = .unknown
     @State private var dpiConfig: Int = 96
     @State private var winVersionLoadingState: LoadingState = .loading
@@ -89,6 +92,7 @@ struct ConfigView: View {
                 bottle: bottle,
                 isExpanded: $wineSectionExpanded,
                 buildVersion: $buildVersion,
+                windowsVersion: $windowsVersion,
                 retinaModeState: $retinaModeState,
                 dpiConfig: $dpiConfig,
                 winVersionLoadingState: $winVersionLoadingState,
@@ -273,7 +277,8 @@ struct ConfigView: View {
         }
         .navigationTitle("tab.config")
         .onAppear {
-            winVersionLoadingState = .success
+            windowsVersion = bottle.settings.windowsVersion
+            loadWindowsVersion()
 
             loadBuildName()
             loadRetinaMode()
@@ -282,20 +287,24 @@ struct ConfigView: View {
             gameConfigSnapshot = GameConfigSnapshot.load(from: bottle.url)
             hasActiveSession = sessionStore.hasActiveSession(for: bottle.url)
         }
-        .onChange(of: bottle.settings.windowsVersion) { _, newValue in
-            if winVersionLoadingState == .success {
-                winVersionLoadingState = .loading
-                buildVersionLoadingState = .loading
-                Task(priority: .userInitiated) {
-                    do {
-                        try await Wine.changeWinVersion(bottle: bottle, win: newValue)
-                        winVersionLoadingState = .success
-                        bottle.settings.windowsVersion = newValue
-                        loadBuildName()
-                    } catch {
-                        logger.error("Failed to change Windows version: \(error.localizedDescription)")
-                        winVersionLoadingState = .failed
-                    }
+        .onChange(of: windowsVersion) { previous, newValue in
+            guard winVersionLoadingState == .success, newValue != bottle.settings.windowsVersion else { return }
+            winVersionLoadingState = .loading
+            buildVersionLoadingState = .loading
+            Task(priority: .userInitiated) {
+                do {
+                    try await Wine.changeWinVersion(bottle: bottle, win: newValue)
+                    // The setting follows the prefix, never leads it. Writing it
+                    // first is how a bottle ended up with a picker saying
+                    // Windows 11 over a prefix telling Steam it was Windows 7.
+                    bottle.settings.windowsVersion = newValue
+                    winVersionLoadingState = .success
+                    loadBuildName()
+                } catch {
+                    logger.error("Failed to change Windows version: \(error.localizedDescription)")
+                    windowsVersion = previous
+                    winVersionLoadingState = .failed
+                    loadBuildName()
                 }
             }
         }
@@ -319,6 +328,31 @@ struct ConfigView: View {
 // MARK: - Loading Functions
 
 extension ConfigView {
+    /// Reads what the prefix reports and shows that, rather than what the
+    /// settings file remembers being asked for.
+    ///
+    /// The two can disagree: a prefix adopted from another Whisky, or a version
+    /// change whose registry write failed. When they do, the prefix wins here,
+    /// and the launch path is what puts the setting back into effect.
+    func loadWindowsVersion() {
+        winVersionLoadingState = .loading
+        Task(priority: .userInitiated) {
+            do {
+                guard let reported = try await Wine.reportedWindowsVersion(bottle: bottle) else {
+                    logger.warning("Prefix reports a Windows version Whisky cannot name")
+                    winVersionLoadingState = .failed
+                    return
+                }
+                windowsVersion = reported
+                bottle.settings.windowsVersion = reported
+                winVersionLoadingState = .success
+            } catch {
+                logger.error("Failed to read the prefix Windows version: \(error.localizedDescription)")
+                winVersionLoadingState = .failed
+            }
+        }
+    }
+
     func loadBuildName() {
         buildVersionLoadingState = .loading
         Task(priority: .userInitiated) {

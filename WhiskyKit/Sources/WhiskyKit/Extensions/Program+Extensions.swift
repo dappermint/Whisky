@@ -115,6 +115,7 @@ public extension Program {
         }
 
         await Wine.syncAudioRegistry(bottle: bottle)
+        await Wine.syncWindowsVersion(bottle: bottle)
 
         let arguments = settings.arguments.split { $0.isWhitespace }.map(String.init)
         var environment = generateEnvironment()
