@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Every language reads as words, not keys. 163 strings had a row in English only,
+  and a language that is missing a string shows the key itself rather than
+  falling back, so the library screen said `library.card.settings` in all 22
+  translated languages. The gaps now carry the English text until a
+  translation arrives.
 - Game Settings on a library card resolves the game's program before deciding
   anything, scanning the bottle on demand when needed. It used to fall through
   to selecting the bottle whenever the bottle had not been opened that
@@ -59,6 +64,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   window.
 - Whisky no longer claims system-wide ownership of .bat and .msi files. It
   stays the app for .exe.
+- Report Issues in the Help menu opens the upstream tracker. This fork has no
+  issue tracker of its own, so the button used to open nothing; SUPPORT.md now
+  says which build a report belongs to.
+
+### Removed
+- The Sparkle appcast template, empty since the in-app updater went, along
+  with the feed URL nothing published to.
 
 ### Fixed
 - A pinned executable that lives inside a Steam game's install folder merges
