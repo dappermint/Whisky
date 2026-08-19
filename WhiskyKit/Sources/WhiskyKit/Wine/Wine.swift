@@ -297,7 +297,9 @@ public class Wine {
         at url: URL, args: [String] = [], bottle: Bottle, environment: [String: String] = [:],
         programOverrides: ProgramOverrides? = nil, programSettings: ProgramSettings? = nil,
         gameProfileEnvironment: [String: String] = [:],
-        overridesApplyToDescendants: Bool = false
+        overridesApplyToDescendants: Bool = false,
+        keepAttached: Bool = false,
+        onLogFile: (@MainActor (URL) -> Void)? = nil
     ) async throws -> ProgramRunResult {
         // Note: Launcher detection and fix application happen before this method
         // is called, via LauncherFixes.detectAndApply from the app's run paths
@@ -391,6 +393,13 @@ public class Wine {
                 "explorer", "/desktop=\(desktopName),\(resolution)",
                 url.path(percentEncoded: false)
             ] + args
+        } else if keepAttached {
+            // `start /unix` hands the program to wineserver and returns, and
+            // wine gives it a console of its own, so nothing it writes reaches
+            // this log. Running the exe directly keeps its output, and its exit
+            // code, on the end of the pipe we are holding. The cost is that
+            // this call now lasts as long as the program does.
+            launchArgs = [url.path(percentEncoded: false)] + args
         } else {
             launchArgs = ["start", "/unix", url.path(percentEncoded: false)] + args
         }
@@ -400,11 +409,19 @@ public class Wine {
         // get between itself and the program it is bridging for.
         DiscordIntegration.shared.programLaunching(url, bottle: bottle)
 
+        // The log exists from here on, and an attached run does not return
+        // until the program exits, so anything waiting to read it is told now.
+        onLogFile?(logFileURL)
+
         var exitCode: Int32 = 0
         for await output in try runProcess(
             name: programName,
             args: launchArgs,
             environment: wineEnvironment, executableURL: wineBinary(for: bottle),
+            // `start` sets the Windows working directory to the program's own
+            // folder. Running the exe directly has to say so, or a game that
+            // opens its assets by relative path finds nothing.
+            directory: keepAttached ? url.deletingLastPathComponent() : nil,
             fileHandle: fileHandle
         ) {
             if case let .terminated(code) = output {
@@ -1094,8 +1111,21 @@ public extension Wine {
         // This is best-effort and only impacts Whisky's own log directory.
         enforceLogRetention(in: logsFolder, maxTotalBytes: maxLogsFolderBytes)
 
+        // Names are second-resolution, and a launch writes more than one log in
+        // its first second: the DLL override import alone lands inside the same
+        // tick as the run it belongs to. Two runs sharing a name meant the
+        // second one replaced the file while the first kept writing into the
+        // inode it had already opened, so the run's own output was reachable
+        // from nowhere.
         let dateString = Date.now.ISO8601Format()
-        let fileURL = Self.logsFolder.appending(path: dateString).appendingPathExtension("log")
+        var fileURL = Self.logsFolder.appending(path: dateString).appendingPathExtension("log")
+        var collision = 1
+        while FileManager.default.fileExists(atPath: fileURL.path(percentEncoded: false)) {
+            fileURL = Self.logsFolder
+                .appending(path: "\(dateString)-\(collision)")
+                .appendingPathExtension("log")
+            collision += 1
+        }
         try "".write(to: fileURL, atomically: true, encoding: .utf8)
         return try (FileHandle(forWritingTo: fileURL), fileURL)
     }

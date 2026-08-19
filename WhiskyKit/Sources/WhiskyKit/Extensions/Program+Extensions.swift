@@ -95,9 +95,20 @@ public extension Program {
     ///   - debugEnvironment: Variables for this launch only, never written to settings.
     ///     The debug window sends its `WINEDEBUG` here so a channel picked for one
     ///     run does not become the program's permanent configuration.
+    ///   - keepAttached: Runs the program as this process's child instead of
+    ///     handing it to wineserver, so its output and its exit code come back.
+    ///     The call then lasts as long as the program does, which is why only
+    ///     the debug window asks for it.
+    ///   - onLogFile: Called with the run's log as soon as it exists, since an
+    ///     attached run has nothing to return until the program exits.
     /// - Returns: LaunchResult indicating success, terminal launch, or failure
     @MainActor
-    func launchWithUserMode(useTerminal: Bool, debugEnvironment: [String: String] = [:]) async -> LaunchResult {
+    func launchWithUserMode(
+        useTerminal: Bool,
+        debugEnvironment: [String: String] = [:],
+        keepAttached: Bool = false,
+        onLogFile: (@MainActor (URL) -> Void)? = nil
+    ) async -> LaunchResult {
         // Check for terminal mode (typically shift-click)
         if useTerminal {
             self.runInTerminal()
@@ -125,7 +136,9 @@ public extension Program {
             let result = try await Wine.runProgram(
                 at: self.url, args: arguments, bottle: self.bottle, environment: environment,
                 programOverrides: plan.overrides, programSettings: settings,
-                gameProfileEnvironment: plan.gameProfileEnvironment
+                gameProfileEnvironment: plan.gameProfileEnvironment,
+                keepAttached: keepAttached,
+                onLogFile: onLogFile
             )
 
             // Track the log file URL for diagnostics

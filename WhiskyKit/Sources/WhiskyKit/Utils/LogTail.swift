@@ -78,6 +78,19 @@ public actor LogTail {
         }
     }
 
+    /// Everything written since the last poll.
+    ///
+    /// A program's final lines land between the last poll and its exit, so the
+    /// reader that stops on exit has to ask once more or lose them.
+    public func drain() -> [String] {
+        var remaining: [String] = []
+        while true {
+            let batch = readNewLines()
+            if batch.isEmpty { return remaining }
+            remaining.append(contentsOf: batch)
+        }
+    }
+
     /// Stops the stream at the next poll.
     public func stop() {
         stopped = true

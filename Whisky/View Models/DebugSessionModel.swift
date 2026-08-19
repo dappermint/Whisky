@@ -103,30 +103,44 @@ final class DebugSessionModel: ObservableObject {
     }
 
     /// Launches the selected program through the one launch door, with the
-    /// picked channels as a one-off environment, then follows the log it wrote.
+    /// picked channels as a one-off environment, and follows its log live.
+    ///
+    /// Attached, so the program is this process's child rather than
+    /// wineserver's. Handed to wineserver it gets a console of its own and
+    /// writes nothing this window could read: the log fills with Wine's session
+    /// coming up and never with the program. The call lasts as long as the
+    /// program does, so the log arrives through ``follow(_:)`` at the start
+    /// rather than as a return value at the end.
     func launch() async {
         guard let program else { return }
+        let programName = program.name
 
         clear()
         status = String(localized: "debug.status.launching")
+
         let result = await program.launchWithUserMode(
             useTerminal: false,
-            debugEnvironment: ["WINEDEBUG": winedebugValue]
+            debugEnvironment: ["WINEDEBUG": winedebugValue],
+            keepAttached: true,
+            onLogFile: { [weak self] logURL in
+                self?.status = String(localized: "debug.status.running \(programName)")
+                self?.follow(logURL)
+            }
         )
 
         switch result {
-        case let .launchedSuccessfully(programName):
-            status = String(localized: "debug.status.running \(programName)")
-            if let logURL = program.settings.lastLogFileURL {
-                follow(logURL)
-            } else {
-                logger.warning("Launch reported success with no log file to follow")
-            }
-        case let .launchedInTerminal(programName):
-            status = String(localized: "debug.status.running \(programName)")
+        case .launchedSuccessfully, .launchedInTerminal:
+            status = String(localized: "debug.status.finished \(programName)")
         case let .launchFailed(_, errorDescription):
             status = errorDescription
         }
+        // The program is gone, so the file has stopped growing. Read what it
+        // wrote on the way out before letting go of it, then say so instead of
+        // leaving the streaming light on over a log nothing is writing.
+        if let tail {
+            await append(tail.drain())
+        }
+        stopFollowing()
     }
 
     /// Follows a log file, replacing whatever was being followed before.

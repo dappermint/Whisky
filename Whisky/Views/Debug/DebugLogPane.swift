@@ -91,6 +91,10 @@ struct DebugLogPane: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                 }
+                // A batch can land before its rows exist, and scrollTo on rows
+                // that are not there yet does nothing. Anchoring the scroll view
+                // keeps the tail in view without depending on that timing.
+                .defaultScrollAnchor(autoScroll ? .bottom : .top)
                 .onChange(of: model.lines.count) {
                     guard autoScroll, let last = model.visibleLines.last else { return }
                     withAnimation(.linear(duration: 0.1)) {

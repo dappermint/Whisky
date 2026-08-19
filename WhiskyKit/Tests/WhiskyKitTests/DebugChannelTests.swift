@@ -129,4 +129,23 @@ struct LogTailTests {
 
         #expect(lines == ["whole", "partial"])
     }
+
+    @Test("Draining returns what landed after the last poll")
+    func drainReturnsTheTail() async throws {
+        let url = FileManager.default.temporaryDirectory.appending(path: "\(UUID().uuidString).log")
+        try "first\n".write(to: url, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let tail = LogTail(url: url, pollInterval: .seconds(60))
+        // Nothing has polled yet, so everything in the file is still pending.
+        #expect(await tail.drain() == ["first"])
+
+        let handle = try FileHandle(forWritingTo: url)
+        try handle.seekToEnd()
+        try handle.write(contentsOf: Data("second\nthird\n".utf8))
+        try handle.close()
+
+        #expect(await tail.drain() == ["second", "third"])
+        #expect(await tail.drain().isEmpty)
+    }
 }
