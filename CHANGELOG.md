@@ -8,6 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Dependencies install again. Winetricks was run without unattended mode, so
+  anything it wanted to ask went to a prompt with nothing behind it and it
+  quit with "Operation cancelled". Visual C++ Runtime could never install:
+  Microsoft reissued the redistributable and the checksum question was the
+  prompt nobody could answer. Visual C++ now installs the 2022 runtime, which
+  carries the older ones with it, and a bottle that already has the 2019 one
+  is not reported as missing it.
+- The Windows version shown for a bottle is the one the prefix reports rather
+  than the one the settings file remembers being asked for. The two could
+  differ for good: a version change whose registry write failed, or a bottle
+  adopted from another Whisky, left a picker saying Windows 11 over a prefix
+  telling Steam it was Windows 7. The picker now applies the change before
+  writing the setting, and every launch puts a drifted prefix right.
+- A build number belongs to a Windows version. Setting one from another
+  version made a pair nothing could name: `winecfg` read it as Vista, Steam
+  read it as Windows 7, and the picker above it said Windows 11. Newer builds
+  of the same version still go through.
+- A WINEDEBUG you type yourself now wins over the diagnostics preset, which
+  used to replace it silently and send you looking through a log that never
+  had the channels you asked for.
+- Two runs starting in the same second no longer share a log file. The second
+  one replaced the file while the first kept writing into it, so a launch's
+  own output was reachable from nowhere. This is why some logs stopped right
+  after the environment listing.
 - Every language reads as words, not keys. 163 strings had a row in English only,
   and a language that is missing a string shows the key itself rather than
   falling back, so the library screen said `library.card.settings` in all 22
@@ -19,6 +43,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   session, silently; the genuine fallback now says why it went there.
 
 ### Added
+- A Debug window, File > Debug Window or Cmd-Shift-B. Pick a bottle and a
+  program, tick the Wine channels you want, launch, and the log streams in as
+  it is written, filtered by problems, fixme or trace and searchable. Follow
+  Latest Log attaches to the newest run instead, for a game started from the
+  library. The bottle's running processes sit in the lower half, so a hung
+  child can be stopped without taking the session with it.
+- Programs started from the Debug window run attached, so what the window
+  shows is the program's own output. Every other launch hands the program to
+  wineserver, which gives it a console of its own, and its output reaches
+  nothing Whisky can read.
 - Library cards are yours to arrange: rename a game, mark it a favourite, or
   hide it. Favourites sort first, hidden cards sit behind Show Hidden, and a
   rename follows the game rather than the file it happens to be.
