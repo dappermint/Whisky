@@ -811,8 +811,13 @@ public struct BottleSettings: Codable, Equatable {
         // Backend-conditional env vars and DLL overrides
         switch resolvedBackend {
         case .d3dMetal, .recommended:
-            // D3DMetal is Wine's default on macOS -- no special env vars needed
-            break
+            // Wine answers KMTQAITYPE_WDDM_2_7_CAPS, the query behind "hardware
+            // accelerated GPU scheduling", only when this says d3dmetal, and
+            // returns STATUS_NOT_IMPLEMENTED otherwise. Nothing set it, so a
+            // game asking whether scheduling is available was told it is not.
+            // The only other reader wants the value "wined3d" alongside
+            // CX_LIBVULKAN, so this is inert for it.
+            builder.set("CX_ACTIVE_GRAPHICS_BACKEND", "d3dmetal", layer: .bottleManaged)
 
         case .dxvk:
             // DXVK: DLL overrides + env vars

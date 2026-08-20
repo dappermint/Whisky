@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- A D3DMetal bottle answers when a game asks whether hardware accelerated GPU
+  scheduling is available. Wine only answers that query for a caller that says
+  it is running on D3DMetal, and nothing said so, so the answer was always that
+  the feature is not implemented.
+
 ## [3.6.1] - 2026-08-13 (App)
 
 ### Changed

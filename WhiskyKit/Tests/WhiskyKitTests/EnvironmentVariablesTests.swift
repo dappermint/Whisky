@@ -525,4 +525,25 @@ final class EnvironmentVariablesTests: XCTestCase {
         // programUser wins over bottleManaged
         XCTAssertEqual(resolved["DXVK_ASYNC"], "0")
     }
+
+    // MARK: - hardware scheduling is claimed only where it applies
+
+    func testD3DMetalBottleClaimsHardwareScheduling() {
+        // Wine answers the WDDM 2.7 caps query only for a caller that says it is
+        // on D3DMetal; without it, a game asking about GPU scheduling is told
+        // the feature is not implemented.
+        var settings = BottleSettings()
+        settings.graphicsBackend = .d3dMetal
+        var env: [String: String] = [:]
+        settings.environmentVariables(wineEnv: &env)
+        XCTAssertEqual(env["CX_ACTIVE_GRAPHICS_BACKEND"], "d3dmetal")
+    }
+
+    func testDXVKBottleDoesNotClaimHardwareScheduling() {
+        var settings = BottleSettings()
+        settings.graphicsBackend = .dxvk
+        var env: [String: String] = [:]
+        settings.environmentVariables(wineEnv: &env)
+        XCTAssertNil(env["CX_ACTIVE_GRAPHICS_BACKEND"])
+    }
 }

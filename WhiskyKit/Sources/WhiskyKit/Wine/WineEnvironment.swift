@@ -181,11 +181,15 @@ extension Wine {
                 builder.remove("DXVK_HUD", layer: .programUser)
                 builder.remove("DXVK_ASYNC", layer: .programUser)
                 builder.remove("WINED3DMETAL", layer: .programUser)
+                // One program on D3DMetal inside a bottle running something else
+                // still has to be told scheduling exists; see the bottle layer.
+                builder.set("CX_ACTIVE_GRAPHICS_BACKEND", "d3dmetal", layer: .programUser)
 
             case .dxvk:
                 // Enable DXVK DLLs at program level
                 dllResolver.programCustom.append(contentsOf: DLLOverrideResolver.dxvkPreset)
                 builder.remove("WINED3DMETAL", layer: .programUser)
+                builder.remove("CX_ACTIVE_GRAPHICS_BACKEND", layer: .programUser)
 
             case .dxmt:
                 // Reset the full translation-DLL union to builtin first so a DXVK
@@ -198,10 +202,12 @@ extension Wine {
                 builder.remove("DXVK_HUD", layer: .programUser)
                 builder.remove("DXVK_ASYNC", layer: .programUser)
                 builder.remove("WINED3DMETAL", layer: .programUser)
+                builder.remove("CX_ACTIVE_GRAPHICS_BACKEND", layer: .programUser)
 
             case .wined3d:
                 // Force wined3d: disable D3DMetal + undo DXVK/DXMT DLLs
                 builder.set("WINED3DMETAL", "0", layer: .programUser)
+                builder.remove("CX_ACTIVE_GRAPHICS_BACKEND", layer: .programUser)
                 dllResolver.programCustom.append(contentsOf: Self.translationDLLResetEntries)
             }
         }
