@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- DirectX 12 games run again in a bottle set to DXVK or DXMT. Neither ships a
+  d3d12 of its own and neither said so, so that one DLL quietly fell through to
+  D3DMetal while the rest of the stack was not. A DX12 game took its adapter
+  from one translation layer into the other and died before it drew anything,
+  with no error of its own to show for it. Both now turn d3d12 off, so such a
+  game falls back to DirectX 11 rather than half landing on something else, and
+  a bottle or a single program set to D3DMetal gets real DirectX 12 back.
 - Dependencies install again. Winetricks was run without unattended mode, so
   anything it wanted to ask went to a prompt with nothing behind it and it
   quit with "Operation cancelled". Visual C++ Runtime could never install:

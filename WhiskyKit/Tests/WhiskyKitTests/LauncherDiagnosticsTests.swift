@@ -392,7 +392,7 @@ final class LauncherDiagnosticsTests: XCTestCase {
 
         // DXVK should be auto-enabled because Rockstar requires it
         // DLL overrides are now composed per-DLL via DLLOverrideResolver (sorted alphabetically)
-        XCTAssertEqual(env["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d9=n,b;dxgi=n,b")
+        XCTAssertEqual(env["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d12=;d3d9=n,b;dxgi=n,b")
     }
 
     func testAutoEnableDXVKNotTriggeredForSteam() throws {

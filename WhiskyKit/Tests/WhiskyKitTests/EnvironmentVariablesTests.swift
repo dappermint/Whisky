@@ -33,7 +33,7 @@ final class EnvironmentVariablesTests: XCTestCase {
         settings.environmentVariables(wineEnv: &env)
 
         // DLL overrides are now composed per-DLL via DLLOverrideResolver (sorted alphabetically)
-        XCTAssertEqual(env["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d9=n,b;dxgi=n,b")
+        XCTAssertEqual(env["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d12=;d3d9=n,b;dxgi=n,b")
         XCTAssertEqual(env["DXVK_HUD"], "full")
     }
 
@@ -47,7 +47,7 @@ final class EnvironmentVariablesTests: XCTestCase {
         settings.environmentVariables(wineEnv: &env)
 
         // The trio is native-then-builtin; winemetal pinned builtin for unixlib binding.
-        XCTAssertEqual(env["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;dxgi=n,b;winemetal=b")
+        XCTAssertEqual(env["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d12=;dxgi=n,b;winemetal=b")
         // DXMT is not DXVK and not wined3d: none of their env vars may leak.
         XCTAssertNil(env["DXVK_HUD"])
         XCTAssertNil(env["DXVK_ASYNC"])
@@ -330,7 +330,7 @@ final class EnvironmentVariablesTests: XCTestCase {
         let managedOverrides = settings.populateBottleManagedLayer(builder: &builder)
 
         // DXVK managed overrides should be returned, not set via builder
-        XCTAssertEqual(managedOverrides.count, 4) // dxgi, d3d9, d3d10core, d3d11
+        XCTAssertEqual(managedOverrides.count, 5) // dxgi, d3d9, d3d10core, d3d11, d3d12
         XCTAssertTrue(managedOverrides.allSatisfy { $0.source == .dxvk })
 
         // WINEDLLOVERRIDES should NOT be in the resolved environment (handled by DLLOverrideResolver)
@@ -370,7 +370,7 @@ final class EnvironmentVariablesTests: XCTestCase {
             builder: &builder, resolvedBackend: resolved
         )
 
-        XCTAssertEqual(managedOverrides.count, 4) // dxgi, d3d9, d3d10core, d3d11
+        XCTAssertEqual(managedOverrides.count, 5) // dxgi, d3d9, d3d10core, d3d11, d3d12
         XCTAssertTrue(managedOverrides.allSatisfy { $0.source == .dxvk })
     }
 
@@ -418,7 +418,7 @@ final class EnvironmentVariablesTests: XCTestCase {
         overrides.graphicsBackend = .dxmt
 
         let resolved = resolvedOverrides(bottleSettings: settings, programOverrides: overrides)
-        XCTAssertEqual(resolved, "d3d10core=n,b;d3d11=n,b;d3d9=b;dxgi=n,b;winemetal=b")
+        XCTAssertEqual(resolved, "d3d10core=n,b;d3d11=n,b;d3d12=;d3d9=b;dxgi=n,b;winemetal=b")
     }
 
     func testProgramBackendOverrideDXMTNeutralizesLeakedDXVKd3d9() {
@@ -433,7 +433,7 @@ final class EnvironmentVariablesTests: XCTestCase {
         overrides.graphicsBackend = .dxmt
 
         let resolved = resolvedOverrides(bottleSettings: settings, programOverrides: overrides)
-        XCTAssertEqual(resolved, "d3d10core=n,b;d3d11=n,b;d3d9=b;dxgi=n,b;winemetal=b")
+        XCTAssertEqual(resolved, "d3d10core=n,b;d3d11=n,b;d3d12=;d3d9=b;dxgi=n,b;winemetal=b")
         XCTAssertFalse(resolved.contains("d3d9=n,b"), "Leaked DXVK d3d9 must be reset to builtin")
     }
 
@@ -465,7 +465,7 @@ final class EnvironmentVariablesTests: XCTestCase {
         overrides.dxvk = false
 
         let resolved = resolvedOverrides(bottleSettings: settings, programOverrides: overrides)
-        XCTAssertEqual(resolved, "d3d10core=n,b;d3d11=n,b;d3d9=b;dxgi=n,b;winemetal=b")
+        XCTAssertEqual(resolved, "d3d10core=n,b;d3d11=n,b;d3d12=;d3d9=b;dxgi=n,b;winemetal=b")
     }
 
     func testLegacyDXVKTrueDoesNotResurrectDXVKUnderD3DMetalOverride() {
