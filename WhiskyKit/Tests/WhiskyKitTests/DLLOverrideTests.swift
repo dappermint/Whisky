@@ -140,11 +140,15 @@ final class DLLOverrideTests: XCTestCase {
 
     func testDXVKPresetReturnsCorrectEntries() {
         let preset = DLLOverrideResolver.dxvkPreset
-        let names = Set(preset.map(\.dllName))
-        XCTAssertEqual(names, Set(["dxgi", "d3d9", "d3d10core", "d3d11"]))
-        for entry in preset {
-            XCTAssertEqual(entry.mode, .nativeThenBuiltin)
-        }
+        let modesByName = Dictionary(uniqueKeysWithValues: preset.map { ($0.dllName, $0.mode) })
+        XCTAssertEqual(modesByName, [
+            "dxgi": .nativeThenBuiltin,
+            "d3d9": .nativeThenBuiltin,
+            "d3d10core": .nativeThenBuiltin,
+            "d3d11": .nativeThenBuiltin,
+            // DXVK has no d3d12; off rather than falling through to D3DMetal
+            "d3d12": .disabled
+        ])
     }
 
     // MARK: - DXMT Preset
@@ -158,7 +162,8 @@ final class DLLOverrideTests: XCTestCase {
             "dxgi": .nativeThenBuiltin,
             "d3d10core": .nativeThenBuiltin,
             "d3d11": .nativeThenBuiltin,
-            "winemetal": .builtin
+            "winemetal": .builtin,
+            "d3d12": .disabled
         ])
     }
 
@@ -169,7 +174,7 @@ final class DLLOverrideTests: XCTestCase {
             programCustom: []
         )
         let result = resolver.resolve()
-        XCTAssertEqual(result.overrides, "d3d10core=n,b;d3d11=n,b;dxgi=n,b;winemetal=b")
+        XCTAssertEqual(result.overrides, "d3d10core=n,b;d3d11=n,b;d3d12=;dxgi=n,b;winemetal=b")
     }
 
     func testDXMTWarningWhenManagedOverridden() {
@@ -186,5 +191,38 @@ final class DLLOverrideTests: XCTestCase {
         XCTAssertEqual(result.warnings.count, 1)
         XCTAssertEqual(result.warnings.first?.overriddenSource, .dxmt)
         XCTAssertTrue(result.warnings.first?.message.contains("DXMT") == true)
+    }
+
+    // MARK: - d3d12 is never left to fall through
+
+    func testTranslationPresetsTurnD3D12Off() {
+        // Neither DXVK nor DXMT ships a d3d12. Leaving the name unmentioned let
+        // it resolve to the builtin, which is D3DMetal, and a DX12 game took its
+        // adapter from one implementation into the other and jumped to null.
+        for (name, preset) in [
+            ("DXVK", DLLOverrideResolver.dxvkPreset),
+            ("DXMT", DLLOverrideResolver.dxmtPreset)
+        ] {
+            let entry = preset.first { $0.dllName == "d3d12" }
+            XCTAssertNotNil(entry, "\(name) preset must say what happens to d3d12")
+            XCTAssertEqual(entry?.mode, .disabled, "\(name) must turn d3d12 off, not leave it builtin")
+        }
+    }
+
+    func testD3DMetalResetRestoresD3D12() {
+        // A program that overrides a DXVK bottle back to D3DMetal has to get
+        // real DX12, so the reset union must put d3d12 back to builtin.
+        let reset = Wine.translationDLLResetEntries
+        let entry = reset.first { $0.dllName == "d3d12" }
+        XCTAssertEqual(entry?.mode, .builtin, "resetting to a builtin backend must re-enable d3d12")
+    }
+
+    func testDXVKBottleRendersD3D12Disabled() {
+        let resolver = DLLOverrideResolver(
+            managed: DLLOverrideResolver.dxvkPreset.map { ($0, DLLOverrideSource.dxvk) },
+            bottleCustom: [],
+            programCustom: []
+        )
+        XCTAssertTrue(resolver.resolve().overrides.contains("d3d12="))
     }
 }
