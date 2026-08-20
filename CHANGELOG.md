@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- DLSS frame generation works under the MetalFX bridge. Wine answers the query
+  behind "hardware accelerated GPU scheduling" only for a caller that says it is
+  running on D3DMetal, and nothing ever said so, so every game was told
+  scheduling was unavailable. NVIDIA Streamline refuses frame generation on that
+  answer, which is why turning MetalFX on did nothing for the games that use it.
+  A D3DMetal bottle, and any single program overridden to D3DMetal, now say so.
 - DirectX 12 games run again in a bottle set to DXVK or DXMT. Neither ships a
   d3d12 of its own and neither said so, so that one DLL quietly fell through to
   D3DMetal while the rest of the stack was not. A DX12 game took its adapter

@@ -874,6 +874,16 @@ public struct BottleSettings: Codable, Equatable {
                 builder.set("D3DM_ENABLE_METALFX", "1", layer: .bottleManaged)
             }
 
+            // Wine answers KMTQAITYPE_WDDM_2_7_CAPS, the query behind "hardware
+            // accelerated GPU scheduling", only when this says d3dmetal, and
+            // returns STATUS_NOT_IMPLEMENTED otherwise. Nothing set it, so every
+            // caller was told scheduling is unavailable. NVIDIA Streamline
+            // refuses DLSS frame generation on that answer, which is what
+            // stopped it working under the MetalFX bridge above. The only other
+            // reader wants the value "wined3d" alongside CX_LIBVULKAN, so this
+            // is inert for it.
+            builder.set("CX_ACTIVE_GRAPHICS_BACKEND", "d3dmetal", layer: .bottleManaged)
+
             // `D3DMDevice::MTL4OptionEnabled` checks the OS version before it
             // reads this and only takes the Metal 4 path for D3D12 devices, so
             // the variable is inert rather than harmful everywhere else.
