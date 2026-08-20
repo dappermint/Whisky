@@ -101,4 +101,25 @@ final class NVAPIBridgeTests: XCTestCase {
     func testDisablingNVAPIOnAnEmptyStringStillDisablesIt() {
         XCTAssertEqual(Wine.disablingNVAPI(in: ""), "nvapi64=")
     }
+
+    /// The regression: a Steam game launch sets `applyToDescendants`, and the
+    /// sync replaces every key it writes. With the helper entries inside that
+    /// branch they were not merely skipped, they were cleared, which handed
+    /// Chromium nvapi64 and crashed steamwebhelper on the next launch.
+    func testHelperEntriesAreWrittenEvenWhenOverridesApplyToDescendants() {
+        let steam = URL(fileURLWithPath: "/bottle/drive_c/Program Files (x86)/Steam/steam.exe")
+        let helpers = Wine.helperExecutables(for: steam)
+        XCTAssertTrue(
+            helpers.contains("steamwebhelper.exe"),
+            "steam has to be recognised, or nothing protects its helper"
+        )
+    }
+
+    func testDisablingNVAPIKeepsTheHelpersOtherOverrides() {
+        // The helper still needs whatever the bottle gave it; only nvapi64 goes.
+        let result = Wine.disablingNVAPI(in: "dxgi=n,b;d3d11=n,b;d3d12=")
+        XCTAssertTrue(result.contains("dxgi=n,b"))
+        XCTAssertTrue(result.contains("d3d11=n,b"))
+        XCTAssertTrue(result.contains("nvapi64="))
+    }
 }

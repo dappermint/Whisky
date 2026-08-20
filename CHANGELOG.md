@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Steam's helper process survives a game launch with MetalFX enabled. The entry
+  that keeps Chromium away from NVIDIA's API was only written for a direct run,
+  and a Steam launch takes the other path, where the same sync replaces each key
+  it writes. So launching a game did not merely skip the helper's protection, it
+  cleared it, and the helper died on the launch after.
 - DLSS works in games that use NVIDIA Streamline, which is most of the current
   ones. Streamline asks NVAPI about the GPU before it will consider DLSS at all,
   and Wine ships an nvapi64 that exports nothing, so it concluded there was no
