@@ -81,6 +81,7 @@ struct WhiskyApp: App {
         Task.detached(priority: .background) {
             GPTKImporter.ensureVideoProcessorEverywhere(bottles: bottles)
             GPTKImporter.ensureMetalFXBridgeEverywhere()
+            GPTKImporter.ensureNVAPIBridgeEverywhere()
         }
     }
 

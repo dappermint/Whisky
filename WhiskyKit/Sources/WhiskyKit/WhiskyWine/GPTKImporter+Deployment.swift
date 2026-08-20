@@ -259,6 +259,7 @@ extension GPTKImporter {
         // into until this point.
         try installVideoProcessor(intoLibraryFolder: folder)
         try installMetalFXBridge(intoLibraryFolder: folder, usingStore: store)
+        try installNVAPIBridge(intoLibraryFolder: folder, usingStore: store)
         logger.info("Deployed GPTK payload into the runtime tree")
     }
 
@@ -316,6 +317,7 @@ extension GPTKImporter {
         // to a DLL this call is about to delete.
         removeVideoProcessor(fromLibraryFolder: folder, usingStore: store)
         removeMetalFXBridge(fromLibraryFolder: folder, usingStore: store)
+        removeNVAPIBridge(fromLibraryFolder: folder, usingStore: store)
 
         for name in forwarderDLLNames {
             let backup = originals.appending(path: name)

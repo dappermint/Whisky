@@ -100,8 +100,18 @@ public extension Wine {
             // Helpers need their own entry: AppDefaults is per executable and
             // children do not inherit, so steamwebhelper.exe would otherwise fall
             // back to the bottle default and draw nothing.
-            for executable in [url.lastPathComponent] + helperExecutables(for: url) {
-                scopes.append((scope: .program(executable), overrides: programOverrides))
+            scopes.append((scope: .program(url.lastPathComponent), overrides: programOverrides))
+            // Helpers get the same overrides plus one of their own. A launcher's
+            // helper is usually Chromium, which probes for an NVIDIA GPU on
+            // startup; answering makes it load D3DMetal and take the helper down,
+            // and a dead helper is a launcher that draws nothing. Games need
+            // nvapi64 (Streamline asks it about the GPU before it will consider
+            // DLSS at all), so this is disabled per helper rather than globally.
+            for executable in helperExecutables(for: url) {
+                scopes.append((
+                    scope: .program(executable),
+                    overrides: disablingNVAPI(in: programOverrides)
+                ))
             }
         }
 
@@ -152,6 +162,16 @@ public extension Wine {
     /// the user enabled launcher fixes.
     static func helperExecutables(for url: URL) -> [String] {
         LauncherType.detect(from: url)?.helperExecutables ?? []
+    }
+
+    /// Adds `nvapi64=` to an override string, keeping whatever else it holds.
+    ///
+    /// - Parameter overrides: A `WINEDLLOVERRIDES`-syntax string, possibly empty.
+    /// - Returns: The same string with nvapi64 disabled.
+    static func disablingNVAPI(in overrides: String) -> String {
+        var parsed = parseDLLOverrides(overrides)
+        parsed["nvapi64"] = ""
+        return parsed.keys.sorted().map { "\($0)=\(parsed[$0] ?? "")" }.joined(separator: ";")
     }
 
     /// Parses a `WINEDLLOVERRIDES` string into DLL name to load-order pairs.

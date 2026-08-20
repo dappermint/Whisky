@@ -92,12 +92,24 @@ public enum GPTKImporter {
     /// name, because it is the only route to MetalFX — see
     /// ``installMetalFXBridge(intoLibraryFolder:usingStore:)``.
     ///
-    /// `nvapi64` is kept in the store and never deployed: a stock runtime ships
-    /// no `nvapi64` at all, so placing Apple's makes every process that probes
-    /// for an NVIDIA GPU load D3DMetal — Chromium does exactly that, which takes
-    /// Steam's helper process down with it. NGX reports DLSS available without
-    /// it, so MetalFX does not pay for that risk.
+    /// `nvapi64` is deployed too, and disabled per launcher helper instead of
+    /// withheld from everything. It used to stay in the store because Chromium
+    /// probes for an NVIDIA GPU and answering makes it load D3DMetal, which takes
+    /// Steam's helper process down. That risk is real, but the claim that came
+    /// with it, that NGX reports DLSS available anyway, is not: Streamline asks
+    /// nvapi64 about the GPU first and, finding wine's no-export placeholder,
+    /// concludes there is no NVIDIA driver and never calls NGX at all. Measured
+    /// on Deep Rock Galactic: zero `NVSDK_NGX_*` calls in a relay trace without
+    /// it, and DLSS absent from the menu; with it, NGX initialises and the option
+    /// appears. See `WineDLLOverrideRegistry.disablingNVAPI(in:)` for the half
+    /// that keeps Chromium away from it.
     static let nvidiaBridgeDLLNames = ["nvapi64.dll", "nvngx-on-metalfx.dll"]
+
+    /// Apple's NVAPI, deployed under the name it ships as; wine's own `nvapi64`
+    /// is a placeholder that exports nothing, so this replaces it.
+    static let nvapiBridgeName = "nvapi64.dll"
+    /// Its unix half, sharing the payload's dylib like every other bridge.
+    static let nvapiBridgeUnixName = "nvapi64.so"
 
     /// Enough bytes to hold the winebuild marker at offset 0x40.
     static let builtinMarkerMinimumLength = 0x50

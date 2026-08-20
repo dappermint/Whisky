@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- DLSS works in games that use NVIDIA Streamline, which is most of the current
+  ones. Streamline asks NVAPI about the GPU before it will consider DLSS at all,
+  and Wine ships an nvapi64 that exports nothing, so it concluded there was no
+  NVIDIA driver and quietly offered no DLSS option, with nothing in any log to
+  say why. Apple's NVAPI is now deployed alongside the MetalFX bridge. It is
+  disabled for launcher helper processes rather than withheld from everything,
+  because Chromium probes for an NVIDIA GPU on startup and answering takes the
+  helper down. A bottle with MetalFX enabled also gets the NGX manifest a driver
+  install would have written, which Streamline logged an error for on every
+  launch.
 - DLSS frame generation works under the MetalFX bridge. Wine answers the query
   behind "hardware accelerated GPU scheduling" only for a caller that says it is
   running on D3DMetal, and nothing ever said so, so every game was told
