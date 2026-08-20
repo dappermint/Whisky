@@ -1,0 +1,186 @@
+name: Publish Runtime
+
+# Moves a built runtime from dappermint/winecx-gptk to where the app looks for it.
+#
+# The app polls dist/pages/WhiskyWineVersion.plist over Pages and, when the version
+# there is newer than the installed one, downloads
+# releases/download/v<version>/Libraries.tar.gz from THIS repo. Both of those were
+# updated by hand, which is why runtimes 4.5.108 through 4.5.111 were built, passed
+# every gate, and never reached a single install.
+#
+# Nothing here needs a cross-repo token: winecx-gptk publishes a release on itself,
+# and public release assets download without auth.
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "runtime version to publish, e.g. 4.5.112; empty means the newest built"
+        type: string
+      force:
+        description: "publish even if it is not newer than what Pages serves"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: publish-runtime
+  cancel-in-progress: false
+
+env:
+  RUNTIME_REPO: dappermint/winecx-gptk
+  PLIST: dist/pages/WhiskyWineVersion.plist
+
+jobs:
+  mirror:
+    name: Mirror the newest runtime
+    if: github.repository == 'dappermint/Whisky'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout preview
+        uses: actions/checkout@v6
+        with:
+          ref: preview
+
+      - name: Work out whether there is anything to publish
+        id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # via env, never interpolated into the script: a dispatch input is
+          # attacker-shaped even when only a maintainer can send one
+          WANT_VERSION: ${{ inputs.version }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "$WANT_VERSION" ]; then
+            want="$WANT_VERSION"
+          else
+            # the release list is ordered by creation, and a rebuild of an older
+            # tree can be created later, so sort by version rather than trusting it
+            want=$(gh release list --repo "$RUNTIME_REPO" --limit 50 \
+                     --json tagName --jq '.[].tagName' \
+                   | sed -n 's/^runtime-v//p' | sort -V | tail -1)
+          fi
+          [ -n "$want" ] || { echo "::error::no runtime-v* releases in $RUNTIME_REPO"; exit 1; }
+
+          case "$want" in
+            [0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "::error::'$want' is not major.minor.patch"; exit 1;;
+          esac
+
+          have=$(python3 - <<'PY'
+          import plistlib, os
+          with open(os.environ["PLIST"], "rb") as f:
+              v = plistlib.load(f)["version"]
+          print(f'{v["major"]}.{v["minor"]}.{v["patch"]}')
+          PY
+          )
+
+          echo "pages serves $have, newest built is $want"
+          newest=$(printf '%s\n%s\n' "$have" "$want" | sort -V | tail -1)
+          if [ "$want" = "$have" ] || { [ "$newest" = "$have" ] && [ "$FORCE" != "true" ]; }; then
+            echo "nothing to do" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+            echo "version=$want" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download the runtime and check it
+        if: steps.pick.outputs.go == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.pick.outputs.version }}
+        run: |
+          set -euo pipefail
+          gh release download "runtime-v$VERSION" --repo "$RUNTIME_REPO" \
+            --pattern 'Libraries.tar.gz' \
+            --pattern 'Libraries.tar.gz.sha256' \
+            --pattern 'WhiskyWineVersion.plist'
+
+          # the app checks this same digest before it installs, so a mismatch
+          # here is the difference between failing in CI and failing on a user's
+          # machine after a 434MB download
+          sha256sum -c Libraries.tar.gz.sha256
+          echo "sha256: ok"
+
+          stamped=$(python3 - <<'PY'
+          import plistlib
+          with open("WhiskyWineVersion.plist", "rb") as f:
+              v = plistlib.load(f)["version"]
+          print(f'{v["major"]}.{v["minor"]}.{v["patch"]}')
+          PY
+          )
+          [ "$stamped" = "$VERSION" ] || {
+            echo "::error::asset is stamped $stamped but the tag says $VERSION"
+            exit 1
+          }
+          echo "stamped version matches the tag"
+
+      - name: Publish the release the app downloads from
+        if: steps.pick.outputs.go == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.pick.outputs.version }}
+        run: |
+          set -euo pipefail
+          tag="v$VERSION"
+          notes="Wine runtime $VERSION, built by [$RUNTIME_REPO](https://github.com/$RUNTIME_REPO/releases/tag/runtime-v$VERSION).
+
+          Whisky downloads this automatically; there is nothing to install by hand."
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" Libraries.tar.gz Libraries.tar.gz.sha256 --clobber
+          else
+            gh release create "$tag" Libraries.tar.gz Libraries.tar.gz.sha256 \
+              --title "Wine runtime $VERSION" --notes "$notes"
+          fi
+
+      - name: Point Pages at it
+        if: steps.pick.outputs.go == 'true'
+        env:
+          VERSION: ${{ steps.pick.outputs.version }}
+        run: |
+          set -euo pipefail
+          # take the plist the build stamped and add the digest, rather than
+          # editing the served one in place: that way dxvk, dxmt and gptkCapable
+          # cannot drift away from the tarball they describe
+          python3 - <<'PY'
+          import plistlib, os
+          with open("WhiskyWineVersion.plist", "rb") as f:
+              info = plistlib.load(f)
+          with open("Libraries.tar.gz.sha256") as f:
+              info["sha256"] = f.read().split()[0]
+          with open(os.environ["PLIST"], "wb") as f:
+              plistlib.dump(info, f)
+          PY
+          plutil -p "$PLIST" 2>/dev/null || cat "$PLIST"
+
+      - name: Commit and redeploy
+        if: steps.pick.outputs.go == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.pick.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add "$PLIST"
+          # --quiet exits 1 when there IS a diff, which is the path we want to
+          # continue on, so this cannot be an && under set -e
+          if git diff --cached --quiet; then
+            echo "plist already current"
+            exit 0
+          fi
+          git commit -m "chore(runtime): serve $VERSION"
+          git push origin preview
+
+          # a push made with the job's own token does not fire Documentation.yml,
+          # and Pages only updates when that runs, so ask for it directly
+          gh workflow run Documentation.yml --ref preview
+          echo "published $VERSION and asked Pages to redeploy" >> "$GITHUB_STEP_SUMMARY"
