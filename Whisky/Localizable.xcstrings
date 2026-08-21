@@ -57458,16 +57458,6 @@
         }
       }
     },
-    "config.runtime.default" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Default"
-          }
-        }
-      }
-    },
     "config.useButtonLabels" : {
       "localizations" : {
         "en" : {
