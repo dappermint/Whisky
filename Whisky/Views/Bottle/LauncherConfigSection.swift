@@ -29,6 +29,8 @@ private let launcherConfigLogger = Logger(
 struct LauncherConfigSection: View {
     @ObservedObject var bottle: Bottle
     @Binding var isExpanded: Bool
+    /// Opens the latest diagnosis; supplied by ConfigView, which owns that sheet.
+    var onViewDiagnostics: () -> Void = {}
     @State private var overridesExpanded: Bool = false
 
     var body: some View {
@@ -116,14 +118,10 @@ extension LauncherConfigSection {
 
         Divider()
 
-        // Link to Diagnostics section (replaces inline diagnostics button)
         HStack {
             Spacer()
             Button {
-                NotificationCenter.default.post(
-                    name: .openDiagnosticsSection,
-                    object: nil
-                )
+                onViewDiagnostics()
             } label: {
                 Label("View Diagnostics", systemImage: "stethoscope")
             }
@@ -457,15 +455,6 @@ private struct ActiveEnvironmentOverrides: View {
         case .compatibility: "Compatibility"
         }
     }
-}
-
-// MARK: - Notification Names
-
-extension Notification.Name {
-    /// Posted to navigate to the Diagnostics section in ConfigView.
-    static let openDiagnosticsSection = Notification.Name(
-        "com.franke.Whisky.openDiagnosticsSection"
-    )
 }
 
 // MARK: - Diagnostics Report View (Shared)

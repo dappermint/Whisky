@@ -191,6 +191,7 @@ final class BottleVM: ObservableObject {
             createdBottle.saveBottleSettings()
 
             try persistBottleCreation(request: request)
+            createdBottle.inFlight = false
             loadBottles()
             Telemetry.capture(.firstBottleCreated)
         } catch {

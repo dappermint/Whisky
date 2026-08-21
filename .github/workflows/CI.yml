@@ -13,14 +13,14 @@ on:
   # the `changes` job below and a skipped run reports no status — required-check
   # names would need a carve-out for it.
   push:
-    branches: [main, preview]
+    branches: [main]
     paths-ignore: &docs-paths
       - '**.md'
       - 'docs/**'
       - 'images/**'
       - 'LICENSE'
   pull_request:
-    branches: [main, preview]
+    branches: [main]
     paths-ignore: *docs-paths
   workflow_dispatch:
 
@@ -113,9 +113,7 @@ jobs:
   build:
     name: Build all schemes
     needs: [lint, format]
-    # macos-26: the app's deployment target is 26.0, so an older runner cannot
-    # launch it, and the UI tests fail before they start.
-    runs-on: macos-26
+    runs-on: macos-15
 
     steps:
       - name: Checkout
@@ -161,9 +159,8 @@ jobs:
       # at runtime but the build stays green — so assert on the built artifact.
       - name: Verify bundled app resources
         run: |
-          # Ask for the exact product path rather than globbing: this fork's
-          # PRODUCT_NAME is "Whisky Preview", and a glob loose enough to catch that
-          # also catches WhiskyUITests-Runner.app.
+          # Ask for the exact product path rather than globbing DerivedData:
+          # a loose glob can also catch WhiskyUITests-Runner.app.
           app=$(xcodebuild -project Whisky.xcodeproj -scheme Whisky -configuration Debug \
             -showBuildSettings 2>/dev/null \
             | awk -F' = ' '
@@ -203,9 +200,7 @@ jobs:
     name: WhiskyUITests
     needs: [lint, format, changes]
     if: github.event_name != 'pull_request' || needs.changes.outputs.app == 'true'
-    # macos-26: the app's deployment target is 26.0, so an older runner cannot
-    # launch it, and the UI tests fail before they start.
-    runs-on: macos-26
+    runs-on: macos-15
 
     steps:
       - name: Checkout
@@ -287,9 +282,7 @@ jobs:
   test:
     name: Run Tests
     needs: [lint, format]
-    # macos-26: the app's deployment target is 26.0, so an older runner cannot
-    # launch it, and the UI tests fail before they start.
-    runs-on: macos-26
+    runs-on: macos-15
     
     steps:
       - name: Checkout

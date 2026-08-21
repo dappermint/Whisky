@@ -158,9 +158,110 @@ final class FixApplicatorTests: XCTestCase {
     }
 
     func testUndoNonReversibleFixFails() {
-        let attempt = FixAttempt(fixId: "install-dependency", afterValue: "dotnet48", result: .applied)
+        let attempt = FixAttempt(fixId: "restart-wineserver", afterValue: "restarted", result: .applied)
 
         XCTAssertFalse(FixApplicator.undo(attempt: attempt, bottle: bottle, program: nil))
+    }
+
+    // MARK: - Program-scoped fixes
+
+    func testApplyEnhancedDiagnosticsSetsTheProgramPreset() {
+        let program = Program(url: tempDir.appendingPathComponent("game.exe"), bottle: bottle)
+        program.settings.activeWineDebugPreset = nil
+
+        let attempt = FixApplicator.apply(
+            fixId: "run-enhanced-diagnostics", params: [:], bottle: bottle, program: program
+        )
+
+        XCTAssertEqual(program.settings.activeWineDebugPreset, .verbose)
+        XCTAssertEqual(attempt.beforeValue, "default")
+        XCTAssertEqual(attempt.result, .applied)
+    }
+
+    func testUndoEnhancedDiagnosticsRestoresPreset() {
+        let program = Program(url: tempDir.appendingPathComponent("game.exe"), bottle: bottle)
+        program.settings.activeWineDebugPreset = .crash
+
+        let attempt = FixApplicator.apply(
+            fixId: "run-enhanced-diagnostics", params: [:], bottle: bottle, program: program
+        )
+        XCTAssertEqual(program.settings.activeWineDebugPreset, .verbose)
+
+        XCTAssertTrue(FixApplicator.undo(attempt: attempt, bottle: bottle, program: program))
+        XCTAssertEqual(program.settings.activeWineDebugPreset, .crash)
+    }
+
+    func testProgramScopedFixesFailWithoutAProgram() {
+        for fixId in ["run-enhanced-diagnostics", "apply-launcher-fixes", "apply-game-config"] {
+            let attempt = FixApplicator.apply(fixId: fixId, params: [:], bottle: bottle, program: nil)
+            XCTAssertEqual(attempt.result, .failed, "\(fixId) must fail honestly without a program")
+        }
+        XCTAssertNil(
+            FixApplicator.preview(
+                fixId: "run-enhanced-diagnostics", params: [:], bottle: bottle, program: nil
+            )
+        )
+    }
+
+    func testApplyLauncherFixesFailsWhenNoLauncherDetected() {
+        let program = Program(url: tempDir.appendingPathComponent("game.exe"), bottle: bottle)
+
+        let attempt = FixApplicator.apply(
+            fixId: "apply-launcher-fixes", params: [:], bottle: bottle, program: program
+        )
+
+        XCTAssertEqual(attempt.result, .failed)
+    }
+
+    // MARK: - Registry fix
+
+    func testSetRegistryValueWithoutParamsFails() {
+        let attempt = FixApplicator.apply(
+            fixId: "set-registry-value", params: [:], bottle: bottle, program: nil
+        )
+
+        XCTAssertEqual(attempt.result, .failed)
+    }
+
+    func testPreviewSetRegistryValueShowsUnsetCurrent() throws {
+        let preview = try XCTUnwrap(FixApplicator.preview(
+            fixId: "set-registry-value",
+            params: [
+                "key": #"HKLM\System\CurrentControlSet\Services\Tcpip\Parameters"#,
+                "valueName": "NameServer",
+                "value": "",
+                "settingName": "Wine DNS override"
+            ],
+            bottle: bottle,
+            program: nil
+        ))
+
+        XCTAssertEqual(preview.settingName, "Wine DNS override")
+        XCTAssertEqual(preview.currentValue, "Not set")
+        XCTAssertEqual(preview.newValue, "Not set")
+        XCTAssertTrue(preview.isReversible)
+    }
+
+    func testPreviewSetRegistryValueReadsThePrefixFile() throws {
+        let regFile = tempDir.appendingPathComponent("system.reg")
+        let content = """
+        [System\\\\CurrentControlSet\\\\Services\\\\Tcpip\\\\Parameters]
+        "NameServer"="10.0.0.53"
+        """
+        try content.write(to: regFile, atomically: true, encoding: .utf8)
+
+        let preview = try XCTUnwrap(FixApplicator.preview(
+            fixId: "set-registry-value",
+            params: [
+                "key": #"HKLM\System\CurrentControlSet\Services\Tcpip\Parameters"#,
+                "valueName": "NameServer",
+                "value": ""
+            ],
+            bottle: bottle,
+            program: nil
+        ))
+
+        XCTAssertEqual(preview.currentValue, "10.0.0.53")
     }
 
     func testUndoUnknownFixIdFails() {

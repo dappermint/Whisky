@@ -12,10 +12,10 @@
       "checkId": "crash.log_classify",
       "params": {},
       "on": {
-        "pass": "check_environment",
+        "pass": "check_winetricks",
         "fail": "check_graphics_backend",
-        "unknown": "check_environment",
-        "error": "check_environment"
+        "unknown": "check_winetricks",
+        "error": "check_winetricks"
       },
       "evidenceMap": {
         "primaryCategory": "Issue category",
@@ -36,11 +36,11 @@
         "scope": "program_or_bottle"
       },
       "on": {
-        "pass": "check_environment",
-        "already_configured": "check_environment",
+        "pass": "check_winetricks",
+        "already_configured": "check_winetricks",
         "fail": "fix_switch_backend",
-        "unknown": "check_environment",
-        "error": "check_environment"
+        "unknown": "check_winetricks",
+        "error": "check_winetricks"
       },
       "evidenceMap": {
         "current": "Current backend",
@@ -64,43 +64,7 @@
       "requiresConfirmation": false,
       "on": {
         "applied": "verify_fix",
-        "skipped": "check_environment"
-      }
-    },
-    "check_dependencies": {
-      "id": "check_dependencies",
-      "type": "check",
-      "phase": "checks",
-      "title": "Check for missing DLLs",
-      "description": "The crash log indicates a DLL loading failure. Checking for missing runtime dependencies.",
-      "checkId": "dependency.check_missing",
-      "params": {
-        "scope": "crash_related"
-      },
-      "on": {
-        "pass": "check_environment",
-        "fail": "fix_install_deps",
-        "unknown": "check_environment",
-        "error": "check_environment"
-      },
-      "evidenceMap": {
-        "missingDeps": "Missing dependencies",
-        "checkedCount": "Components checked"
-      },
-      "fragmentRef": "dependency-install"
-    },
-    "fix_install_deps": {
-      "id": "fix_install_deps",
-      "type": "fix",
-      "phase": "fix",
-      "title": "Install missing runtime dependencies",
-      "description": "Install the missing runtime components via Winetricks. This may take a few minutes.",
-      "fixId": "install-dependency",
-      "isReversible": false,
-      "requiresConfirmation": true,
-      "on": {
-        "applied": "verify_fix",
-        "skipped": "check_environment"
+        "skipped": "check_winetricks"
       }
     },
     "check_winetricks": {
@@ -114,10 +78,10 @@
         "verbs": "vcrun2019,dotnet48,d3dcompiler_47"
       },
       "on": {
-        "pass": "check_environment",
+        "pass": "escalate",
         "fail": "fix_install_verb",
-        "unknown": "check_environment",
-        "error": "check_environment"
+        "unknown": "escalate",
+        "error": "escalate"
       },
       "evidenceMap": {
         "installedVerbs": "Installed verbs",
@@ -135,42 +99,6 @@
       "requiresConfirmation": true,
       "on": {
         "applied": "verify_fix",
-        "skipped": "check_environment"
-      }
-    },
-    "check_environment": {
-      "id": "check_environment",
-      "type": "check",
-      "phase": "checks",
-      "title": "Check environment configuration",
-      "description": "Checking for environment variable issues that might prevent the program from starting.",
-      "checkId": "env.check_var",
-      "params": {
-        "vars": "WINEPREFIX,WINEARCH,WINEDLLOVERRIDES"
-      },
-      "on": {
-        "pass": "escalate",
-        "fail": "fix_environment",
-        "already_configured": "escalate",
-        "unknown": "escalate",
-        "error": "escalate"
-      },
-      "evidenceMap": {
-        "issueVar": "Problematic variable",
-        "currentValue": "Current value"
-      }
-    },
-    "fix_environment": {
-      "id": "fix_environment",
-      "type": "fix",
-      "phase": "fix",
-      "title": "Fix environment configuration",
-      "description": "Correct the environment variable configuration to resolve the launch issue.",
-      "fixId": "fix-env-var",
-      "isReversible": true,
-      "requiresConfirmation": false,
-      "on": {
-        "applied": "verify_fix",
         "skipped": "escalate"
       }
     },
@@ -182,7 +110,7 @@
       "description": "Try launching the program again to see if the crash is resolved.",
       "on": {
         "yes": "resolved",
-        "no": "check_environment"
+        "no": "check_winetricks"
       }
     },
     "resolved": {
