@@ -63,6 +63,19 @@ struct GraphicsConfigSection: View {
                 runningProcessWarning
             }
 
+            // MetalFX rides on D3DMetal's DLSS bridge, so it is meaningless
+            // under any other backend rather than merely inactive.
+            if resolvedBackend == .d3dMetal {
+                Toggle(isOn: $bottle.settings.metalFX) {
+                    VStack(alignment: .leading) {
+                        Text("config.metalFX")
+                        Text("config.metalFX.info")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
             // Force DX11 toggle -- always visible (Simple + Advanced)
             Toggle(isOn: $bottle.settings.forceD3D11) {
                 Text("config.forceD3D11")

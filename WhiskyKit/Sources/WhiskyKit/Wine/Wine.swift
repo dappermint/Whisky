@@ -267,12 +267,7 @@ public class Wine {
             programOverrides = pinned
         }
 
-        // DXMT first: if launcher auto-DXVK also fires below (e.g. Rockstar),
-        // DXVK's file copy deterministically wins, matching the override-layer
-        // order where launcher-managed entries land after bottle-managed ones.
-        if effectiveBackend == .dxmt {
-            try enableDXMT(bottle: bottle)
-        }
+        try prepareBackendPrefix(effectiveBackend, bottle: bottle)
 
         // Enable DXVK if needed: effective backend, the legacy program-level
         // flag (honored only without a backend override, mirroring
@@ -725,6 +720,89 @@ public class Wine {
             return false
         }
         return marker != Data("Wine builtin DLL".utf8)
+    }
+
+    /// Places the per-bottle files a backend needs in the prefix before launch.
+    ///
+    /// DXMT goes first: if launcher auto-DXVK also fires in `runProgram`, DXVK's
+    /// file copy deterministically wins, matching the override-layer order where
+    /// launcher-managed entries land after bottle-managed ones.
+    @MainActor
+    private static func prepareBackendPrefix(_ backend: GraphicsBackend, bottle: Bottle) throws {
+        switch backend {
+        case .dxmt:
+            try enableDXMT(bottle: bottle)
+        case .d3dMetal, .dxvk, .wined3d, .recommended:
+            break
+        }
+
+        applyMetalFX(bottle: bottle, backend: backend)
+    }
+
+    /// Opts a bottle in or out of D3DMetal's DLSS-to-MetalFX path, per
+    /// ``BottleSettings/metalFX`` and the backend the launch actually resolved
+    /// to.
+    ///
+    /// The bridge itself is a builtin in the shared Wine tree, so it cannot be
+    /// installed per bottle. What can is the `system32` entry the loader needs
+    /// before it will look in the builtin directory at all: without one,
+    /// `LoadLibrary("nvngx.dll")` fails with `ERROR_MOD_NOT_FOUND` however
+    /// complete the tree is. So the placeholder is the switch: present means a
+    /// game can reach MetalFX, absent means the bridge is inert.
+    ///
+    /// Only D3DMetal implements the DLSS entry points behind it, so every other
+    /// backend clears, setting or no setting. Otherwise a bottle switched away
+    /// from D3DMetal with MetalFX still on keeps a placeholder for a bridge
+    /// nothing in that prefix can answer, and a DLSS-aware game reaches it under
+    /// a backend it was never meant for.
+    ///
+    /// - Parameters:
+    ///   - bottle: The ``Bottle`` whose opt-in state to apply.
+    ///   - backend: The backend this launch resolved to.
+    ///   - libraryFolder: The runtime tree holding the bridge.
+    ///
+    /// - Note: Called by `runProgram` for every launch, in both directions, so
+    ///   turning the setting off or switching backend takes effect on the next
+    ///   launch without the user having to repair anything.
+    @MainActor
+    public static func applyMetalFX(
+        bottle: Bottle,
+        backend: GraphicsBackend,
+        libraryFolder: URL = WhiskyWineInstaller.libraryFolder
+    ) {
+        if backend == .d3dMetal, bottle.settings.metalFX {
+            GPTKImporter.seedMetalFXBridgePlaceholder(inBottle: bottle.url, fromLibraryFolder: libraryFolder)
+            seedNGXModelConfig(inBottle: bottle.url)
+        } else {
+            GPTKImporter.clearMetalFXBridgePlaceholder(inBottle: bottle.url)
+        }
+    }
+
+    /// Where NGX keeps the manifest its updater reads, which a real NVIDIA driver
+    /// would have written.
+    static let ngxModelConfigPath = ["drive_c", "ProgramData", "NVIDIA", "NGX", "models"]
+
+    /// Writes the NGX manifest a driver install would leave behind.
+    ///
+    /// Streamline opens this before it does anything else and logs a pair of
+    /// errors per launch when it is missing:
+    ///
+    ///     [streamline][error] File 'C:\ProgramData/NVIDIA/NGX/models/nvngx_config.txt' does not exist
+    ///     [streamline][error] readServerManifest: Failed to open manifest file
+    ///
+    /// Only the over-the-air updater reads what is inside, and that updater
+    /// (`nvngx_update.exe`) does not exist here either, so the contents matter
+    /// less than the file existing. Left alone once written, so a real one from a
+    /// driver install or a user's own edit survives.
+    ///
+    /// - Parameter bottle: The bottle whose prefix to seed.
+    static func seedNGXModelConfig(inBottle bottle: URL) {
+        let fileManager = FileManager.default
+        let folder = ngxModelConfigPath.reduce(bottle) { $0.appending(path: $1) }
+        let config = folder.appending(path: "nvngx_config.txt")
+        guard !fileManager.fileExists(atPath: config.path(percentEncoded: false)) else { return }
+        try? fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
+        try? "[global]\nversion = 1\n".write(to: config, atomically: true, encoding: .utf8)
     }
 
     /// Installs DXMT into a bottle so its Direct3D-11-to-Metal layer is used.
