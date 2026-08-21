@@ -12,6 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   scheduling is available. Wine only answers that query for a caller that says
   it is running on D3DMetal, and nothing said so, so the answer was always that
   the feature is not implemented.
+- DirectX 12 games run again in a bottle set to DXVK or DXMT. Neither ships a
+  d3d12 of its own and neither said so, so that one DLL quietly fell through to
+  D3DMetal while the rest of the stack was not. A DX12 game took its adapter
+  from one translation layer into the other and died before it drew anything,
+  with no error of its own to show for it. Both now turn d3d12 off, so such a
+  game falls back to DirectX 11 rather than half landing on something else, and
+  a bottle or a single program set to D3DMetal gets real DirectX 12 back.
+- Newly created bottles are now immediately interactive: the inFlight guard
+  is reset after a successful creation so that state-dependent actions (move,
+  export, duplicate) no longer require an app restart to become available.
 
 ## [3.6.1] - 2026-08-13 (App)
 
