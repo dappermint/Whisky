@@ -56,6 +56,18 @@ extension GPTKImporter {
             .appending(path: "x86_64-unix").appending(path: nvapiBridgeUnixName)
     }
 
+    /// The copy the builtin loader actually resolves, named for the PE's export
+    /// directory rather than the file games ask for.
+    static func nvapiBridgeExportPE(inLibraryFolder folder: URL) -> URL {
+        folder.appending(path: "Wine").appending(path: "lib").appending(path: "wine")
+            .appending(path: "x86_64-windows").appending(path: nvapiBridgeExportName)
+    }
+
+    static func nvapiBridgeExportUnixLink(inLibraryFolder folder: URL) -> URL {
+        folder.appending(path: "Wine").appending(path: "lib").appending(path: "wine")
+            .appending(path: "x86_64-unix").appending(path: nvapiBridgeExportUnixName)
+    }
+
     static func nvapiPlaceholderBackup(inLibraryFolder folder: URL) -> URL {
         nvapiBridgePE(inLibraryFolder: folder).appendingPathExtension(
             String(nvapiPlaceholderSuffix.dropFirst())
@@ -65,8 +77,14 @@ extension GPTKImporter {
     /// Whether the tree holds a bridge this store put there.
     static func isNVAPIBridgeInstalled(inLibraryFolder folder: URL, usingStore store: URL) -> Bool {
         guard let source = nvapiBridgeSource(inStore: store) else { return false }
-        return FileManager.default.contentsEqual(
+        let fileManager = FileManager.default
+        // Both names, so a tree installed before the export-name copy existed
+        // reports as not installed and gets repaired on the next pass.
+        return fileManager.contentsEqual(
             atPath: nvapiBridgePE(inLibraryFolder: folder).path(percentEncoded: false),
+            andPath: source.path(percentEncoded: false)
+        ) && fileManager.contentsEqual(
+            atPath: nvapiBridgeExportPE(inLibraryFolder: folder).path(percentEncoded: false),
             andPath: source.path(percentEncoded: false)
         )
     }
@@ -96,15 +114,25 @@ extension GPTKImporter {
         }
         try fileManager.copyItem(at: source, to: destination)
 
+        // The same PE again under its export name. Games load nvapi64.dll, the
+        // loader then resolves the builtin by what the export directory says,
+        // and without this copy it finds nothing and DllMain fails.
+        let exportPE = nvapiBridgeExportPE(inLibraryFolder: folder)
+        try? fileManager.removeItem(at: exportPE)
+        try fileManager.copyItem(at: source, to: exportPE)
+
         try fileManager.createDirectory(
             at: link.deletingLastPathComponent(), withIntermediateDirectories: true
         )
-        try? fileManager.removeItem(at: link)
-        try fileManager.createSymbolicLink(
-            atPath: link.path(percentEncoded: false),
-            withDestinationPath: unixLinkDestination
-        )
-        logger.info("Installed Apple's NVAPI as \(nvapiBridgeName, privacy: .public)")
+        for unixLink in [link, nvapiBridgeExportUnixLink(inLibraryFolder: folder)] {
+            try? fileManager.removeItem(at: unixLink)
+            try fileManager.createSymbolicLink(
+                atPath: unixLink.path(percentEncoded: false),
+                withDestinationPath: unixLinkDestination
+            )
+        }
+        let installedAs = "\(nvapiBridgeName) and \(nvapiBridgeExportName)"
+        logger.info("Installed Apple's NVAPI as \(installedAs, privacy: .public)")
     }
 
     /// Takes the bridge back out and restores Wine's placeholder.
@@ -115,14 +143,19 @@ extension GPTKImporter {
         let backup = nvapiPlaceholderBackup(inLibraryFolder: folder)
 
         try? fileManager.removeItem(at: destination)
+        try? fileManager.removeItem(at: nvapiBridgeExportPE(inLibraryFolder: folder))
         if fileManager.fileExists(atPath: backup.path(percentEncoded: false)) {
             try? fileManager.moveItem(at: backup, to: destination)
         }
 
-        let link = nvapiBridgeUnixLink(inLibraryFolder: folder)
-        let target = try? fileManager.destinationOfSymbolicLink(atPath: link.path(percentEncoded: false))
-        if target == unixLinkDestination {
-            try? fileManager.removeItem(at: link)
+        for link in [
+            nvapiBridgeUnixLink(inLibraryFolder: folder),
+            nvapiBridgeExportUnixLink(inLibraryFolder: folder)
+        ] {
+            let target = try? fileManager.destinationOfSymbolicLink(atPath: link.path(percentEncoded: false))
+            if target == unixLinkDestination {
+                try? fileManager.removeItem(at: link)
+            }
         }
     }
 
