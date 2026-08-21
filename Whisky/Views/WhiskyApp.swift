@@ -77,6 +77,18 @@ struct WhiskyApp: App {
     private func installMetalFXBridgeIfNeeded() {
         Task.detached(priority: .background) {
             GPTKImporter.ensureMetalFXBridgeInstalled()
+    /// Installs the D3D12 video processor if the GPTK payload is already
+    /// deployed.
+    ///
+    /// Deploying does this too, but an install that was set up before the
+    /// interposer existed never deploys again, so without this it would keep
+    /// rendering video through the engine's broken fallback until it happened
+    /// to reimport. Idempotent, and a no-op on runtimes that ship no interposer.
+    private func installVideoProcessorIfNeeded() {
+        var data = BottleData()
+        let bottles = data.loadBottles().map(\.url)
+        Task.detached(priority: .background) {
+            GPTKImporter.ensureVideoProcessorInstalled(bottles: bottles)
         }
     }
 
@@ -91,6 +103,7 @@ struct WhiskyApp: App {
                         await WhiskyApp.deleteOldLogs()
                     }
                     installMetalFXBridgeIfNeeded()
+                    installVideoProcessorIfNeeded()
                     startAudioDeviceListening()
                 }
                 .onReceive(

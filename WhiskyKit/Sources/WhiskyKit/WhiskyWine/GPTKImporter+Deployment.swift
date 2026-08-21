@@ -136,6 +136,12 @@ extension GPTKImporter {
         let originals = store.appending(path: "originals")
         try prepareOriginals(inStore: store, forLibraryFolder: folder)
 
+        // A previous install leaves the interposer in the d3d12 slot, where it
+        // matches neither Wine's DLL nor the store's forwarder. Clear it first
+        // so the loop below sees the tree it expects and never files the
+        // interposer away as if it were Wine's own builtin.
+        removeVideoProcessor(fromLibraryFolder: folder, usingStore: store)
+
         for name in forwarderDLLNames {
             let target = peDir.appending(path: name)
             let backup = originals.appending(path: name)
@@ -174,6 +180,10 @@ extension GPTKImporter {
         // can be installed: it forwards into the payload's own shared dylib and
         // has nothing to bind to before this point.
         try installMetalFXBridge(intoLibraryFolder: folder, usingStore: store)
+        // Apple's D3D12 is in place now, which is the only moment the swap can
+        // be made: the runtime ships the interposer but has nothing to forward
+        // into until this point.
+        try installVideoProcessor(intoLibraryFolder: folder)
         logger.info("Deployed GPTK payload into the runtime tree")
     }
 
@@ -208,6 +218,11 @@ extension GPTKImporter {
             == runtimeVersionStamp(inLibraryFolder: folder)
 
         removeMetalFXBridge(fromLibraryFolder: folder, usingStore: store)
+        // Apple's DLL goes back into the d3d12 slot before the loop reads it,
+        // or the slot still holds the interposer, fails the byte match against
+        // the store, and is skipped: the tree would keep a d3d12 that forwards
+        // to a DLL this call is about to delete.
+        removeVideoProcessor(fromLibraryFolder: folder, usingStore: store)
 
         for name in forwarderDLLNames {
             let backup = originals.appending(path: name)

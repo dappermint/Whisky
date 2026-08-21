@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- British English localization, generated from the English strings and kept
+  complete by a CI check, so systems set to English (UK) see proper spellings
+  instead of raw localization keys (#208).
+
 ### Changed
 - The bottle action bar now emphasizes Run as its primary control, with
   Liquid Glass styling on macOS 26 and bordered buttons on earlier
@@ -16,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   either position (#216).
 
 ### Fixed
+- Games that decode video themselves no longer fall back to a broken
+  half-resolution path under D3DMetal: when the runtime ships the D3D12
+  video processor interposer, it is installed automatically alongside the
+  GPTK payload (#197).
 - The Play Test Tone button now actually plays a tone. The test executable
   was never included in any build, so the button silently did nothing and
   then asked whether you heard it. The tone is also gentler: 600ms with
