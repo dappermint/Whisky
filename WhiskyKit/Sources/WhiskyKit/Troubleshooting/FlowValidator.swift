@@ -190,6 +190,16 @@ public enum FlowValidator {
                 }
             }
 
+            // Check fix nodes reference an implemented fix
+            if let fixId = node.fixId, !FixApplicator.knownFixIds.contains(fixId) {
+                issues.append(ValidationIssue(
+                    flowId: flowId,
+                    nodeId: nodeId,
+                    message: "Fix ID '\(fixId)' has no implementation in FixApplicator",
+                    severity: .error
+                ))
+            }
+
             // Check fragment references resolve
             if let fragmentRef = node.fragmentRef {
                 if !fragmentKeys.contains(fragmentRef) {

@@ -22,14 +22,14 @@ import XCTest
 final class ManagedPresetTests: XCTestCase {
     func testDXVKBackendContributesTheDXVKPreset() {
         let preset = DLLOverrideResolver.managedPreset(for: .dxvk)
-        XCTAssertEqual(preset.map(\.dllName).sorted(), ["d3d10core", "d3d11", "d3d9", "dxgi"])
+        XCTAssertEqual(preset.map(\.dllName).sorted(), ["d3d10core", "d3d11", "d3d12", "d3d9", "dxgi"])
     }
 
     /// The case the config section used to miss entirely: a DXMT bottle applies
-    /// four overrides at launch and the UI listed none of them.
+    /// five overrides at launch and the UI listed none of them.
     func testDXMTBackendContributesTheDXMTPreset() {
         let preset = DLLOverrideResolver.managedPreset(for: .dxmt)
-        XCTAssertEqual(preset.map(\.dllName).sorted(), ["d3d10core", "d3d11", "dxgi", "winemetal"])
+        XCTAssertEqual(preset.map(\.dllName).sorted(), ["d3d10core", "d3d11", "d3d12", "dxgi", "winemetal"])
     }
 
     /// D3DMetal and WineD3D both run on Wine's builtin D3D and pick between

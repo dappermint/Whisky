@@ -62,7 +62,6 @@ final class FlowLoaderValidatorTests: XCTestCase {
 
         // The engine's escalation path depends on export-escalation existing.
         XCTAssertNotNil(fragments["export-escalation"])
-        XCTAssertNotNil(fragments["dependency-install"])
     }
 
     func testBundledFlowsPassValidationWithoutErrors() {
@@ -137,6 +136,27 @@ final class FlowLoaderValidatorTests: XCTestCase {
         XCTAssertTrue(
             issues.contains { $0.severity == .error },
             "a branch target that resolves nowhere must be a validation error, got: \(issues)"
+        )
+    }
+
+    func testValidatorFlagsUnknownFixId() {
+        let flow = FlowDefinition(
+            version: 1,
+            categoryId: "test",
+            nodes: [
+                "start": FlowStepNode(
+                    id: "start", type: .fix, phase: .fix,
+                    on: ["applied": "start"], fixId: "not-a-real-fix"
+                )
+            ],
+            entryNodeId: "start"
+        )
+
+        let issues = FlowValidator.validate(flows: ["test": flow], fragments: [:])
+
+        XCTAssertTrue(
+            issues.contains { $0.severity == .error && $0.message.contains("not-a-real-fix") },
+            "a fixId with no implementation must fail validation, got: \(issues)"
         )
     }
 

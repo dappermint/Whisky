@@ -144,7 +144,7 @@ extension TroubleshootingHistoryView {
         VStack(alignment: .leading, spacing: 8) {
             if !entry.fixResults.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Fixes attempted:")
+                    Text("troubleshooting.history.fixesAttempted")
                         .font(.caption)
                         .fontWeight(.medium)
                         .foregroundStyle(.secondary)
