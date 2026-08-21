@@ -302,6 +302,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   runtime ships, and installs that already have the payload pick it up at
   launch without reimporting.
 
+### Fixed
+- Stopping every game now asks first. **Clear Shader Caches** shut Wine down
+  before wiping the cache and said nothing about it in the menu title, and
+  **Kill All Bottles** (Cmd-Shift-K) asked nothing either. Both now name the
+  bottles that are about to go down, and skip the dialog when nothing is
+  running.
+- Kill-on-quit does what it says. It scheduled the shutdown on a task that the
+  app's own teardown outran, so quitting with the setting on usually left Wine
+  running. It now waits for the shutdown, bounded so a wedged wineserver cannot
+  hold up quitting.
+- A game running in the foreground keeps the display awake. The screen saver
+  could still come in during a session driven only by a controller: the power
+  assertion that prevents it was written against a process registry nothing ever
+  wrote to. Programs Whisky launches and holds are registered now, which also
+  restores the process list's macOS PIDs and its force-quit fallback.
+- Pinned programs can be reached from the keyboard and read by VoiceOver. A pin
+  was a tap target with no button role, no focus and no label. Its green play
+  glyph now appears on hover or focus instead of sitting over the icon at all
+  times.
+- A Steam game launching from the library says what it is waiting for. It showed
+  one unlabelled spinner for up to three and a half minutes, covering both the
+  client coming up and the game starting, with no way to call it off. The card
+  names the phase now and offers a cancel during either.
+- A crash report stays until you have seen it. The banner cleared itself after
+  eight seconds, which is the window in which the game that just died still has
+  the screen, and the Notification Center copy was only posted when Whisky was
+  in the background.
+- **Run Diagnostics** no longer dead-ends. Picking a bottle scans it for
+  programs rather than showing an empty list, Analyze is disabled until there is
+  a log to read, and a run it cannot classify says so instead of doing nothing.
+- The VC++ runtime is marked installed once winetricks reports it installed. The
+  green checkmark appeared the moment the installer was handed off, so it also
+  appeared for an install that was cancelled or that failed.
+- Winetricks opens the terminal chosen in Settings, instead of always driving
+  Terminal.app and ignoring iTerm2 and Warp.
+- Updating the Wine runtime no longer removes the working one first. Backing out
+  of the setup sheet left the app with no runtime at all.
+- Cmd-I, Cmd-L, Cmd-Shift-D and Cmd-Shift-T work as printed. Each was declared
+  with an uppercase key, which silently added Shift to the real shortcut.
+- The setup sheet's error state fits. It was framed at a fixed height that its
+  icon, message and two rows of buttons overflowed, and translated text made it
+  worse.
+- A Steam game that failed to launch no longer leaves a last-played date and a
+  remembered bottle behind it. Both were written before the client was asked to
+  start.
+- A stalled Steam download is reported in the library. The check for one has
+  been running all along with nothing reading its verdict.
+- Long sessions cost less while they run. An attached game's output was carried
+  through to a consumer that discarded it, each launch left behind a crash
+  watcher that polled for as long as Whisky ran, and the sidebar kept probing
+  every bottle while Whisky sat in the background.
+- Launch environments reach the system log by name only, matching what the run's
+  own log file already did. A value can be a token.
+
+### Changed
+- **Import Bottles from Another Whisky…** is offered where it is needed. Whisky
+  Preview has its own bundle identifier, so arriving from another Whisky build
+  meant an empty list with the bottles still on disk, and the import lived only
+  in the File menu. Both empty states now offer it when there is something to
+  find.
+- **Force DX11** appears once, in Graphics beside the backend it affects. It was
+  in two sections bound to the same setting, worded differently in each.
+- **Help → Report Issues** opens the support page, which sorts out which tracker
+  a report belongs on, rather than upstream's issue chooser where anything
+  Preview-only is out of scope.
+- The bundled runtime is documented as Wine 11.14 (runtime 4.5.114). The README
+  and the dependency notes had it as Wine 10 and Wine 11.0, and the dependency
+  file's checksum table stopped two runtimes back, which is the copy a fresh
+  install is verified against.
+
+
 ## [3.6.1] - 2026-08-13 (App)
 
 ### Changed
