@@ -54,25 +54,20 @@ final class ProcessRegistryTests: XCTestCase {
     // MARK: - Registration Tests
 
     func testRegisterProcess() {
-        let process = Process()
         let programName = "test.exe"
 
-        ProcessRegistry.shared.register(process: process, bottle: testBottle, programName: programName)
+        ProcessRegistry.shared.registerLaunched(pid: 4_100, bottleURL: testBottleURL, programName: programName)
 
         let processes = ProcessRegistry.shared.getProcesses(for: testBottle)
         XCTAssertEqual(processes.count, 1, "Should have one registered process")
         XCTAssertEqual(processes.first?.programName, programName, "Program name should match")
-        XCTAssertEqual(processes.first?.pid, 0, "PID should be 0 before launch")
+        XCTAssertEqual(processes.first?.pid, 4_100, "PID should be the one it was registered with")
     }
 
     func testRegisterMultipleProcesses() {
-        let process1 = Process()
-        let process2 = Process()
-        let process3 = Process()
-
-        ProcessRegistry.shared.register(process: process1, bottle: testBottle, programName: "app1.exe")
-        ProcessRegistry.shared.register(process: process2, bottle: testBottle, programName: "app2.exe")
-        ProcessRegistry.shared.register(process: process3, bottle: testBottle, programName: "app3.exe")
+        ProcessRegistry.shared.registerLaunched(pid: 4_101, bottleURL: testBottleURL, programName: "app1.exe")
+        ProcessRegistry.shared.registerLaunched(pid: 4_102, bottleURL: testBottleURL, programName: "app2.exe")
+        ProcessRegistry.shared.registerLaunched(pid: 4_103, bottleURL: testBottleURL, programName: "app3.exe")
 
         let processes = ProcessRegistry.shared.getProcesses(for: testBottle)
         XCTAssertEqual(processes.count, 3, "Should have three registered processes")
@@ -89,11 +84,8 @@ final class ProcessRegistryTests: XCTestCase {
 
         let bottle2 = Bottle(bottleUrl: bottle2URL, isAvailable: true)
 
-        let process1 = Process()
-        let process2 = Process()
-
-        ProcessRegistry.shared.register(process: process1, bottle: testBottle, programName: "app1.exe")
-        ProcessRegistry.shared.register(process: process2, bottle: bottle2, programName: "app2.exe")
+        ProcessRegistry.shared.registerLaunched(pid: 4_201, bottleURL: testBottleURL, programName: "app1.exe")
+        ProcessRegistry.shared.registerLaunched(pid: 4_202, bottleURL: bottle2URL, programName: "app2.exe")
 
         let processes1 = ProcessRegistry.shared.getProcesses(for: testBottle)
         let processes2 = ProcessRegistry.shared.getProcesses(for: bottle2)
@@ -105,28 +97,22 @@ final class ProcessRegistryTests: XCTestCase {
         try? FileManager.default.removeItem(at: bottle2URL)
     }
 
-    func testUpdatePID() {
-        let process = Process()
-        ProcessRegistry.shared.register(process: process, bottle: testBottle, programName: "test.exe")
+    /// A pid of 0 means the launch never happened, so registering it would leave
+    /// an entry behind that no signal can ever reach.
+    func testRegisterRejectsNonPositivePID() {
+        ProcessRegistry.shared.registerLaunched(pid: 0, bottleURL: testBottleURL, programName: "never-ran.exe")
 
-        let processesBefore = ProcessRegistry.shared.getProcesses(for: testBottle)
-        XCTAssertEqual(processesBefore.first?.pid, 0, "PID should be 0 before update")
-
-        let newPID: Int32 = 12_345
-        ProcessRegistry.shared.updatePID(pid: newPID, for: process)
-
-        let processesAfter = ProcessRegistry.shared.getProcesses(for: testBottle)
-        XCTAssertEqual(processesAfter.first?.pid, newPID, "PID should be updated")
+        let processes = ProcessRegistry.shared.getProcesses(for: testBottle)
+        XCTAssertEqual(processes.count, 0, "A process with no pid should not be registered")
     }
 
     func testUnregisterProcess() {
-        let process = Process()
-        ProcessRegistry.shared.register(process: process, bottle: testBottle, programName: "test.exe")
+        ProcessRegistry.shared.registerLaunched(pid: 4_300, bottleURL: testBottleURL, programName: "test.exe")
 
         let processesBefore = ProcessRegistry.shared.getProcesses(for: testBottle)
         XCTAssertEqual(processesBefore.count, 1, "Should have one registered process")
 
-        ProcessRegistry.shared.unregister(pid: 0)
+        ProcessRegistry.shared.unregister(pid: 4_300)
 
         let processesAfter = ProcessRegistry.shared.getProcesses(for: testBottle)
         XCTAssertEqual(processesAfter.count, 0, "Process should be unregistered")
@@ -135,11 +121,8 @@ final class ProcessRegistryTests: XCTestCase {
     // MARK: - Querying Tests
 
     func testGetProcessesForBottle() {
-        let process1 = Process()
-        let process2 = Process()
-
-        ProcessRegistry.shared.register(process: process1, bottle: testBottle, programName: "app1.exe")
-        ProcessRegistry.shared.register(process: process2, bottle: testBottle, programName: "app2.exe")
+        ProcessRegistry.shared.registerLaunched(pid: 4_401, bottleURL: testBottleURL, programName: "app1.exe")
+        ProcessRegistry.shared.registerLaunched(pid: 4_402, bottleURL: testBottleURL, programName: "app2.exe")
 
         let processes = ProcessRegistry.shared.getProcesses(for: testBottle)
 
@@ -159,11 +142,8 @@ final class ProcessRegistryTests: XCTestCase {
 
         let bottle2 = Bottle(bottleUrl: bottle2URL, isAvailable: true)
 
-        let process1 = Process()
-        let process2 = Process()
-
-        ProcessRegistry.shared.register(process: process1, bottle: testBottle, programName: "app1.exe")
-        ProcessRegistry.shared.register(process: process2, bottle: bottle2, programName: "app2.exe")
+        ProcessRegistry.shared.registerLaunched(pid: 4_501, bottleURL: testBottleURL, programName: "app1.exe")
+        ProcessRegistry.shared.registerLaunched(pid: 4_502, bottleURL: bottle2URL, programName: "app2.exe")
 
         let allProcesses = ProcessRegistry.shared.getAllProcesses()
 
@@ -186,11 +166,7 @@ final class ProcessRegistryTests: XCTestCase {
     }
 
     func testCleanupGracefulShutdown() async {
-        let process = Process()
-        ProcessRegistry.shared.register(process: process, bottle: testBottle, programName: "test.exe")
-
-        // Simulate PID update
-        ProcessRegistry.shared.updatePID(pid: 9_999, for: process)
+        ProcessRegistry.shared.registerLaunched(pid: 9_999, bottleURL: testBottleURL, programName: "test.exe")
 
         let processesBefore = ProcessRegistry.shared.getProcesses(for: testBottle)
         XCTAssertEqual(processesBefore.count, 1, "Should have one registered process")
@@ -213,11 +189,8 @@ final class ProcessRegistryTests: XCTestCase {
 
         let bottle2 = Bottle(bottleUrl: bottle2URL, isAvailable: true)
 
-        let process1 = Process()
-        let process2 = Process()
-
-        ProcessRegistry.shared.register(process: process1, bottle: testBottle, programName: "app1.exe")
-        ProcessRegistry.shared.register(process: process2, bottle: bottle2, programName: "app2.exe")
+        ProcessRegistry.shared.registerLaunched(pid: 4_501, bottleURL: testBottleURL, programName: "app1.exe")
+        ProcessRegistry.shared.registerLaunched(pid: 4_502, bottleURL: bottle2URL, programName: "app2.exe")
 
         // Cleanup all (method includes internal timing and clears registry)
         await ProcessRegistry.shared.cleanupAll(bottles: [testBottle, bottle2], force: false)
@@ -300,10 +273,9 @@ final class ProcessRegistryTests: XCTestCase {
         let expectation = XCTestExpectation(description: "Concurrent registration")
 
         DispatchQueue.concurrentPerform(iterations: processCount) { index in
-            let process = Process()
-            ProcessRegistry.shared.register(
-                process: process,
-                bottle: self.testBottle,
+            ProcessRegistry.shared.registerLaunched(
+                pid: Int32(index + 5_000),
+                bottleURL: self.testBottleURL,
                 programName: "app\(index).exe"
             )
         }
@@ -320,13 +292,13 @@ final class ProcessRegistryTests: XCTestCase {
 
         // Register processes
         for index in 0 ..< processCount {
-            let process = Process()
-            ProcessRegistry.shared.register(
-                process: process,
-                bottle: testBottle,
+            let pid = Int32(index + 1_000)
+            ProcessRegistry.shared.registerLaunched(
+                pid: pid,
+                bottleURL: testBottleURL,
                 programName: "app\(index).exe"
             )
-            pids.append(Int32(index + 1_000))
+            pids.append(pid)
         }
 
         // Unregister concurrently
@@ -335,7 +307,6 @@ final class ProcessRegistryTests: XCTestCase {
         }
 
         let processes = ProcessRegistry.shared.getProcesses(for: testBottle)
-        // Some may remain due to PID mismatch, but registry should handle concurrent access safely
-        XCTAssertGreaterThanOrEqual(processes.count, 0, "Registry should handle concurrent operations safely")
+        XCTAssertEqual(processes.count, 0, "Every registered pid should have been unregistered")
     }
 }

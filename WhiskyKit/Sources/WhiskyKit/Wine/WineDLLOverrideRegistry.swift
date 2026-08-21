@@ -40,7 +40,7 @@ public extension Wine {
     }
 
     private static let dllOverrideLogger = Logger(
-        subsystem: "com.isaacmarovitz.WhiskyKit", category: "dll-overrides"
+        subsystem: Bundle.whiskyBundleIdentifier, category: "dll-overrides"
     )
 
     /// Replaces the DLL overrides at each scope, in one import.

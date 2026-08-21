@@ -160,11 +160,16 @@ public extension Program {
     /// has its own log file, so concurrent watchers never double-report one
     /// run. The probe is deliberately one interval late; the wineserver may
     /// not be up yet at the moment of launch.
+    ///
+    /// Bounded, because "wineserver went idle" does not always arrive: a bottle
+    /// with a resident Steam client stays busy between games, and every launch
+    /// would otherwise leave a poller behind for as long as Whisky runs.
     private func watchForLateCrash(logFileURL: URL) {
         let bottle = self.bottle
         Task {
-            while true {
-                try? await Task.sleep(for: .seconds(30))
+            let deadline = ContinuousClock.now + Self.watchDuration
+            while ContinuousClock.now < deadline {
+                try? await Task.sleep(for: Self.watchInterval)
                 if logContainsCrashSignatures(logFileURL) {
                     triggerCrashClassification(logFileURL: logFileURL, exitCode: 1)
                     return
@@ -174,8 +179,20 @@ public extension Program {
                 let running = await Wine.isWineserverRunning(for: bottle)
                 if !running { return }
             }
+            Logger.wineKit.debug(
+                "Late-crash watch for \(self.name, privacy: .public) timed out with the bottle still busy"
+            )
         }
     }
+
+    /// How often the late-crash watcher scans the log.
+    private static let watchInterval: Duration = .seconds(30)
+
+    /// How long the late-crash watcher keeps scanning before standing down.
+    ///
+    /// It exists to catch a launch-time crash written after the detached stub
+    /// returned; half an hour is far past that.
+    private static let watchDuration: Duration = .seconds(30 * 60)
 
     /// Checks whether the log file contains crash signatures that warrant classification.
     ///

@@ -27,14 +27,16 @@ import os.log
 /// It supports both graceful shutdown (SIGTERM) and force kill (SIGKILL)
 /// operations with configurable timeouts.
 ///
-/// ## Usage
+/// Only an attached run is registered: a detached run's pid belongs to the
+/// `wine start` stub, which exits within the second. Those sessions are visible
+/// through ``Wine/isWineserverRunning(for:)`` instead, so an empty result here
+/// means "unknown", not "nothing is running".
 ///
 /// ```swift
-/// // Register a process when launching
-/// ProcessRegistry.shared.register(process: wineProcess, bottle: bottle, programName: "game.exe")
-///
-/// // Clean up processes when app terminates
-/// await ProcessRegistry.shared.cleanupAll(force: false)
+/// ProcessRegistry.shared.registerLaunched(
+///     pid: process.processIdentifier, bottleURL: bottle.url, programName: "game.exe"
+/// )
+/// await ProcessRegistry.shared.cleanupAll(bottles: bottles, force: false)
 /// ```
 public final class ProcessRegistry: @unchecked Sendable {
     public static let shared = ProcessRegistry()
@@ -51,7 +53,7 @@ public final class ProcessRegistry: @unchecked Sendable {
 
     /// Information about a tracked Wine process.
     public struct ProcessInfo: Hashable, Sendable {
-        /// Process ID (may be 0 if not yet launched)
+        /// Process ID of the running program.
         public let pid: Int32
         /// When the process was launched
         public let launchTime: Date
@@ -59,23 +61,17 @@ public final class ProcessRegistry: @unchecked Sendable {
         public let bottleURL: URL
         /// Name of the program/executable
         public let programName: String
-        /// Identity of the underlying `Process` object, used to disambiguate
-        /// pre-launch entries (where ``pid`` is still 0). Excluded from hashing
-        /// and equality so that updating ``pid`` does not change identity.
-        let processIdentity: ObjectIdentifier?
 
         public init(
             pid: Int32,
             launchTime: Date,
             bottleURL: URL,
-            programName: String,
-            processIdentity: ObjectIdentifier? = nil
+            programName: String
         ) {
             self.pid = pid
             self.launchTime = launchTime
             self.bottleURL = bottleURL
             self.programName = programName
-            self.processIdentity = processIdentity
         }
 
         public func hash(into hasher: inout Hasher) {
@@ -97,67 +93,40 @@ public final class ProcessRegistry: @unchecked Sendable {
 
     // MARK: - Registration
 
-    /// Registers a Wine process for tracking.
+    /// Registers a program that has already started.
     ///
-    /// This method should be called before launching a Wine process.
-    /// The PID will be updated after the process starts.
+    /// Called after the process is running, so a failed launch leaves nothing
+    /// behind and no entry ever holds a pid of 0.
     ///
     /// - Parameters:
-    ///   - process: The Process object (may not have PID yet)
-    ///   - bottle: The Bottle containing this process
-    ///   - programName: Name of the program being launched
-    public func register(process: Process, bottle: Bottle, programName: String) {
+    ///   - pid: The process ID of the running program.
+    ///   - bottleURL: URL of the bottle the program is running in.
+    ///   - programName: Name of the program being launched.
+    public func registerLaunched(pid: Int32, bottleURL: URL, programName: String) {
+        guard pid > 0 else {
+            logger.warning("Refusing to register '\(programName)' with a non-positive pid")
+            return
+        }
+
         lock.lock()
         defer { lock.unlock() }
 
         let info = ProcessInfo(
-            pid: 0, // Will be updated after launch
+            pid: pid,
             launchTime: Date(),
-            bottleURL: bottle.url,
-            programName: programName,
-            processIdentity: ObjectIdentifier(process)
+            bottleURL: bottleURL,
+            programName: programName
         )
 
-        var processes = activeProcesses[bottle.url] ?? Set()
+        var processes = activeProcesses[bottleURL] ?? Set()
         processes.insert(info)
-        activeProcesses[bottle.url] = processes
+        activeProcesses[bottleURL] = processes
 
         ensureDisplayWakeAssertionLocked()
 
-        logger.info("Registered process '\(programName)' for bottle '\(bottle.url.lastPathComponent)'")
-    }
-
-    /// Updates the PID for a registered process.
-    ///
-    /// This should be called after the process has launched and the PID is known.
-    ///
-    /// - Parameter pid: The actual process ID
-    public func updatePID(pid: Int32, for process: Process) {
-        lock.lock()
-        defer { lock.unlock() }
-
-        let identity = ObjectIdentifier(process)
-
-        for (bottleURL, processes) in activeProcesses {
-            for info in processes where info.processIdentity == identity {
-                var mutableProcesses = processes
-                mutableProcesses.remove(info)
-                let updatedInfo = ProcessInfo(
-                    pid: pid,
-                    launchTime: info.launchTime,
-                    bottleURL: info.bottleURL,
-                    programName: info.programName,
-                    processIdentity: info.processIdentity
-                )
-                mutableProcesses.insert(updatedInfo)
-                activeProcesses[bottleURL] = mutableProcesses
-
-                logger.debug("Updated PID for process '\(info.programName)' to \(pid)")
-                return
-            }
-        }
-
-        logger.warning("updatePID called for unregistered Process (pid: \(pid))")
+        logger.info(
+            "Registered '\(programName)' (PID: \(pid)) for bottle '\(bottleURL.lastPathComponent)'"
+        )
     }
 
     /// Unregisters a process by PID.

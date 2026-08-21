@@ -34,15 +34,24 @@ public enum ProcessOutput: Hashable, Sendable {
 
 public extension Process {
     /// Run the process returning a stream output
-    func runStream(name: String, fileHandle: FileHandle?) throws -> AsyncStream<ProcessOutput> {
-        let stream = makeStream(name: name, fileHandle: fileHandle)
+    ///
+    /// - Parameter emitsOutput: Whether stdout and stderr lines are yielded.
+    ///   Pass `false` for a long run whose output is only wanted in the log
+    ///   file: the stream buffer is unbounded and every chunk wakes the
+    ///   consumer. Lifecycle events, the log file and `os.log` are unaffected.
+    func runStream(
+        name: String, fileHandle: FileHandle?, emitsOutput: Bool = true
+    ) throws -> AsyncStream<ProcessOutput> {
+        let stream = makeStream(name: name, fileHandle: fileHandle, emitsOutput: emitsOutput)
         self.logProcessInfo(name: name)
         fileHandle?.writeInfo(for: self)
         try run()
         return stream
     }
 
-    private func makeStream(name: String, fileHandle: FileHandle?) -> AsyncStream<ProcessOutput> {
+    private func makeStream(
+        name: String, fileHandle: FileHandle?, emitsOutput: Bool
+    ) -> AsyncStream<ProcessOutput> {
         let pipe = Pipe()
         let errorPipe = Pipe()
         let outputLock = NSLock()
@@ -58,14 +67,16 @@ public extension Process {
                 kind: .stdout,
                 outputLock: outputLock,
                 continuation: continuation,
-                fileHandle: fileHandle
+                fileHandle: fileHandle,
+                emitsOutput: emitsOutput
             )
 
             errorPipe.fileHandleForReading.readabilityHandler = self.makeReadabilityHandler(
                 kind: .stderr,
                 outputLock: outputLock,
                 continuation: continuation,
-                fileHandle: fileHandle
+                fileHandle: fileHandle,
+                emitsOutput: emitsOutput
             )
 
             terminationHandler = self.makeProcessTerminationHandler(
@@ -75,7 +86,8 @@ public extension Process {
                     errorPipe: errorPipe,
                     outputLock: outputLock,
                     continuation: continuation,
-                    fileHandle: fileHandle
+                    fileHandle: fileHandle,
+                    emitsOutput: emitsOutput
                 )
             )
         }
@@ -93,6 +105,7 @@ public extension Process {
         let outputLock: NSLock
         let continuation: AsyncStream<ProcessOutput>.Continuation
         let fileHandle: FileHandle?
+        let emitsOutput: Bool
     }
 
     private func makeStreamTerminationCallback()
@@ -108,7 +121,8 @@ public extension Process {
         kind: StreamKind,
         outputLock: NSLock,
         continuation: AsyncStream<ProcessOutput>.Continuation,
-        fileHandle: FileHandle?
+        fileHandle: FileHandle?,
+        emitsOutput: Bool
     ) -> @Sendable (FileHandle) -> Void {
         { pipeHandle in
             // The read itself must happen under the lock: if bytes were consumed
@@ -133,7 +147,10 @@ public extension Process {
                 // installed for the remaining output.
                 return
             case let .text(line):
-                self.emit(line: line, kind: kind, continuation: continuation, fileHandle: fileHandle)
+                self.emit(
+                    line: line, kind: kind, continuation: continuation,
+                    fileHandle: fileHandle, emitsOutput: emitsOutput
+                )
             }
         }
     }
@@ -154,13 +171,15 @@ public extension Process {
                     context.pipe.fileHandleForReading,
                     kind: .stdout,
                     continuation: context.continuation,
-                    fileHandle: context.fileHandle
+                    fileHandle: context.fileHandle,
+                    emitsOutput: context.emitsOutput
                 )
                 try self.drainToLog(
                     context.errorPipe.fileHandleForReading,
                     kind: .stderr,
                     continuation: context.continuation,
-                    fileHandle: context.fileHandle
+                    fileHandle: context.fileHandle,
+                    emitsOutput: context.emitsOutput
                 )
                 try context.fileHandle?.closeWineLog()
             } catch {
@@ -177,29 +196,34 @@ public extension Process {
         _ handle: FileHandle,
         kind: StreamKind,
         continuation: AsyncStream<ProcessOutput>.Continuation,
-        fileHandle: FileHandle?
+        fileHandle: FileHandle?,
+        emitsOutput: Bool
     ) throws {
         // `readabilityHandler` may stop firing before the last bytes are consumed.
         guard let remaining = try handle.readToEnd(),
               let text = String(data: remaining, encoding: .utf8),
               !text.isEmpty
         else { return }
-        emit(line: text, kind: kind, continuation: continuation, fileHandle: fileHandle)
+        emit(
+            line: text, kind: kind, continuation: continuation,
+            fileHandle: fileHandle, emitsOutput: emitsOutput
+        )
     }
 
     private func emit(
         line: String,
         kind: StreamKind,
         continuation: AsyncStream<ProcessOutput>.Continuation,
-        fileHandle: FileHandle?
+        fileHandle: FileHandle?,
+        emitsOutput: Bool
     ) {
         switch kind {
         case .stdout:
-            continuation.yield(.message(line))
+            if emitsOutput { continuation.yield(.message(line)) }
             guard !line.isEmpty else { return }
             Logger.wineKit.info("\(line, privacy: .public)")
         case .stderr:
-            continuation.yield(.error(line))
+            if emitsOutput { continuation.yield(.error(line)) }
             guard !line.isEmpty else { return }
             Logger.wineKit.warning("\(line, privacy: .public)")
         }
@@ -230,8 +254,9 @@ public extension Process {
         if let directory = currentDirectoryURL {
             Logger.wineKit.info("Directory: `\(directory.path(percentEncoded: false))`")
         }
-        if let environment {
-            Logger.wineKit.info("Environment: \(environment)")
+        if let environment, !environment.isEmpty {
+            // Keys only, matching the log file: a value can be a secret.
+            Logger.wineKit.info("Environment (keys only): \(environment.keys.sorted().joined(separator: ", "))")
         }
     }
 }

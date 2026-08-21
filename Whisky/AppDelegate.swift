@@ -79,11 +79,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
 
             if shouldKill {
-                Wine.killBottle(bottle: bottle)
-                ProcessRegistry.shared.clearRegistry(for: bottle.url)
                 logger.info(
                     "Killing bottle '\(bottle.settings.name)' on quit (policy: \(String(describing: bottlePolicy)))"
                 )
+                // Synchronous: a scheduled task never runs, the app is already going.
+                Wine.killBottleSynchronously(bottle: bottle)
+                ProcessRegistry.shared.clearRegistry(for: bottle.url)
             }
         }
 

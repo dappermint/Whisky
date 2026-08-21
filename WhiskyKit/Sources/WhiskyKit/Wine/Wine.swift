@@ -122,11 +122,21 @@ public class Wine {
         WhiskyWineInstaller.binFolder(for: bottle.settings.runtime).appending(path: "wineserver")
     }
 
-    /// Run a process on a executable file given by the `executableURL`
-    private static func runProcess(
+    /// A process that has started, and the pid it can be signalled by.
+    struct StartedProcess {
+        let stream: AsyncStream<ProcessOutput>
+        let pid: Int32
+    }
+
+    /// Run a process on a executable file given by the `executableURL`, keeping
+    /// hold of its pid.
+    ///
+    /// Only a caller that owns the program's lifetime has any use for the pid;
+    /// everything else goes through ``runProcess(name:args:environment:executableURL:directory:fileHandle:)``.
+    private static func startProcess(
         name: String? = nil, args: [String], environment: [String: String], executableURL: URL, directory: URL? = nil,
-        fileHandle: FileHandle?
-    ) throws -> AsyncStream<ProcessOutput> {
+        fileHandle: FileHandle?, emitsOutput: Bool = true
+    ) throws -> StartedProcess {
         let process = Process()
         process.executableURL = executableURL
         process.arguments = args
@@ -134,9 +144,21 @@ public class Wine {
         process.environment = environment
         process.qualityOfService = .userInitiated
 
-        return try process.runStream(
-            name: name ?? args.joined(separator: " "), fileHandle: fileHandle
+        let stream = try process.runStream(
+            name: name ?? args.joined(separator: " "), fileHandle: fileHandle, emitsOutput: emitsOutput
         )
+        return StartedProcess(stream: stream, pid: process.processIdentifier)
+    }
+
+    /// Run a process on a executable file given by the `executableURL`
+    private static func runProcess(
+        name: String? = nil, args: [String], environment: [String: String], executableURL: URL, directory: URL? = nil,
+        fileHandle: FileHandle?
+    ) throws -> AsyncStream<ProcessOutput> {
+        try startProcess(
+            name: name, args: args, environment: environment, executableURL: executableURL,
+            directory: directory, fileHandle: fileHandle
+        ).stream
     }
 
     /// Run a `wine` process with the given arguments and environment variables returning a stream of output
@@ -326,11 +348,8 @@ public class Wine {
             try enableDXVK(bottle: bottle)
         }
 
-        // Disable App Nap if requested to prevent macOS from throttling Wine processes.
-        // Note: This token is held while the `wine start` launcher process runs. The actual
-        // game process continues as a child of wineserver after the launcher exits. Full
-        // App Nap prevention for the entire game session would require tracking wineserver,
-        // but this provides protection during the critical startup/initialization phase.
+        // An attached run holds this for the whole session. A detached run only
+        // holds it while the `wine start` stub lives, covering startup.
         let activityToken: NSObjectProtocol? = bottle.settings.disableAppNap
             ? ProcessInfo.processInfo.beginActivity(
                 options: [.userInitiated, .idleSystemSleepDisabled],
@@ -359,51 +378,17 @@ public class Wine {
             applyToDescendants: overridesApplyToDescendants
         )
 
-        // Create a run log entry to track this session
         let programName = url.lastPathComponent
-        var runLogEntry = RunLogEntry(programName: programName, logFileName: logFileURL.lastPathComponent)
+        let hasWineDebug = wineEnvironment.keys.contains("WINEDEBUG")
+        let runLogEntry = openRunLog(
+            programName: programName, logFileURL: logFileURL, at: url, bottle: bottle,
+            activeWineDebugPreset: hasWineDebug ? programSettings?.activeWineDebugPreset?.rawValue : nil
+        )
 
-        // Record the active WINEDEBUG preset if one is set
-        if wineEnvironment.keys.contains("WINEDEBUG") {
-            runLogEntry.activeWineDebugPreset = programSettings?.activeWineDebugPreset?.rawValue
-        }
-
-        // Persist the "running" state immediately
-        var runLogHistory = RunLogStore.load(for: programName, in: bottle.url)
-        let prunedEntries = runLogHistory.append(runLogEntry)
-        RunLogStore.save(runLogHistory, for: programName, in: bottle.url)
-
-        // Stamp the game record too: it is keyed by the exe's bottle-relative
-        // path where the run log is keyed by bare filename, so two Launch.exe
-        // in one bottle stop sharing a last-played.
-        GameRecordStore(bottleURL: bottle.url).recordLaunch(.pin(at: url, bottleURL: bottle.url))
-
-        // Clean up log files for pruned entries
-        for pruned in prunedEntries {
-            let prunedLogURL = Self.logsFolder.appending(path: pruned.logFileName)
-            try? FileManager.default.removeItem(at: prunedLogURL)
-        }
-
-        // Build launch arguments with optional per-program virtual desktop
-        let launchArgs: [String]
-        if let overrides = programOverrides,
-           let vdEnabled = overrides.virtualDesktopEnabled, vdEnabled {
-            let resolution = Self.resolveVirtualDesktopResolution(from: overrides)
-            let desktopName = programName.replacingOccurrences(of: " ", with: "_")
-            launchArgs = [
-                "explorer", "/desktop=\(desktopName),\(resolution)",
-                url.path(percentEncoded: false)
-            ] + args
-        } else if keepAttached {
-            // `start /unix` hands the program to wineserver and returns, and
-            // wine gives it a console of its own, so nothing it writes reaches
-            // this log. Running the exe directly keeps its output, and its exit
-            // code, on the end of the pipe we are holding. The cost is that
-            // this call now lasts as long as the program does.
-            launchArgs = [url.path(percentEncoded: false)] + args
-        } else {
-            launchArgs = ["start", "/unix", url.path(percentEncoded: false)] + args
-        }
+        let launchArgs = launchArguments(
+            for: url, args: args, programName: programName,
+            programOverrides: programOverrides, keepAttached: keepAttached
+        )
 
         // As late as possible: the bridge holds the prefix open only for a short
         // grace window before standing down, so it wants the smallest gap it can
@@ -414,8 +399,7 @@ public class Wine {
         // until the program exits, so anything waiting to read it is told now.
         onLogFile?(logFileURL)
 
-        var exitCode: Int32 = 0
-        for await output in try runProcess(
+        let started = try startProcess(
             name: programName,
             args: launchArgs,
             environment: wineEnvironment, executableURL: wineBinary(for: bottle),
@@ -423,8 +407,19 @@ public class Wine {
             // folder. Running the exe directly has to say so, or a game that
             // opens its assets by relative path finds nothing.
             directory: keepAttached ? url.deletingLastPathComponent() : nil,
-            fileHandle: fileHandle
-        ) {
+            fileHandle: fileHandle,
+            // The loop below discards output, and a session's worth of it would
+            // buffer on the way. The log file is still written line for line.
+            emitsOutput: false
+        )
+
+        let registration = RunRegistration(
+            started: started, tracked: keepAttached, bottleURL: bottle.url, programName: programName
+        )
+        defer { registration.release() }
+
+        var exitCode: Int32 = 0
+        for await output in started.stream {
             switch output {
             case .started:
                 // An attached run does not return until the program exits, so
@@ -442,7 +437,7 @@ public class Wine {
         updatedHistory.markCompleted(
             id: runLogEntry.id,
             exitCode: exitCode,
-            hasWineDebug: wineEnvironment.keys.contains("WINEDEBUG")
+            hasWineDebug: hasWineDebug
         )
         RunLogStore.save(updatedHistory, for: programName, in: bottle.url)
 
@@ -450,6 +445,81 @@ public class Wine {
     }
 
     // swiftlint:enable function_body_length
+
+    /// A run's entry in ``ProcessRegistry``, released when the run ends.
+    ///
+    /// Only an attached run is tracked: a detached run's pid is the
+    /// `wine start` stub's, gone within the second and never the game.
+    private struct RunRegistration {
+        private let pid: Int32?
+
+        init(started: StartedProcess, tracked: Bool, bottleURL: URL, programName: String) {
+            guard tracked else {
+                pid = nil
+                return
+            }
+            ProcessRegistry.shared.registerLaunched(
+                pid: started.pid, bottleURL: bottleURL, programName: programName
+            )
+            pid = started.pid
+        }
+
+        func release() {
+            guard let pid else { return }
+            ProcessRegistry.shared.unregister(pid: pid)
+        }
+    }
+
+    /// Opens this run's entry in the run log and stamps the game record.
+    ///
+    /// Persisted as "running" before the program starts, so a session that never
+    /// comes back is still visible afterwards.
+    @MainActor
+    private static func openRunLog(
+        programName: String, logFileURL: URL, at url: URL, bottle: Bottle,
+        activeWineDebugPreset: String?
+    ) -> RunLogEntry {
+        var runLogEntry = RunLogEntry(programName: programName, logFileName: logFileURL.lastPathComponent)
+        runLogEntry.activeWineDebugPreset = activeWineDebugPreset
+
+        var runLogHistory = RunLogStore.load(for: programName, in: bottle.url)
+        let prunedEntries = runLogHistory.append(runLogEntry)
+        RunLogStore.save(runLogHistory, for: programName, in: bottle.url)
+
+        // Stamp the game record too: it is keyed by the exe's bottle-relative
+        // path where the run log is keyed by bare filename, so two Launch.exe
+        // in one bottle stop sharing a last-played.
+        GameRecordStore(bottleURL: bottle.url).recordLaunch(.pin(at: url, bottleURL: bottle.url))
+
+        for pruned in prunedEntries {
+            let prunedLogURL = Self.logsFolder.appending(path: pruned.logFileName)
+            try? FileManager.default.removeItem(at: prunedLogURL)
+        }
+
+        return runLogEntry
+    }
+
+    /// The argument vector `wine` is given for this run.
+    ///
+    /// An attached run names the exe itself, keeping its output and exit code on
+    /// the pipe this process holds; `start /unix` gives up both.
+    private static func launchArguments(
+        for url: URL, args: [String], programName: String,
+        programOverrides: ProgramOverrides?, keepAttached: Bool
+    ) -> [String] {
+        if let overrides = programOverrides, overrides.virtualDesktopEnabled == true {
+            let resolution = Self.resolveVirtualDesktopResolution(from: overrides)
+            let desktopName = programName.replacingOccurrences(of: " ", with: "_")
+            return [
+                "explorer", "/desktop=\(desktopName),\(resolution)",
+                url.path(percentEncoded: false)
+            ] + args
+        }
+        if keepAttached {
+            return [url.path(percentEncoded: false)] + args
+        }
+        return ["start", "/unix", url.path(percentEncoded: false)] + args
+    }
 
     /// Resolves the virtual desktop resolution string from per-program overrides.
     ///
@@ -709,6 +779,51 @@ public class Wine {
             } catch {
                 Logger.wineKit.error("Failed to kill bottle '\(bottle.settings.name)': \(error.localizedDescription)")
             }
+        }
+    }
+
+    /// Kills every process in a bottle and does not return until they are gone.
+    ///
+    /// ``killBottle(bottle:)`` only schedules the kill, so at
+    /// `applicationWillTerminate` the app is gone before wineserver is ever
+    /// spawned. Bounded by `timeout` so a wedged wineserver cannot block quit.
+    ///
+    /// - Parameters:
+    ///   - bottle: The ``Bottle`` whose processes should be terminated.
+    ///   - timeout: How long to wait for `wineserver -k` before giving up on it.
+    @MainActor
+    public static func killBottleSynchronously(bottle: Bottle, timeout: TimeInterval = 3) {
+        // Our own children first, before wineserver pulls the prefix out.
+        for tracked in ProcessRegistry.shared.getProcesses(for: bottle) where tracked.pid > 0 {
+            kill(tracked.pid, SIGTERM)
+        }
+
+        let process = Process()
+        process.executableURL = wineserverBinary(for: bottle)
+        process.arguments = ["-k"]
+        process.environment = constructWineEnvironment(for: bottle)
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+
+        do {
+            try process.run()
+        } catch {
+            Logger.wineKit.error(
+                "Failed to kill bottle '\(bottle.settings.name)' on quit: \(error.localizedDescription)"
+            )
+            return
+        }
+
+        let deadline = Date().addingTimeInterval(timeout)
+        while process.isRunning, Date() < deadline {
+            usleep(20_000)
+        }
+
+        if process.isRunning {
+            process.terminate()
+            Logger.wineKit.warning(
+                "wineserver -k for '\(bottle.settings.name)' did not finish within \(timeout, privacy: .public)s"
+            )
         }
     }
 

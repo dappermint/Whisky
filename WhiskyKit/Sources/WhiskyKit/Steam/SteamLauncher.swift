@@ -62,11 +62,6 @@ public enum SteamLauncher {
             throw SteamLaunchError.steamNotInstalled
         }
 
-        if record {
-            GameRouting().record(appId: appId, bottleURL: bottle.url)
-            GameRecordStore(bottleURL: bottle.url).recordLaunch(.steam(appID: appId))
-        }
-
         let installURL = installURL ?? SteamLibrary.enumerate(bottleURL: bottle.url)
             .first { $0.appId == appId }?.installURL
         let plan = LaunchResolver.plan(
@@ -78,6 +73,7 @@ public enum SteamLauncher {
         return Task {
             await Wine.syncAudioRegistry(bottle: bottle)
             await Wine.syncWindowsVersion(bottle: bottle)
+
             _ = try? await Wine.runProgram(
                 at: steamExe, args: ["-applaunch", String(appId)], bottle: bottle,
                 programOverrides: plan.overrides,
@@ -88,7 +84,14 @@ public enum SteamLauncher {
                 // client is what puts the game's output in the run's log. This
                 // task holds the call for the whole session, which is what the
                 // caller already expects of it.
-                keepAttached: true
+                keepAttached: true,
+                // Recorded once the client is up: a launch that never happened
+                // used to leave a routing entry and a last-played behind it.
+                onStarted: {
+                    guard record else { return }
+                    GameRouting().record(appId: appId, bottleURL: bottle.url)
+                    GameRecordStore(bottleURL: bottle.url).recordLaunch(.steam(appID: appId))
+                }
             )
         }
     }
