@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- DLSS reaches games that use NVIDIA Streamline, which needed one more thing
+  than deploying Apple's NVAPI. Wine resolves a builtin by the name in the PE
+  export directory rather than the filename, and Apple's NVAPI ships as
+  nvapi64.dll while exporting as nvapi.dll, so the loader looked for a builtin
+  it could not find, loaded the PE without its unix half, and DllMain failed.
+  Nothing surfaced that: Streamline asked for a GPU, got nothing, and offered no
+  DLSS with no error to explain it. The same file is now installed under both
+  names, and a runtime set up before this is repaired rather than skipped.
 - Steam's helper process survives a game launch with MetalFX enabled. The entry
   that keeps Chromium away from NVIDIA's API was only written for a direct run,
   and a Steam launch takes the other path, where the same sync replaces each key
