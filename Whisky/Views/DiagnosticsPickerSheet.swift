@@ -21,10 +21,13 @@ import WhiskyKit
 
 // MARK: - Crash Diagnosis Banner State
 
-struct CrashDiagnosisBannerState {
+struct CrashDiagnosisBannerState: Identifiable {
     let diagnosis: CrashDiagnosis
     let programName: String
+    let programPath: String
     let logFileURL: URL
+
+    var id: String { programPath + logFileURL.absoluteString }
 }
 
 // MARK: - Diagnostics Picker Sheet
@@ -94,7 +97,8 @@ struct DiagnosticsPickerSheet: View {
                     logText: resultLogText,
                     programName: program.name,
                     bottleName: selectedBottle?.settings.name ?? "",
-                    timestamp: Date()
+                    timestamp: Date(),
+                    applyBottle: selectedBottle
                 )
                 .frame(minWidth: 600, minHeight: 400)
             }

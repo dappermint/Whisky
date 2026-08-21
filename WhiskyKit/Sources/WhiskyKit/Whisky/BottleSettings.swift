@@ -811,8 +811,13 @@ public struct BottleSettings: Codable, Equatable {
         // Backend-conditional env vars and DLL overrides
         switch resolvedBackend {
         case .d3dMetal, .recommended:
-            // D3DMetal is Wine's default on macOS -- no special env vars needed
-            break
+            // Wine answers KMTQAITYPE_WDDM_2_7_CAPS, the query behind "hardware
+            // accelerated GPU scheduling", only when this says d3dmetal, and
+            // returns STATUS_NOT_IMPLEMENTED otherwise. Nothing set it, so a
+            // game asking whether scheduling is available was told it is not.
+            // The only other reader wants the value "wined3d" alongside
+            // CX_LIBVULKAN, so this is inert for it.
+            builder.set("CX_ACTIVE_GRAPHICS_BACKEND", "d3dmetal", layer: .bottleManaged)
 
         case .dxvk:
             // DXVK: DLL overrides + env vars
@@ -890,29 +895,19 @@ public struct BottleSettings: Codable, Equatable {
             builder.set("MTL_DEBUG_LAYER", "1", layer: .bottleManaged)
         }
 
-        // macOS Sequoia compatibility mode (whisky-app/whisky#1310, #1372)
-        // Applies additional fixes for graphics and launcher issues on macOS 15.x
-        // Since macOS 15 is now the minimum deployment target, we only check the setting
-        if sequoiaCompatMode {
-            // Disable problematic Metal shader validation on Sequoia
-            // This helps fix graphics corruption issues (whisky-app/whisky#1310)
-            builder.set("MTL_DEBUG_LAYER", "0", layer: .bottleManaged)
-
-            // Stability improvements for D3DMetal on macOS 15.x
-            builder.set("D3DM_VALIDATION", "0", layer: .bottleManaged)
-
-            // Help with Steam and launcher compatibility (whisky-app/whisky#1307, #1372)
-            // Disable Wine's fsync which has issues on Sequoia
-            builder.set("WINEFSYNC", "0", layer: .bottleManaged)
-        }
+        // The old sequoiaCompatMode block is gone: all three values it set
+        // (MTL_DEBUG_LAYER, D3DM_VALIDATION, WINEFSYNC) are platform-layer
+        // fixes on every supported macOS, so the toggle's off position changed
+        // nothing and its on position only hid the provenance.
 
         // Performance preset handling (whisky-app/whisky#1361 - FPS regression fix)
         populatePerformancePreset(builder: &builder)
 
-        // Shader cache control
+        // Shader cache control. DXVK_STATE_CACHE is the variable DXVK actually
+        // reads; the previous pair (a compile-thread throttle and an NVIDIA GL
+        // driver variable) changed nothing on this platform.
         if !shaderCacheEnabled {
-            builder.set("DXVK_SHADER_COMPILE_THREADS", "1", layer: .bottleManaged)
-            builder.set("__GL_SHADER_DISK_CACHE", "0", layer: .bottleManaged)
+            builder.set("DXVK_STATE_CACHE", "0", layer: .bottleManaged)
         }
 
         // Force D3D11 mode - helps with compatibility (whisky-app/whisky#1361)
@@ -977,7 +972,7 @@ public struct BottleSettings: Codable, Equatable {
 
         // Apply GPU spoofing if enabled
         if gpuSpoofing {
-            let gpuEnv = GPUDetection.spoofWithVendor(gpuVendor)
+            let gpuEnv = spoofEnvironment()
             let launcherEnv = detectedLauncher?.environmentOverrides() ?? [:]
             // Don't override values already set by launcher preset (original behavior:
             // merge with "current.isEmpty ? new : current")
@@ -998,15 +993,27 @@ public struct BottleSettings: Codable, Equatable {
             builder.set("WINHTTP_RECEIVE_TIMEOUT", String(networkTimeout * 2), layer: .launcherManaged)
         }
 
-        // Connection pooling fixes for download stalls (whisky-app/whisky#1148, #1072, #1176)
-        builder.set("WINE_MAX_CONNECTIONS_PER_SERVER", "10", layer: .launcherManaged)
-        builder.set("WINE_FORCE_HTTP11", "1", layer: .launcherManaged) // HTTP/2 issues in Wine
-
-        // SSL/TLS compatibility for launchers
-        builder.set("WINE_ENABLE_SSL", "1", layer: .launcherManaged)
-        builder.set("WINE_SSL_VERSION_MIN", "TLS1.2", layer: .launcherManaged)
+        // The connection-pooling and SSL variables that used to be set here
+        // (WINE_MAX_CONNECTIONS_PER_SERVER and friends) exist in no Wine or
+        // WineCX source; nothing ever read them.
 
         return launcherDLLOverrides
+    }
+
+    /// The GPU spoof environment with feature-level keys resolved against the
+    /// bottle's own settings.
+    ///
+    /// Feature level is one resolved decision: force-D3D11 already pinned 12_0
+    /// off in the bottle layer, and the spoof's layer wins, so leaving these
+    /// keys in would silently undo the setting that sits beside the spoof in
+    /// the same screen.
+    private func spoofEnvironment() -> [String: String] {
+        var gpuEnv = GPUDetection.spoofWithVendor(gpuVendor)
+        if forceD3D11 {
+            gpuEnv.removeValue(forKey: "D3DM_FEATURE_LEVEL_12_0")
+            gpuEnv.removeValue(forKey: "D3DM_FEATURE_LEVEL_12_1")
+        }
+        return gpuEnv
     }
 
     /// Populates the ``EnvironmentLayer/bottleManaged`` layer with controller/input compatibility fixes.
@@ -1068,8 +1075,6 @@ public struct BottleSettings: Codable, Equatable {
 
         case .performance:
             // Performance mode - prioritize FPS over visual quality (whisky-app/whisky#1361 fix)
-            // Reduce D3DMetal shader quality for better performance
-            builder.set("D3DM_FAST_SHADER_COMPILE", "1", layer: .bottleManaged)
             // Disable extra validation that can slow down rendering
             builder.set("D3DM_VALIDATION", "0", layer: .bottleManaged)
             builder.set("MTL_DEBUG_LAYER", "0", layer: .bottleManaged)
@@ -1086,8 +1091,6 @@ public struct BottleSettings: Codable, Equatable {
             // Quality mode - prioritize visuals over performance
             // Enable shader optimizations
             builder.set("DXVK_SHADER_OPT_LEVEL", "2", layer: .bottleManaged)
-            // Disable fast shader compile for better quality
-            builder.set("D3DM_FAST_SHADER_COMPILE", "0", layer: .bottleManaged)
 
         case .unity:
             // Unity games optimization (whisky-app/whisky#1313, #1312 - il2cpp fix)
@@ -1103,8 +1106,6 @@ public struct BottleSettings: Codable, Equatable {
                 builder.set("D3DM_FORCE_D3D11", "1", layer: .bottleManaged)
             }
 
-            // Disable features that can cause issues with Unity's IL2CPP runtime
-            builder.set("WINE_HEAP_REUSE", "0", layer: .bottleManaged)
             // Help with thread management for Unity's job system
             builder.set("WINE_DISABLE_NTDLL_THREAD_REGS", "1", layer: .bottleManaged)
 

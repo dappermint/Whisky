@@ -12502,6 +12502,12 @@
             "value" : "Audiogerät getrennt"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio device disconnected"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12636,6 +12642,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Niedrige Abtastrate erkannt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low sample rate detected"
           }
         },
         "es" : {
@@ -12774,6 +12786,12 @@
             "value" : "Audiogerät wieder verbunden"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio device reconnected"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12908,6 +12926,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Audiogerät wechseln"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch audio device"
           }
         },
         "es" : {
@@ -13046,6 +13070,12 @@
             "value" : "Standard"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Default"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13180,6 +13210,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Keine Audiogeräte gefunden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No audio devices found"
           }
         },
         "es" : {
@@ -13318,6 +13354,12 @@
             "value" : "Audiogeräte"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio Devices"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13449,6 +13491,12 @@
           }
         },
         "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        },
+        "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Details"
@@ -13590,6 +13638,12 @@
             "value" : "Korrektur"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fix"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13724,6 +13778,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Technische Details"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Technical Details"
           }
         },
         "es" : {
@@ -13862,6 +13922,12 @@
             "value" : "Ergebnisse"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Findings"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13996,6 +14062,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verlauf löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear History"
           }
         },
         "es" : {
@@ -14134,6 +14206,12 @@
             "value" : "Kein Geräteverlauf"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No device history"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14268,6 +14346,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Geräteverlauf"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Device History"
           }
         },
         "es" : {
@@ -14406,6 +14490,12 @@
             "value" : "Defekt"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Broken"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14542,6 +14632,12 @@
             "value" : "Eingeschränkt"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Degraded"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14673,6 +14769,12 @@
           }
         },
         "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "OK"
@@ -14814,6 +14916,12 @@
             "value" : "Unbekannt"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14948,6 +15056,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Knistern"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crackling"
           }
         },
         "es" : {
@@ -15086,6 +15200,12 @@
             "value" : "Ton nur in Menüs"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sound only in menus"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -15220,6 +15340,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kein Ton"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No sound"
           }
         },
         "es" : {
@@ -15358,6 +15484,12 @@
             "value" : "Stottern"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stuttering"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -15492,6 +15624,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Falsches Ausgabegerät"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wrong output device"
           }
         },
         "es" : {
@@ -15630,6 +15768,12 @@
             "value" : "Zuletzt getestet"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last tested"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -15764,6 +15908,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aktualisieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh"
           }
         },
         "es" : {
@@ -15902,6 +16052,12 @@
             "value" : "Test läuft…"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Test running…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -16036,6 +16192,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Testton abspielen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play Test Tone"
           }
         },
         "es" : {
@@ -16174,6 +16336,12 @@
             "value" : "Hast du den Testton gehört?"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Did you hear the tone?"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -16308,6 +16476,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wine-Audio testen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Test Wine Audio"
           }
         },
         "es" : {
@@ -16446,6 +16620,12 @@
             "value" : "Korrektur anwenden"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apply Fix"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -16580,6 +16760,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hat das das Problem behoben?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Did that fix the problem?"
           }
         },
         "es" : {
@@ -16718,6 +16904,12 @@
             "value" : "Das Problem ließ sich nicht automatisch beheben."
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The problem could not be fixed automatically."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -16852,6 +17044,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nächste Schritte"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next steps"
           }
         },
         "es" : {
@@ -16990,6 +17188,12 @@
             "value" : "Diagnose exportieren"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Diagnostics"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -17124,6 +17328,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Keine Audioprobleme gefunden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No audio problems found"
           }
         },
         "es" : {
@@ -17262,6 +17472,12 @@
             "value" : "Nein, immer noch fehlerhaft"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No, still broken"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -17396,6 +17612,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Erweiterte Einstellungen öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Advanced Settings"
           }
         },
         "es" : {
@@ -17534,6 +17756,12 @@
             "value" : "Ton-Einstellungen öffnen"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Sound Settings"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -17668,6 +17896,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wähle das passende Symptom aus"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick the symptom that matches"
           }
         },
         "es" : {
@@ -17806,6 +18040,12 @@
             "value" : "Audioproblem behoben"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio problem resolved"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -17940,6 +18180,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ergebnisse"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Results"
           }
         },
         "es" : {
@@ -18078,6 +18324,12 @@
             "value" : "Prüfungen laufen…"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Running checks…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -18212,6 +18464,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Korrektur überspringen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip Fix"
           }
         },
         "es" : {
@@ -18350,6 +18608,12 @@
             "value" : "Vorgeschlagene Korrektur"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggested Fix"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -18484,6 +18748,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Erneut testen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Test Again"
           }
         },
         "es" : {
@@ -18622,6 +18892,12 @@
             "value" : "Audio-Fehlerbehebung"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio Troubleshooting"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -18758,6 +19034,12 @@
             "value" : "Korrektur ausprobieren"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Fix"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -18892,6 +19174,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ja, behoben"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yes, fixed"
           }
         },
         "es" : {
@@ -27419,6 +27707,12 @@
             "value" : "Erweitert"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Advanced"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -27553,6 +27847,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Systemgerät folgen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Follow System Device"
           }
         },
         "es" : {
@@ -27691,6 +27991,12 @@
             "value" : "Gerätewahl"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Device Selection"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -27825,6 +28131,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Festgelegtes Gerät"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pinned Device"
           }
         },
         "es" : {
@@ -27963,6 +28275,12 @@
             "value" : "Audiotreiber"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio Driver"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -28097,6 +28415,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Automatisch"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatic"
           }
         },
         "es" : {
@@ -28235,6 +28559,12 @@
             "value" : "Deaktiviert"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disabled"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -28369,6 +28699,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Latenz"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latency"
           }
         },
         "es" : {
@@ -28507,6 +28843,12 @@
             "value" : "Standard"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Default"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -28641,6 +28983,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Niedrig"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low"
           }
         },
         "es" : {
@@ -28779,6 +29127,12 @@
             "value" : "Stabil"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stable"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -28913,6 +29267,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Audiostatus zurücksetzen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Audio State"
           }
         },
         "es" : {
@@ -29051,6 +29411,12 @@
             "value" : "Den gesicherten Audiostatus dieser Flasche zurücksetzen?"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset this bottle's saved audio state?"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -29185,6 +29551,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Einfach"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simple"
           }
         },
         "es" : {
@@ -38550,6 +38922,12 @@
           }
         },
         "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio"
+          }
+        },
+        "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Audio"
@@ -57020,6 +57398,366 @@
         }
       }
     },
+    "config.allowBackgroundEvents" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow Background Events"
+          }
+        }
+      }
+    },
+    "config.controllerCompat" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controller Compatibility Mode"
+          }
+        }
+      }
+    },
+    "config.disableControllerMapping" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disable Controller Mapping"
+          }
+        }
+      }
+    },
+    "config.disableHIDAPI" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disable HIDAPI"
+          }
+        }
+      }
+    },
+    "config.graphics.backend" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Graphics Backend"
+          }
+        }
+      }
+    },
+    "config.graphics.nextLaunch" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Takes effect the next time this program launches."
+          }
+        }
+      }
+    },
+    "config.useButtonLabels" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Button Labels"
+          }
+        }
+      }
+    },
+    "console.clearConsole" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear Console"
+          }
+        }
+      }
+    },
+    "console.deleteOldLogs" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Old Logs"
+          }
+        }
+      }
+    },
+    "console.deleteRun" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Run"
+          }
+        }
+      }
+    },
+    "console.lastRun" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last run"
+          }
+        }
+      }
+    },
+    "console.log.copy" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Log"
+          }
+        }
+      }
+    },
+    "console.log.export" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Log"
+          }
+        }
+      }
+    },
+    "console.log.liveIndicator" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Live"
+          }
+        }
+      }
+    },
+    "console.noRuns" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No runs yet"
+          }
+        }
+      }
+    },
+    "console.noRuns.detail" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Run this program and its output shows up here."
+          }
+        }
+      }
+    },
+    "console.openLogsFolder" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Logs Folder"
+          }
+        }
+      }
+    },
+    "console.previousRuns" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous runs"
+          }
+        }
+      }
+    },
+    "console.running" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Running"
+          }
+        }
+      }
+    },
+    "console.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Console"
+          }
+        }
+      }
+    },
+    "program.graphics.overridden" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This program overrides the bottle's graphics backend."
+          }
+        }
+      }
+    },
+    "program.overrides.display" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Display"
+          }
+        }
+      }
+    },
+    "program.overrides.dll" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DLL Overrides"
+          }
+        }
+      }
+    },
+    "program.overrides.graphics" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Graphics"
+          }
+        }
+      }
+    },
+    "program.overrides.inherited" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inherited from the bottle"
+          }
+        }
+      }
+    },
+    "program.overrides.input" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Input"
+          }
+        }
+      }
+    },
+    "program.overrides.performance" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Performance"
+          }
+        }
+      }
+    },
+    "program.overrides.reset" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Overrides"
+          }
+        }
+      }
+    },
+    "program.overrides.reset.confirm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset this program's overrides so it follows the bottle again?"
+          }
+        }
+      }
+    },
+    "program.overrides.sync" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync"
+          }
+        }
+      }
+    },
+    "program.overrides.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Program Overrides"
+          }
+        }
+      }
+    },
+    "program.overrides.winetricks.none" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Winetricks verbs installed in this bottle."
+          }
+        }
+      }
+    },
+    "program.overrides.winetricks.subtitle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbs installed in the bottle this program runs in."
+          }
+        }
+      }
+    },
+    "program.overrides.winetricks.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Winetricks"
+          }
+        }
+      }
+    },
+    "program.overrides.winetricks.usedByProgram" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Used by this program"
+          }
+        }
+      }
+    },
+    "programOverride.display.info" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overrides the bottle's display settings for this program only."
+          }
+        }
+      }
+    },
     "main.createFirst" : {
       "localizations" : {
         "ar" : {
@@ -67526,6 +68264,56 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "所有程式"
+          }
+        }
+      }
+    },
+    "remediation.applied" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applied: %@"
+          }
+        }
+      }
+    },
+    "remediation.installFailed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ did not install. The log has the details."
+          }
+        }
+      }
+    },
+    "remediation.installed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ installed."
+          }
+        }
+      }
+    },
+    "remediation.installing" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installing %@. This can take a few minutes."
+          }
+        }
+      }
+    },
+    "remediation.unsupported" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This suggestion cannot be applied automatically."
           }
         }
       }
@@ -81451,6 +82239,26 @@
         }
       }
     },
+    "troubleshooting.branch.pathChangedGeneric" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The troubleshooting path has been updated based on the check results."
+          }
+        }
+      }
+    },
+    "troubleshooting.branch.pathChangedReason %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Path updated: %@"
+          }
+        }
+      }
+    },
     "troubleshooting.check.alreadyConfigured" : {
       "localizations" : {
         "ar" : {
@@ -82445,6 +83253,26 @@
         }
       }
     },
+    "troubleshooting.escalation.clipboardReady" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clipboard (ready to paste)"
+          }
+        }
+      }
+    },
+    "troubleshooting.escalation.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automated troubleshooting was unable to resolve the issue. Here are some next steps."
+          }
+        }
+      }
+    },
     "troubleshooting.escalation.enhancedDiag" : {
       "localizations" : {
         "ar" : {
@@ -82583,6 +83411,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "執行強化診斷"
+          }
+        }
+      }
+    },
+    "troubleshooting.escalation.enhancedDiag.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable verbose Wine logging (WINEDEBUG) for this program's next run. The detailed log helps diagnose the issue."
           }
         }
       }
@@ -82729,6 +83567,36 @@
         }
       }
     },
+    "troubleshooting.escalation.export.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy a summary of findings, fix history, and environment details to the clipboard for sharing."
+          }
+        }
+      }
+    },
+    "troubleshooting.escalation.exportedTo %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exported to: %@"
+          }
+        }
+      }
+    },
+    "troubleshooting.escalation.noPreviousSteps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No previous steps available"
+          }
+        }
+      }
+    },
     "troubleshooting.escalation.retry" : {
       "localizations" : {
         "ar" : {
@@ -82867,6 +83735,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "從指定步驟重試…"
+          }
+        }
+      }
+    },
+    "troubleshooting.escalation.retry.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go back to a previous step and try a different path."
+          }
+        }
+      }
+    },
+    "troubleshooting.escalation.stepNumber %d" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step %d:"
           }
         }
       }
@@ -83013,6 +83901,16 @@
         }
       }
     },
+    "troubleshooting.escalation.supportDraft.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy a pre-filled summary to the clipboard for pasting into a GitHub issue."
+          }
+        }
+      }
+    },
     "troubleshooting.escalation.title" : {
       "localizations" : {
         "ar" : {
@@ -83151,6 +84049,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "無法自動解決"
+          }
+        }
+      }
+    },
+    "troubleshooting.escalation.whatWasTried" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What was tried:"
           }
         }
       }
@@ -83439,6 +84347,16 @@
         }
       }
     },
+    "troubleshooting.fix.confirmChange %@ %@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This will change %1$@ from \"%2$@\" to \"%3$@\"."
+          }
+        }
+      }
+    },
     "troubleshooting.fix.confirmHighImpact" : {
       "localizations" : {
         "ar" : {
@@ -83577,6 +84495,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "這是影響較大的變更。確定要繼續嗎？"
+          }
+        }
+      }
+    },
+    "troubleshooting.fix.confirmTitle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm Fix"
           }
         }
       }
@@ -84145,6 +85073,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "此變更可以還原"
+          }
+        }
+      }
+    },
+    "troubleshooting.fix.scope %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scope: %@"
           }
         }
       }
@@ -84855,6 +85793,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "匯出工作階段報告"
+          }
+        }
+      }
+    },
+    "troubleshooting.history.fixesAttempted" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fixes attempted:"
           }
         }
       }
@@ -86137,6 +87085,16 @@
         }
       }
     },
+    "troubleshooting.resolved.changesApplied" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changes applied:"
+          }
+        }
+      }
+    },
     "troubleshooting.resolved.description" : {
       "localizations" : {
         "ar" : {
@@ -86701,6 +87659,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "捨棄"
+          }
+        }
+      }
+    },
+    "troubleshooting.resume.lastUpdated" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last updated:"
           }
         }
       }
@@ -87557,6 +88525,16 @@
         }
       }
     },
+    "troubleshooting.symptom.audio.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No sound, crackling, popping, or wrong output device"
+          }
+        }
+      }
+    },
     "troubleshooting.symptom.controllerInput" : {
       "localizations" : {
         "ar" : {
@@ -87695,6 +88673,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "控制器/輸入問題"
+          }
+        }
+      }
+    },
+    "troubleshooting.symptom.controllerInput.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controller not detected or buttons mapped incorrectly"
           }
         }
       }
@@ -87841,6 +88829,16 @@
         }
       }
     },
+    "troubleshooting.symptom.graphics.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Black screen, flickering, visual artifacts, or low frame rate"
+          }
+        }
+      }
+    },
     "troubleshooting.symptom.installDependencies" : {
       "localizations" : {
         "ar" : {
@@ -87979,6 +88977,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "安裝/相依項目問題"
+          }
+        }
+      }
+    },
+    "troubleshooting.symptom.installDependencies.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Missing .NET, VC++, DirectX, or Winetricks components"
           }
         }
       }
@@ -88125,6 +89133,16 @@
         }
       }
     },
+    "troubleshooting.symptom.launchCrash.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Program fails to start or crashes within seconds"
+          }
+        }
+      }
+    },
     "troubleshooting.symptom.launcherIssues" : {
       "localizations" : {
         "ar" : {
@@ -88263,6 +89281,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "啟動器問題"
+          }
+        }
+      }
+    },
+    "troubleshooting.symptom.launcherIssues.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam, EA App, Epic Games, or Rockstar launcher problems"
           }
         }
       }
@@ -88409,6 +89437,16 @@
         }
       }
     },
+    "troubleshooting.symptom.networkDownload.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download timeouts, Steam stalls, or connection failures"
+          }
+        }
+      }
+    },
     "troubleshooting.symptom.other" : {
       "localizations" : {
         "ar" : {
@@ -88547,6 +89585,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "其他"
+          }
+        }
+      }
+    },
+    "troubleshooting.symptom.other.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe your issue and we will try to help"
           }
         }
       }
@@ -88693,6 +89741,16 @@
         }
       }
     },
+    "troubleshooting.symptom.performanceStability.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stuttering, frame drops, or hangs after playing for a while"
+          }
+        }
+      }
+    },
     "troubleshooting.symptom.title" : {
       "localizations" : {
         "ar" : {
@@ -88831,6 +89889,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "你遇到的是什麼問題？"
+          }
+        }
+      }
+    },
+    "troubleshooting.target.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select a bottle and optionally a program to troubleshoot."
+          }
+        }
+      }
+    },
+    "troubleshooting.target.noProgram" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No specific program (bottle-level)"
+          }
+        }
+      }
+    },
+    "troubleshooting.target.selectBottle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select a bottle"
           }
         }
       }
@@ -89541,6 +90629,56 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "這項修正解決問題了嗎？"
+          }
+        }
+      }
+    },
+    "troubleshooting.verify.undoLast" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo last fix"
+          }
+        }
+      }
+    },
+    "troubleshooting.wizard.close" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        }
+      }
+    },
+    "troubleshooting.wizard.runningChecks" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Running checks…"
+          }
+        }
+      }
+    },
+    "troubleshooting.wizard.skip" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip"
+          }
+        }
+      }
+    },
+    "troubleshooting.wizard.step %d" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step %d"
           }
         }
       }

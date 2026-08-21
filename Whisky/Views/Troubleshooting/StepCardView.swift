@@ -119,7 +119,7 @@ extension StepCardView {
         HStack(spacing: 8) {
             ProgressView()
                 .controlSize(.small)
-            Text("Running check\u{2026}")
+            Text("troubleshooting.check.running")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

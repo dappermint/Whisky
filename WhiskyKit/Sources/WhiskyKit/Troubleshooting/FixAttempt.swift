@@ -38,18 +38,25 @@ public struct FixAttempt: Codable, Sendable {
     /// The current result of this fix attempt.
     public var result: FixResult
 
+    /// The flow node params the fix was applied with. Parameterized fixes
+    /// (registry writes) need these back to undo, since the fixId alone
+    /// does not identify the target.
+    public var params: [String: String]?
+
     public init(
         fixId: String,
         timestamp: Date = Date(),
         beforeValue: String? = nil,
         afterValue: String? = nil,
-        result: FixResult = .pending
+        result: FixResult = .pending,
+        params: [String: String]? = nil
     ) {
         self.fixId = fixId
         self.timestamp = timestamp
         self.beforeValue = beforeValue
         self.afterValue = afterValue
         self.result = result
+        self.params = params
     }
 }
 

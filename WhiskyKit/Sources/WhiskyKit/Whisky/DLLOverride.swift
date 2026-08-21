@@ -146,13 +146,23 @@ public struct DLLOverrideResolver: Sendable {
 
     /// The standard DXVK DLL override preset.
     ///
-    /// Applies `n,b` (native then builtin) to the four core DXVK DLLs.
+    /// Applies `n,b` (native then builtin) to the four core DXVK DLLs, and
+    /// turns `d3d12` off.
+    ///
+    /// DXVK ships no `d3d12`, so leaving it unmentioned let it fall through to
+    /// the builtin, which is D3DMetal. A DX12 game then took its adapter from
+    /// DXVK's DXGI and handed it to D3DMetal's `D3D12CreateDevice`, which
+    /// dereferenced a vtable slot on an object it had not created and jumped to
+    /// null. Disabling it keeps the bottle on one implementation, so such a game
+    /// falls back to D3D11 instead of half-landing on the other one. A bottle or
+    /// program set to D3DMetal resets this to builtin and gets real DX12.
     public static var dxvkPreset: [DLLOverrideEntry] {
         [
             DLLOverrideEntry(dllName: "dxgi", mode: .nativeThenBuiltin),
             DLLOverrideEntry(dllName: "d3d9", mode: .nativeThenBuiltin),
             DLLOverrideEntry(dllName: "d3d10core", mode: .nativeThenBuiltin),
-            DLLOverrideEntry(dllName: "d3d11", mode: .nativeThenBuiltin)
+            DLLOverrideEntry(dllName: "d3d11", mode: .nativeThenBuiltin),
+            DLLOverrideEntry(dllName: "d3d12", mode: .disabled)
         ]
     }
 
@@ -169,7 +179,10 @@ public struct DLLOverrideResolver: Sendable {
             DLLOverrideEntry(dllName: "dxgi", mode: .nativeThenBuiltin),
             DLLOverrideEntry(dllName: "d3d10core", mode: .nativeThenBuiltin),
             DLLOverrideEntry(dllName: "d3d11", mode: .nativeThenBuiltin),
-            DLLOverrideEntry(dllName: "winemetal", mode: .builtin)
+            DLLOverrideEntry(dllName: "winemetal", mode: .builtin),
+            // off for the same reason as DXVK: DXMT has no d3d12 either, and the
+            // builtin behind it belongs to a different translation layer
+            DLLOverrideEntry(dllName: "d3d12", mode: .disabled)
         ]
     }
 
