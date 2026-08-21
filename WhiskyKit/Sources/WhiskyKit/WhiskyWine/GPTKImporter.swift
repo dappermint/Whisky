@@ -111,6 +111,18 @@ public enum GPTKImporter {
     /// Its unix half, sharing the payload's dylib like every other bridge.
     static let nvapiBridgeUnixName = "nvapi64.so"
 
+    /// The name Wine's loader resolves the builtin under. `find_builtin_dll()`
+    /// matches on the PE export directory's name rather than the filename, and
+    /// Apple's NVAPI exports as `nvapi.dll`, so a tree holding only `nvapi64.dll`
+    /// makes the loader log `cannot find builtin library` and `DllMain` fail with
+    /// `ERROR_DLL_INIT_FAILED`. Games still load it as `nvapi64.dll`; this is the
+    /// name the loader looks up behind that. The MetalFX bridge avoids the same
+    /// trap by installing under its export name outright, which NVAPI cannot do:
+    /// the filename is what games ask for.
+    static let nvapiBridgeExportName = "nvapi.dll"
+    /// The unix half under the export name, for the same reason.
+    static let nvapiBridgeExportUnixName = "nvapi.so"
+
     /// Enough bytes to hold the winebuild marker at offset 0x40.
     static let builtinMarkerMinimumLength = 0x50
 
