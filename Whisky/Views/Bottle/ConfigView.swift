@@ -32,6 +32,9 @@ struct ConfigView: View {
     @State private var windowsVersion: WinVersion = .win10
     @State private var retinaModeState: RetinaModeState = .unknown
     @State private var dpiConfig: Int = 96
+    /// Set when a prefix read ran out of time rather than failing outright.
+    /// Something else is holding the prefix, and the rows cannot say that alone.
+    @State private var prefixBusy = false
     @State private var winVersionLoadingState: LoadingState = .loading
     @State private var buildVersionLoadingState: LoadingState = .loading
     @State private var retinaModeLoadingState: LoadingState = .loading
@@ -100,6 +103,7 @@ struct ConfigView: View {
                 retinaModeLoadingState: $retinaModeLoadingState,
                 dpiConfigLoadingState: $dpiConfigLoadingState,
                 dpiSheetPresented: $dpiSheetPresented,
+                prefixBusy: prefixBusy,
                 onRetryWindowsVersion: loadWindowsVersion,
                 onRetryBuildVersion: loadBuildName,
                 onRetryRetinaMode: loadRetinaMode,
@@ -356,9 +360,11 @@ extension ConfigView {
                 }
                 windowsVersion = reported
                 bottle.settings.windowsVersion = reported
+                prefixBusy = false
                 winVersionLoadingState = .success
             } catch {
                 logger.error("Failed to read the prefix Windows version: \(error.localizedDescription)")
+                prefixBusy = error is TimedOutError
                 winVersionLoadingState = .failed
             }
         }
@@ -374,6 +380,7 @@ extension ConfigView {
                 buildVersionLoadingState = .success
             } catch {
                 logger.error("Failed to load build version: \(error.localizedDescription)")
+                prefixBusy = error is TimedOutError
                 buildVersionLoadingState = .failed
             }
         }
@@ -397,6 +404,7 @@ extension ConfigView {
                 retinaModeLoadingState = .success
             } catch {
                 logger.error("Failed to get retina mode: \(error.localizedDescription)")
+                prefixBusy = error is TimedOutError
                 retinaModeLoadingState = .failed
             }
         }
@@ -414,6 +422,7 @@ extension ConfigView {
                 dpiConfigLoadingState = .success
             } catch {
                 logger.error("Failed to load DPI resolution: \(error.localizedDescription)")
+                prefixBusy = error is TimedOutError
                 dpiConfigLoadingState = .failed
             }
         }

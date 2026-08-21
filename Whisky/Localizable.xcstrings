@@ -39679,6 +39679,154 @@
         }
       }
     },
+    "config.prefixBusy" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle is busy, so these could not be read. A Wine process is still working in it, often a prefix update after a runtime change. Retry once it settles."
+          }
+        }
+      }
+    },
     "config.preset.balanced.desc" : {
       "localizations" : {
         "ar" : {

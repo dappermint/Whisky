@@ -37,6 +37,9 @@ struct WineConfigSection: View {
     @Binding var retinaModeLoadingState: LoadingState
     @Binding var dpiConfigLoadingState: LoadingState
     @Binding var dpiSheetPresented: Bool
+    /// True when a read timed out rather than failed, which means the prefix is
+    /// busy rather than broken.
+    var prefixBusy = false
     var onRetryWindowsVersion: (() -> Void)?
     var onRetryBuildVersion: (() -> Void)?
     /// Set when a typed build belongs to a different Windows version. Shown
@@ -48,6 +51,15 @@ struct WineConfigSection: View {
     var body: some View {
         Section("config.title.wine", isExpanded: $isExpanded) {
             RuntimePickerView(bottle: bottle)
+            if prefixBusy {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Image(systemName: "clock.badge.exclamationmark")
+                        .foregroundStyle(.orange)
+                    Text("config.prefixBusy")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
             SettingItemView(
                 title: "config.winVersion",
                 description: "config.winVersion.info",
