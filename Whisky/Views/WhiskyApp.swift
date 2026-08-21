@@ -77,6 +77,9 @@ struct WhiskyApp: App {
     private func installMetalFXBridgeIfNeeded() {
         Task.detached(priority: .background) {
             GPTKImporter.ensureMetalFXBridgeInstalled()
+        }
+    }
+
     /// Installs the D3D12 video processor if the GPTK payload is already
     /// deployed.
     ///
