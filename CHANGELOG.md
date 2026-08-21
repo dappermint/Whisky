@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The bottle action bar now emphasizes Run as its primary control, with
+  Liquid Glass styling on macOS 26 and bordered buttons on earlier
+  releases (#210).
+- The Sequoia Compatibility Mode toggle has been removed. The fixes it
+  claimed to control ship unconditionally, so the switch changed nothing in
+  either position (#216).
+
+### Fixed
+- The Play Test Tone button now actually plays a tone. The test executable
+  was never included in any build, so the button silently did nothing and
+  then asked whether you heard it. The tone is also gentler: 600ms with
+  fades instead of a 100ms full-scale click (#209).
+- Audio settings, the console, and program overrides no longer show raw
+  localization keys in place of text on English systems: the English source
+  strings were missing from the catalog and have been restored (#207).
+- Troubleshooting fixes now do what their cards say: the crash banner's
+  buttons open the diagnosis they promise, remediation cards actually apply
+  (winetricks installs run and report their real outcome, and a fix that
+  cannot be performed is recorded as failed rather than applied), and the
+  troubleshooting wizard is localized (#213).
+- The shader cache toggle now controls the cache DXVK actually reads, and a
+  dxvk.conf file placed in the bottle root is picked up at launch. The
+  Recommended backend applies the same availability check as the backend
+  picker, so it can no longer select a backend whose payload is missing and
+  then fail at launch (#216).
+- The audio driver and latency settings now actually take effect: they are
+  written to the bottle's Wine registry at launch, which nothing did before,
+  so the options were recorded but never applied (#214).
+- Crash diagnosis now covers games that die later in a session, not just at
+  launch: classification runs when the bottle's Wine session actually ends,
+  and it reads the start of the log as well as the end, which is where
+  missing-DLL and backend failures appear (#217).
+- A D3DMetal bottle answers when a game asks whether hardware accelerated GPU
+  scheduling is available. Wine only answers that query for a caller that says
+  it is running on D3DMetal, and nothing said so, so the answer was always that
+  the feature is not implemented.
+- DirectX 12 games run again in a bottle set to DXVK or DXMT. Neither ships a
+  d3d12 of its own and neither said so, so that one DLL quietly fell through to
+  D3DMetal while the rest of the stack was not. A DX12 game took its adapter
+  from one translation layer into the other and died before it drew anything,
+  with no error of its own to show for it. Both now turn d3d12 off, so such a
+  game falls back to DirectX 11 rather than half landing on something else, and
+  a bottle or a single program set to D3DMetal gets real DirectX 12 back.
+- Newly created bottles are now immediately interactive: the inFlight guard
+  is reset after a successful creation so that state-dependent actions (move,
+  export, duplicate) no longer require an app restart to become available.
+
 ## [3.6.1] - 2026-08-13 (App)
 
 ### Changed

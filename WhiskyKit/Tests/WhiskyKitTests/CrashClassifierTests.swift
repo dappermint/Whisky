@@ -307,4 +307,27 @@ final class CrashClassifierTests: XCTestCase {
         XCTAssertTrue(types.contains(.switchBackend))
         XCTAssertTrue(types.contains(.changeSetting))
     }
+
+    /// A missing-DLL failure is a head-of-log event. A session that then runs
+    /// for hours buries it megabytes above the tail, which is exactly the log
+    /// a tail-only window used to read and classify as clean.
+    func testClassifyLastRunSeesHeadOfLogEvents() async throws {
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let logURL = tempDir.appendingPathComponent("run.log")
+        let crash = "0024:err:module:import_dll Library MSVCR100.dll (which is needed by L\"game.exe\") not found\n"
+        let padding = String(
+            repeating: "0032:fixme:dxgi:swapchain_present partial stub, routine frame output line\n",
+            count: 8_000
+        )
+        try (crash + padding).write(to: logURL, atomically: true, encoding: .utf8)
+
+        let diagnosis = await Wine.classifyLastRun(logFileURL: logURL, exitCode: 0)
+
+        let unwrapped = try XCTUnwrap(diagnosis)
+        XCTAssertFalse(unwrapped.isEmpty)
+        XCTAssertEqual(unwrapped.primaryCategory, .dependenciesLoading)
+    }
 }

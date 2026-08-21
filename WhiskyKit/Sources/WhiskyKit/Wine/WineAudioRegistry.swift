@@ -21,6 +21,44 @@ import os.log
 
 private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "WineAudioRegistry")
 
+/// The audio registry values Whisky last wrote into a bottle, kept as a
+/// marker file so launches only spawn `wine reg` when the settings changed.
+struct AudioRegistryState: Codable, Equatable {
+    var driver: String
+    var helBuflen: Int
+
+    /// What the bottle's current settings ask the registry to contain.
+    @MainActor
+    static func desired(for bottle: Bottle) -> AudioRegistryState {
+        AudioRegistryState(
+            driver: bottle.settings.audioDriver.rawValue,
+            helBuflen: bottle.settings.audioLatencyPreset.helBuflenValue
+        )
+    }
+
+    /// Auto driver detection and Wine's own default buffer size: the state
+    /// a fresh prefix already has without any registry write.
+    static let factoryDefault = AudioRegistryState(
+        driver: AudioDriverMode.auto.rawValue,
+        helBuflen: AudioLatencyPreset.defaultPreset.helBuflenValue
+    )
+
+    static func markerURL(in bottleURL: URL) -> URL {
+        bottleURL.appending(path: ".audio-registry-state.plist")
+    }
+
+    static func load(from bottleURL: URL) -> AudioRegistryState? {
+        guard let data = try? Data(contentsOf: markerURL(in: bottleURL)) else { return nil }
+        return try? PropertyListDecoder().decode(AudioRegistryState.self, from: data)
+    }
+
+    func save(to bottleURL: URL) throws {
+        let encoder = PropertyListEncoder()
+        encoder.outputFormat = .xml
+        try encoder.encode(self).write(to: Self.markerURL(in: bottleURL))
+    }
+}
+
 /// Extension on ``Wine`` providing typed read/write methods for Wine audio registry keys.
 ///
 /// Audio driver selection and DirectSound buffer configuration are stored in the Wine
@@ -115,6 +153,39 @@ public extension Wine {
             data: String(helBuflen),
             type: .string
         )
+    }
+
+    /// Brings the bottle's Wine registry in line with its audio settings.
+    ///
+    /// The settings UI and the troubleshooting fixes only mutate
+    /// ``BottleSettings``; the registry values Wine actually reads are written
+    /// here, from the launch path, and only when the marker file shows they
+    /// changed. A missing marker on factory settings is stamped without
+    /// booting wineserver, since a fresh prefix already behaves that way.
+    @MainActor
+    static func syncAudioRegistry(bottle: Bottle) async {
+        let desired = AudioRegistryState.desired(for: bottle)
+        let applied = AudioRegistryState.load(from: bottle.url)
+        guard desired != applied else { return }
+
+        if applied == nil, desired == .factoryDefault {
+            try? desired.save(to: bottle.url)
+            return
+        }
+
+        do {
+            if applied?.driver != desired.driver {
+                try await setAudioDriver(bottle: bottle, driver: bottle.settings.audioDriver)
+            }
+            if applied?.helBuflen != desired.helBuflen {
+                try await setDirectSoundBuffer(bottle: bottle, helBuflen: desired.helBuflen)
+            }
+            try desired.save(to: bottle.url)
+        } catch {
+            logger.error(
+                "Audio registry sync failed for '\(bottle.settings.name)': \(error.localizedDescription)"
+            )
+        }
     }
 
     /// Resets Wine audio device state by clearing cached device mappings and restarting wineserver.
