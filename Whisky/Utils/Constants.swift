@@ -22,4 +22,8 @@ enum ViewWidth {
     static let small: Double = 400
     static let medium: Double = 500
     static let large: Double = 600
+    /// The main window's minimum. Sized from the library rather than from a
+    /// sheet: the sidebar takes around 250pt, and the grid needs what is left
+    /// to hold two cards.
+    static let window: Double = 720
 }

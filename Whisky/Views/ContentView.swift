@@ -23,22 +23,20 @@ import UniformTypeIdentifiers
 import WhiskyKit
 
 struct ContentView: View {
-    @AppStorage("selectedBottleURL") private var selectedBottleURL: URL?
     @EnvironmentObject var bottleVM: BottleVM
     @Binding var showSetup: Bool
 
-    @State private var selected: URL?
-    @State private var showBottleCreation: Bool = false
-    @State private var bottlesLoaded: Bool = false
-    @State private var showBottleSelection: Bool = false
-    @State private var newlyCreatedBottleURL: URL?
-    @State private var openedFileURL: URL?
-    @State private var triggerRefresh: Bool = false
-    @State private var refreshAnimation: Angle = .degrees(0)
+    @State var selected: URL?
+    @State var showBottleCreation: Bool = false
+    @State var bottlesLoaded: Bool = false
+    @State var showBottleSelection: Bool = false
+    @State var newlyCreatedBottleURL: URL?
+    @State var openedFileURL: URL?
+    @State var triggerRefresh: Bool = false
+    @State var refreshAnimation: Angle = .degrees(0)
 
-    @State private var bottleFilter = ""
-    @State private var toast: ToastData?
-    @State private var corruptRegistryBackupURL: URL?
+    @State var toast: ToastData?
+    @State var corruptRegistryBackupURL: URL?
 
     var body: some View {
         NavigationSplitView {
@@ -159,9 +157,7 @@ struct ContentView: View {
                 toast: $toast
             )
         }
-        .onChange(of: selected) { oldValue, newValue in
-            selectedBottleURL = newValue
-
+        .onChange(of: selected) { oldValue, _ in
             // Check if previous bottle had running processes
             guard let oldURL = oldValue,
                   let oldBottle = bottleVM.bottles.first(where: { $0.url == oldURL })
@@ -197,13 +193,9 @@ struct ContentView: View {
             // registry reset the scan offers everything back (issue #145).
             bottleVM.scanForOrphanedBottles()
 
-            if !bottleVM.bottles.isEmpty || bottleVM.countActive() != 0 {
-                if let bottle = bottleVM.bottles.first(where: { $0.url == selectedBottleURL && $0.isAvailable }) {
-                    selected = bottle.url
-                } else {
-                    selected = bottleVM.bottles[0].url
-                }
-            }
+            // Deliberately does not select a bottle. The library is the landing
+            // screen, and restoring a prefix selection would put the plumbing in
+            // front of the thing people opened the app to do.
 
             // Skip the first-launch setup sheet and update check under UI testing:
             // tests run without a runtime, so this would otherwise drop a modal
@@ -239,149 +231,4 @@ struct ContentView: View {
             }
         }
     }
-}
-
-// MARK: - Sidebar & Detail
-
-extension ContentView {
-    var sidebar: some View {
-        ScrollViewReader { proxy in
-            List(selection: $selected) {
-                Section {
-                    ForEach(filteredBottles) { bottle in
-                        Group {
-                            if bottle.inFlight {
-                                HStack {
-                                    Text(bottle.settings.name)
-                                    Spacer()
-                                    ProgressView().controlSize(.small)
-                                }
-                                .opacity(0.5)
-                            } else if !bottle.isAvailable {
-                                HStack {
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .foregroundStyle(.orange)
-                                        .font(.caption)
-                                    Text(bottle.settings.name)
-                                    Spacer()
-                                    Button {
-                                        Task { await bottle.remove(delete: false) }
-                                    } label: {
-                                        Image(systemName: "xmark.circle")
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .help("button.removeFromList.help")
-                                }
-                                .opacity(0.6)
-                                .selectionDisabled(true)
-                            } else {
-                                BottleListEntry(
-                                    bottle: bottle,
-                                    selected: $selected,
-                                    refresh: $triggerRefresh,
-                                    toast: $toast
-                                )
-                            }
-                        }
-                        .id(bottle.url)
-                    }
-                }
-            }
-            .animation(.default, value: bottleVM.bottles)
-            .animation(.default, value: bottleFilter)
-            .listStyle(.sidebar)
-            .accessibilityIdentifier("bottleSidebar")
-            .searchable(text: $bottleFilter, placement: .sidebar)
-            .onChange(of: newlyCreatedBottleURL) { _, url in
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    selected = url
-                    withAnimation {
-                        proxy.scrollTo(url, anchor: .center)
-                    }
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    var detail: some View {
-        if let bottle = selected {
-            if let bottle = bottleVM.bottles.first(where: { $0.url == bottle }) {
-                BottleView(bottle: bottle)
-                    .disabled(bottle.inFlight)
-                    .id(bottle.url)
-            }
-        } else {
-            if bottleVM.bottles.isEmpty || bottleVM.countActive() == 0, bottlesLoaded {
-                VStack {
-                    Text("main.createFirst")
-                    Button {
-                        showBottleCreation.toggle()
-                    } label: {
-                        HStack {
-                            Image(systemName: "plus")
-                            Text("button.createBottle")
-                        }
-                        .padding(6)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.accentColor)
-                }
-            }
-        }
-    }
-
-    var filteredBottles: [Bottle] {
-        if bottleFilter.isEmpty {
-            bottleVM.bottles
-                .sorted()
-        } else {
-            bottleVM.bottles
-                .filter { $0.settings.name.localizedCaseInsensitiveContains(bottleFilter) }
-                .sorted()
-        }
-    }
-}
-
-// MARK: - Process Close Confirmation
-
-extension ContentView {
-    @MainActor
-    func showProcessCloseAlert(for bottle: Bottle) {
-        let checkbox = NSButton(
-            checkboxWithTitle: String(localized: "bottle.close.remember"),
-            target: nil,
-            action: nil
-        )
-        let alert = NSAlert()
-        alert.messageText = String(localized: "bottle.close.confirm.title")
-        alert.informativeText = String(localized: "bottle.close.confirm.message")
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: String(localized: "bottle.close.keepRunning"))
-        let stopButton = alert.addButton(withTitle: String(localized: "bottle.close.stopBottle"))
-        stopButton.hasDestructiveAction = true
-        alert.accessoryView = checkbox
-
-        let response = alert.runModal()
-
-        if response == .alertFirstButtonReturn {
-            // Keep Running (default)
-            if checkbox.state == .on {
-                bottle.settings.closeWithProcessesPolicy = .alwaysKeepRunning
-            }
-        } else if response == .alertSecondButtonReturn {
-            // Stop Bottle
-            if checkbox.state == .on {
-                bottle.settings.closeWithProcessesPolicy = .alwaysStop
-            }
-            Wine.killBottle(bottle: bottle)
-            ProcessRegistry.shared.clearRegistry(for: bottle.url)
-        }
-    }
-}
-
-#Preview {
-    ContentView(showSetup: .constant(false))
-        .environmentObject(BottleVM.shared)
 }

@@ -34,11 +34,75 @@ public actor IconCache {
     /// The shared icon cache instance.
     public static let shared = IconCache()
 
+    /// A decoded image and the palette sampled from it.
+    public struct Sampled: Sendable {
+        public let image: NSImage
+        public let palette: IconPalette
+
+        public init(image: NSImage, palette: IconPalette) {
+            self.image = image
+            self.palette = palette
+        }
+    }
+
+    /// `NSCache` stores objects, and ``Sampled`` is a value.
+    private final class SampledBox {
+        let sampled: Sampled
+        init(_ sampled: Sampled) { self.sampled = sampled }
+    }
+
     private let memoryCache = NSCache<NSURL, NSImage>()
+    private let artworkCache = NSCache<NSURL, SampledBox>()
 
     private init() {
         memoryCache.countLimit = 100
         memoryCache.totalCostLimit = 50 * 1_024 * 1_024 // 50MB limit
+        // Fewer, because these are store banners rather than 44pt icons: a
+        // library header is around 600x290 and there is one per game on screen.
+        artworkCache.countLimit = 60
+        artworkCache.totalCostLimit = 80 * 1_024 * 1_024
+    }
+
+    /// Loads artwork from disk and samples its palette, caching both.
+    ///
+    /// Both halves are expensive and neither belongs on the main actor: the
+    /// decode reads a JPEG off disk and the sampling rasterises into a bitmap
+    /// context. A lazy grid re-runs a card's load task every time the card
+    /// scrolls back into view, so without this the same banner is decoded over
+    /// and over while somebody scrolls.
+    ///
+    /// - Parameter url: The image file to load.
+    /// - Returns: The image and its palette, or `nil` if it could not be decoded.
+    public func sampledArtwork(for url: URL) -> Sampled? {
+        if let cached = artworkCache.object(forKey: url as NSURL) {
+            return cached.sampled
+        }
+
+        guard let image = NSImage(contentsOf: url) else { return nil }
+        let sampled = Sampled(image: image, palette: IconPalette.palette(for: image))
+        artworkCache.setObject(SampledBox(sampled), forKey: url as NSURL)
+        return sampled
+    }
+
+    /// The icon for a program plus the palette sampled from it.
+    ///
+    /// Sampling is the expensive half and is the reason this exists alongside
+    /// ``iconOrFallback(for:peFile:)``: the icon itself is already cached, but
+    /// its palette was being recomputed on every appearance.
+    ///
+    /// - Parameters:
+    ///   - url: The URL of the PE executable file.
+    ///   - peFile: An optional pre-parsed PE file.
+    /// - Returns: The icon (or the system fallback) and its palette.
+    public func sampledIcon(for url: URL, peFile: PEFile? = nil) -> Sampled {
+        if let cached = artworkCache.object(forKey: url as NSURL) {
+            return cached.sampled
+        }
+
+        let image = iconOrFallback(for: url, peFile: peFile)
+        let sampled = Sampled(image: image, palette: IconPalette.palette(for: image))
+        artworkCache.setObject(SampledBox(sampled), forKey: url as NSURL)
+        return sampled
     }
 
     /// Retrieves a cached icon or extracts and caches it.
@@ -93,6 +157,7 @@ public actor IconCache {
     /// - Parameter url: The URL of the PE file to remove from cache.
     public func invalidate(url: URL) {
         memoryCache.removeObject(forKey: url as NSURL)
+        artworkCache.removeObject(forKey: url as NSURL)
     }
 
     /// Clears all cached icons.
@@ -100,5 +165,6 @@ public actor IconCache {
     /// This can be called in response to memory pressure or when bottles are deleted.
     public func clearCache() {
         memoryCache.removeAllObjects()
+        artworkCache.removeAllObjects()
     }
 }

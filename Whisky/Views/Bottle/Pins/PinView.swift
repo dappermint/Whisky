@@ -75,7 +75,10 @@ struct PinView: View {
             }
             .labelStyle(.titleAndIcon)
         }
-        .onTapGesture(count: 2) {
+        // One click, the same as a library card. The two were a single click
+        // here and a double click there for the same object, and the library is
+        // where most launches now happen.
+        .onTapGesture {
             runProgram()
         }
         .sheet(isPresented: $showRenameSheet) {
