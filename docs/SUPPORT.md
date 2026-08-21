@@ -25,6 +25,9 @@ Most problems already have an answer:
 
 ## Where to go
 
+The tracker below is **frankea/Whisky's**, and it covers the maintained app. Preview has no tracker of
+its own, so a Preview-only problem is out of scope there. The next section covers what to do instead.
+
 | You have… | Go to |
 |-----------|-------|
 | A reproducible app bug | [New issue → Bug Report](https://github.com/frankea/Whisky/issues/new/choose) |
@@ -32,6 +35,21 @@ Most problems already have an answer:
 | An idea | [New issue → Feature Request](https://github.com/frankea/Whisky/issues/new/choose) |
 | A security report | See [`SECURITY.md`](../SECURITY.md) — **do not** open a public issue |
 | A "how do I…" question | The troubleshooting docs and the Game Support wiki first |
+
+### If it only happens on Preview
+
+Preview carries Steam, DLL override, D3DMetal and runtime work that has not landed upstream, so a
+problem in any of that has no home on upstream's tracker and filing it there wastes both your time and
+theirs. In order:
+
+1. **Reproduce on the maintained app** (`brew install --cask frankea/whisky/whisky`). If it happens
+   there too, it is an upstream bug and the table above is the right route.
+2. **If it is Preview-only**, no tracker will take it. Message the fork's maintainer,
+   [@dappermint](https://github.com/dappermint), with the same details a bug report would carry:
+   Preview version from **Whisky → About**, macOS version, graphics backend, and the diagnostic export.
+
+You can install Preview from a public tap and then find you have nowhere to send a bug report. That
+gap is open.
 
 **Do not open issues on the archived [whisky-app/whisky](https://github.com/whisky-app/whisky) repo** —
 it is read-only and no one will see them.

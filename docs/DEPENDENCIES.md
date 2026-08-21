@@ -5,15 +5,19 @@ Whisky's app code is built from this repo, but the **Wine runtime** it downloads
 for *what versions are bundled* and *where they come from*, so the runtime can't silently go stale and
 any future maintainer can reproduce a build. Update it whenever a runtime release is cut.
 
+> The authoritative version and digest are in
+> [`dist/pages/WhiskyWineVersion.plist`](../dist/pages/WhiskyWineVersion.plist), the file the app
+> reads. If this file and that plist disagree, the plist is right and this file is stale.
+
 See [`ReleaseWorkflow.md`](ReleaseWorkflow.md) for the assembly + publish procedure, and
 [`.github/workflows/RuntimeTrack.yml`](../.github/workflows/RuntimeTrack.yml) for the automation that
 flags when a bundled component falls behind upstream.
 
-## Bundled in runtime `v3.1.1`
+## Bundled in runtime `4.5.114`
 
 | Component | Bundled version | Upstream source | Notes |
 |-----------|-----------------|-----------------|-------|
-| **Wine** | 11.0 (Gcenx `11.0_1` repack) | [Gcenx/macOS_Wine_builds](https://github.com/Gcenx/macOS_Wine_builds/releases) | Wine ships a new stable each January; 11.0 = Jan 2026. The Gcenx tag is `11.0_1` (a repack of the same Wine 11.0; the bare `11.0` tag was retired) — `RuntimeTrack.yml` pins that exact tag. |
+| **Wine** | 11.14 | [dappermint/winecx-gptk](https://github.com/dappermint/winecx-gptk) | This fork builds it rather than repacking someone else's, because the GPTK route needs a Wine that calls personality routines in builtin modules. The runtime version's last component tracks the Wine minor: `4.5.114` is Wine 11.14, the current upstream development release. |
 | **DXVK (macOS)** | 1.10.3 | [Gcenx/DXVK-macOS](https://github.com/Gcenx/DXVK-macOS/releases) | Frozen at 1.10.x **by design** — the DXVK 2.x line needs Vulkan 1.3 features MoltenVK/macOS don't expose. Not stale; do not "upgrade" to upstream 2.x. |
 | **DXMT** | 0.80 | [3Shain/dxmt](https://github.com/3Shain/dxmt/releases) | Direct3D 11 → Metal. Bundled from the project's prebuilt v0.80 release — the **last MIT-licensed** build (v1.0+ is LGPL; bumping past 0.80 is a deliberate relicensing decision, not routine drift). The release ships only the `wine_builtin_dll=true` asset (trio carries winebuild's "Wine builtin DLL" header marker, meant for a *global* `lib/wine` install). For **per-bottle** selection, `scripts/assemble-runtime.sh` strips that marker from `d3d11`/`dxgi`/`d3d10core` (x64+x32) — deterministically reproducing the project's `wine_builtin_dll=false` (native) variant — and stages them in `Libraries/DXMT/{x64,x32}`. The app then copies the native trio into each bottle's `system32`/`syswow64` with `dxgi,d3d11,d3d10core=n,b`, exactly like DXVK. `winemetal` stays a builtin: its `winemetal.dll` is synced into both Wine windows trees (paired with `winemetal.so` in the unix tree) and the app copies it into the prefix as the import redirect. Selectable per-bottle/per-program in app ≥ 3.4.0 (Experimental); requires a runtime assembled by the current script (the older builtin-variant payload is gated off, since it would silently redirect to wined3d). |
 | **D3DMetal** | from Apple Game Porting Toolkit | [Apple GPTK](https://developer.apple.com/games/game-porting-toolkit/) | **Apple-proprietary. Extracted, never built.** Redistribution is governed by Apple's GPTK license — review terms before bumping. Not bundled in the published runtime; used only when a GPTK payload is present on disk. Since app 3.5.2 the "Recommended" backend resolves to DXMT (or DXVK) when the payload is absent, and the picker greys D3DMetal out rather than offering a silent wined3d fallback. |
@@ -27,6 +31,7 @@ flags when a bundled component falls behind upstream.
 
 | Artifact | SHA-256 |
 |----------|---------|
+| `Libraries.tar.gz` (`4.5.114`) | `e7e3f28d6475c4e65617556d8d30e850f77a7b0abb2fc94685b8a36e6a368419` |
 | `Libraries.tar.gz` (`v3.1.1`) | `01f3a1b43b98065fe20c529c1023b61dd79a6d2ad93bba6040865f646481ccf3` |
 | `Libraries.tar.gz` (`v3.1.0`) | `86e2d54a60736f27e6ce82cacf2a91e500c20f6d32ae959a16afd912e6b03096` |
 | `Libraries.tar.gz` (`v3.0.0`) | `9c3d2a7d9bb682ae8398d8bae458e3cb52bb9f5a3345fb0830a64d9b6a1025f8` |

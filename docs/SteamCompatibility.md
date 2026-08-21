@@ -3,7 +3,14 @@
 **Feature:** Launcher Compatibility System (frankea/Whisky#41)
 **Last Updated:** January 12, 2026
 
-> **Note:** This documentation references issue numbers from both this fork (frankea/Whisky) and the original upstream project (whisky-app/whisky). Upstream references are kept for historical context. Please report new issues to [frankea/Whisky](https://github.com/frankea/Whisky/issues).
+> **Note:** This documentation references issue numbers from both this fork (frankea/Whisky) and the original upstream project (whisky-app/whisky). Upstream references are kept for historical context. See [`SUPPORT.md`](SUPPORT.md) for where a new report belongs.
+
+> **On Whisky Preview, start at the Library.** Click a game's card and Preview brings the Steam client
+> up, fires `-applaunch`, and waits for the game to appear. The walkthrough below predates that: it has
+> you create a bottle, install `SteamSetup.exe` by hand, and treat the client as the thing you look at.
+> Follow it for a first-time Steam install, and read the troubleshooting sections as they stand, but
+> expect a per-game backend or a network-timeout knob it names to be missing from Preview's config.
+> Where this guide and the app disagree, trust the app.
 
 ---
 

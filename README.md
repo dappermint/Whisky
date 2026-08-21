@@ -64,7 +64,7 @@ Whisky provides a clean and easy-to-use graphical wrapper for Wine built in nati
 
 ## Key Features
 
-- **Wine 10.0 (CrossOver 25)** - GPTK-capable build that executes Apple's D3DMetal payload, with GStreamer and FFmpeg
+- **Wine 11.14** - GPTK-capable build that executes Apple's D3DMetal payload, with GStreamer and FFmpeg
 - **DXMT & DXVK Graphics** - DirectX 11 through native Metal translation (DXMT) out of the box, with DXVK over MoltenVK as the universal fallback
 - **Launcher Compatibility** - Built-in support for Steam, Epic, EA App, Rockstar, Battle.net, and more
 - **Controller Support** - SDL environment variable controls for gamepad detection and mapping issues
