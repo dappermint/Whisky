@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with no error of its own to show for it. Both now turn d3d12 off, so such a
   game falls back to DirectX 11 rather than half landing on something else, and
   a bottle or a single program set to D3DMetal gets real DirectX 12 back.
+- Newly created bottles are now immediately interactive: the inFlight guard
+  is reset after a successful creation so that state-dependent actions (move,
+  export, duplicate) no longer require an app restart to become available.
 
 ## [3.6.1] - 2026-08-13 (App)
 
