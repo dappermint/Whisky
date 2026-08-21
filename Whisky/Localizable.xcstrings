@@ -36890,12 +36890,24 @@
             "state" : "translated",
             "value" : "DLSS via MetalFX"
           }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DLSS via MetalFX"
+          }
         }
       }
     },
     "config.metalFX.info" : {
       "localizations" : {
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maps a game's DLSS to MetalFX upscaling. Only applies when DLSS is also turned on in the game's own settings."
+          }
+        },
+        "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Maps a game's DLSS to MetalFX upscaling. Only applies when DLSS is also turned on in the game's own settings."
