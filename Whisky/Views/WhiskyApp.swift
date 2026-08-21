@@ -45,7 +45,6 @@ struct WhiskyApp: App {
     /// window closes (see `AppDelegate.applicationShouldTerminateAfterLastWindowClosed`).
     @AppStorage("showMenuBarExtra") private var showMenuBarExtra = false
     @State var showSetup: Bool = false
-    @State private var showMigrate: Bool = false
     @State private var showDiagnosticsSheet: Bool = false
     @State private var showTroubleshootingPicker: Bool = false
     @State private var showTroubleshootingWizard: Bool = false
@@ -137,10 +136,6 @@ struct WhiskyApp: App {
                         )
                     }
                 }
-                .sheet(isPresented: $showMigrate) {
-                    MigrateBottlesSheet()
-                        .environmentObject(BottleVM.shared)
-                }
                 .sheet(item: $crashDiagnosisSheet) { banner in
                     DiagnosticsView(
                         diagnosis: banner.diagnosis,
@@ -199,27 +194,27 @@ struct WhiskyApp: App {
                         }
                     }
                 }
-                .keyboardShortcut("I", modifiers: [.command])
-                Button("Import Bottles from Another Whisky…") {
-                    showMigrate = true
+                // Lowercase: an uppercase key equivalent implies Shift.
+                .keyboardShortcut("i", modifiers: [.command])
+                Button("migrate.menu.import") {
+                    NotificationCenter.default.post(name: .whiskyImportBottles, object: nil)
                 }
             }
             CommandGroup(after: .importExport) {
                 Button("debug.window.open") {
                     openWindow(id: Self.debugWindowID)
                 }
-                .keyboardShortcut("B", modifiers: [.command, .shift])
+                .keyboardShortcut("b", modifiers: [.command, .shift])
                 Button("open.logs") {
                     WhiskyApp.openLogsFolder()
                 }
-                .keyboardShortcut("L", modifiers: [.command])
+                .keyboardShortcut("l", modifiers: [.command])
                 Button("kill.bottles") {
-                    WhiskyApp.killBottles()
+                    WhiskyApp.killBottlesConfirmed()
                 }
-                .keyboardShortcut("K", modifiers: [.command, .shift])
+                .keyboardShortcut("k", modifiers: [.command, .shift])
                 Button("wine.clearShaderCaches") {
-                    WhiskyApp.killBottles() // Better not make things more complicated for ourselves
-                    WhiskyApp.wipeShaderCaches()
+                    WhiskyApp.clearShaderCachesConfirmed()
                 }
             }
             CommandGroup(replacing: .help) {
@@ -228,11 +223,13 @@ struct WhiskyApp: App {
                         openURL(url)
                     }
                 }
-                // Issues are disabled on the preview repo, so reports go to
-                // upstream's tracker, where anything preview-only is out of
-                // scope. docs/SUPPORT.md tells people which is which.
+                // Not straight to upstream's tracker: issues are disabled on
+                // the preview repo, and anything preview-only is out of scope
+                // on frankea's. SUPPORT.md is the page that sorts that out.
                 Button("help.issues") {
-                    if let url = URL(string: "https://github.com/frankea/Whisky/issues") {
+                    if let url = URL(
+                        string: "https://github.com/dappermint/Whisky/blob/preview/docs/SUPPORT.md"
+                    ) {
                         openURL(url)
                     }
                 }
@@ -240,11 +237,11 @@ struct WhiskyApp: App {
                 Button("Run Diagnostics\u{2026}") {
                     showDiagnosticsSheet = true
                 }
-                .keyboardShortcut("D", modifiers: [.command, .shift])
+                .keyboardShortcut("d", modifiers: [.command, .shift])
                 Button(String(localized: "troubleshooting.entry.helpMenu")) {
                     showTroubleshootingPicker = true
                 }
-                .keyboardShortcut("T", modifiers: [.command, .shift])
+                .keyboardShortcut("t", modifiers: [.command, .shift])
             }
         }
         Window("debug.window.title", id: Self.debugWindowID) {
@@ -278,25 +275,18 @@ struct WhiskyApp: App {
             logFileURL: logFileURL
         )
 
-        // A game usually crashes while its own window is frontmost, so the
-        // banner above plays to an empty room; Notification Center is what
-        // actually reaches the person.
-        if !NSApp.isActive {
-            CrashNotifier.notify(
-                programName: programName,
-                category: diagnosis.primaryCategory,
-                programPath: programPath,
-                logFileURL: logFileURL
-            )
-        }
+        // Unconditional: `CrashNotificationDelegate` leaves `willPresent`
+        // unimplemented, so the system already withholds the alert while Whisky
+        // is frontmost. Gating on `!NSApp.isActive` only lost the record.
+        CrashNotifier.notify(
+            programName: programName,
+            category: diagnosis.primaryCategory,
+            programPath: programPath,
+            logFileURL: logFileURL
+        )
 
-        // Auto-dismiss after 8 seconds
-        Task {
-            try? await Task.sleep(for: .seconds(8))
-            withAnimation {
-                crashDiagnosisBanner = nil
-            }
-        }
+        // The banner stays until dismissed. It used to clear itself after 8
+        // seconds, which is long enough to miss while the game still has the screen.
     }
 
     /// A click on the crash notification: the diagnosis is re-derived from
@@ -460,6 +450,77 @@ extension WhiskyApp {
             // killBottle is fire-and-forget; errors are logged internally
             Wine.killBottle(bottle: bottle)
         }
+    }
+
+    @MainActor
+    private static func runningBottles() async -> [Bottle] {
+        var running: [Bottle] = []
+        for bottle in BottleVM.shared.bottles where await Wine.isWineserverRunning(for: bottle) {
+            running.append(bottle)
+        }
+        return running
+    }
+
+    /// Asks before killing, naming the bottles that are about to go down.
+    ///
+    /// Silent when nothing is running, since there is nothing to lose.
+    @MainActor
+    static func killBottlesConfirmed() {
+        Task {
+            let running = await runningBottles()
+            guard !running.isEmpty else {
+                killBottles()
+                return
+            }
+            guard confirmStop(
+                title: String(localized: "kill.bottles.confirm.title"),
+                message: String(
+                    format: String(localized: "kill.bottles.confirm.message"),
+                    running.map(\.settings.name).joined(separator: ", ")
+                ),
+                confirmTitle: String(localized: "kill.bottles.confirm.button")
+            )
+            else { return }
+            killBottles()
+        }
+    }
+
+    /// Asks before wiping shader caches, which stops every running game first.
+    ///
+    /// The cache is rebuilt on next use; the kill is the part worth asking about,
+    /// and it was invisible from the menu title.
+    @MainActor
+    static func clearShaderCachesConfirmed() {
+        Task {
+            let running = await runningBottles()
+            if !running.isEmpty {
+                guard confirmStop(
+                    title: String(localized: "wine.clearShaderCaches.confirm.title"),
+                    message: String(
+                        format: String(localized: "wine.clearShaderCaches.confirm.message"),
+                        running.map(\.settings.name).joined(separator: ", ")
+                    ),
+                    confirmTitle: String(localized: "wine.clearShaderCaches.confirm.button")
+                )
+                else { return }
+                killBottles()
+                // Let wineserver drop the cache before it is deleted underneath it.
+                try? await Task.sleep(for: .seconds(2))
+            }
+            wipeShaderCaches()
+        }
+    }
+
+    @MainActor
+    private static func confirmStop(title: String, message: String, confirmTitle: String) -> Bool {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.alertStyle = .warning
+        let confirm = alert.addButton(withTitle: confirmTitle)
+        confirm.hasDestructiveAction = true
+        alert.addButton(withTitle: String(localized: "button.cancel"))
+        return alert.runModal() == .alertFirstButtonReturn
     }
 
     static func openLogsFolder() {

@@ -90,7 +90,8 @@ struct WhiskyWineDownloadView: View {
             }
             Spacer()
         }
-        .frame(width: 400, height: 200)
+        // The error state does not fit a fixed 200pt once translated.
+        .frame(width: 400).frame(minHeight: 200)
         .onAppear {
             // Guard against multiple onAppear calls from NavigationStack so the
             // once-per-setup-attempt runtime_install_started capture holds.
@@ -143,7 +144,8 @@ extension WhiskyWineDownloadView {
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.defaultAction)
 
-                Button("setup.quit") {
+                // Not "Quit": the welcome stage's same-labelled button exits.
+                Button("setup.close") {
                     showSetup = false
                 }
                 .buttonStyle(.bordered)

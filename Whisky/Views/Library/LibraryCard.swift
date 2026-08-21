@@ -30,9 +30,31 @@ enum LibraryEntryState: Equatable {
     /// Not started, or started and already exited.
     case idle
     /// Whisky has been asked to start it and Wine has not put a window up yet.
-    case launching
+    ///
+    /// A Steam launch spends up to 90 seconds bringing the client up and then
+    /// up to 120 more waiting for the game, so the phase is carried here: three
+    /// minutes of one unlabelled spinner reads as a hang.
+    case launching(LaunchPhase)
     /// It has a process of its own in ``ProcessRegistry``.
     case running
+
+    /// What a launch is waiting on.
+    enum LaunchPhase: Equatable {
+        /// Bringing the Steam client up first.
+        case startingClient
+        /// Asked for the game; waiting for its process to appear.
+        case waitingForGame
+        /// A direct program launch, which has no phases worth naming.
+        case program
+
+        var label: LocalizedStringKey {
+            switch self {
+            case .startingClient: "library.card.startingClient"
+            case .waitingForGame: "library.card.waitingForGame"
+            case .program: "library.card.launching"
+            }
+        }
+    }
 }
 
 /// One library entry, coloured by its own icon.
@@ -54,6 +76,9 @@ struct LibraryCard: View {
     let favourite: Bool
     let state: LibraryEntryState
     let launch: () -> Void
+    /// Abandons a launch still in flight. `nil` for entries with nothing to
+    /// cancel, which is every direct program launch.
+    let onCancel: (() -> Void)?
 
     @State private var icon: Image?
     @State private var artwork: Image?
@@ -191,12 +216,21 @@ struct LibraryCard: View {
     @ViewBuilder
     private var statusView: some View {
         switch state {
-        case .launching:
-            ProgressView()
-                .controlSize(.small)
-                .frame(width: 30, height: 30)
-                .glassEffect(.regular, in: .circle)
-                .help("library.card.launching")
+        case let .launching(phase):
+            HStack(spacing: 6) {
+                ProgressView()
+                    .controlSize(.small)
+                if isActive, let onCancel {
+                    Button("library.card.cancelLaunch", systemImage: "xmark") { onCancel() }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.plain)
+                        .font(.system(size: 11, weight: .bold))
+                }
+            }
+            .padding(.horizontal, 9)
+            .frame(height: 30)
+            .glassEffect(.regular, in: .capsule)
+            .help(phase.label)
         case .running:
             Label("library.card.running", systemImage: "circle.fill")
                 .labelStyle(.titleAndIcon)

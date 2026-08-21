@@ -78,12 +78,19 @@ struct BottleListEntry: View {
                 while !Task.isCancelled {
                     try? await Task.sleep(for: .seconds(60))
                     guard !Task.isCancelled else { break }
+                    // The badge only means anything to somebody looking at it,
+                    // and each probe is a wineserver spawn per visible bottle.
+                    guard NSApp.isActive else { continue }
                     await probeRunningState()
                 }
             }
         }
         .onDisappear {
             probeTask?.cancel()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            // Catches up on whatever the paused ticks missed.
+            Task { await probeRunningState() }
         }
         .onChange(of: refresh, initial: true) {
             name = bottle.settings.name

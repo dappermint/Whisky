@@ -48,14 +48,8 @@ struct PerformanceConfigSection: View {
                         .foregroundColor(.secondary)
                 }
             }
-            Toggle(isOn: $bottle.settings.forceD3D11) {
-                VStack(alignment: .leading) {
-                    Text("config.forceD3D11")
-                    Text("config.forceD3D11.info")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
+            // Force DX11 lives in the Graphics section, next to the backend it
+            // affects. It was in both, bound to the same setting.
             Toggle(isOn: $bottle.settings.disableAppNap) {
                 VStack(alignment: .leading) {
                     Text("config.disableAppNap")
@@ -69,7 +63,7 @@ struct PerformanceConfigSection: View {
                 Button {
                     Task {
                         await Winetricks.runCommand(command: "vcrun2022", bottle: bottle)
-                        bottle.settings.vcRedistInstalled = true
+                        await confirmVcRedist()
                     }
                 } label: {
                     HStack {
@@ -90,6 +84,20 @@ struct PerformanceConfigSection: View {
                 }
             }
         }
+        .task { await confirmVcRedist() }
+    }
+
+    /// Sets the installed flag from winetricks' own record of finished verbs.
+    ///
+    /// ``Winetricks/runCommand(command:bottle:)`` hands the install to Terminal
+    /// and returns immediately, so it cannot report success. Marking it
+    /// installed on dispatch meant the green checkmark also appeared for an
+    /// install the user cancelled or that failed.
+    private func confirmVcRedist() async {
+        let bottleURL = bottle.url
+        guard let verbs = await Winetricks.listInstalledVerbs(for: bottle) else { return }
+        guard bottle.url == bottleURL else { return }
+        bottle.settings.vcRedistInstalled = verbs.contains { $0.hasPrefix("vcrun") }
     }
 
     // MARK: - Performance Preset Helpers

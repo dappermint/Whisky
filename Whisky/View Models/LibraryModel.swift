@@ -72,12 +72,14 @@ final class LibraryModel: ObservableObject {
     @Published var launchError: String?
     @Published var toast: ToastData?
 
-    /// App IDs with a launch in flight, per bottle.
-    @Published private var steamLaunching: [URL: Set<Int>] = [:]
+    /// Where each in-flight Steam launch is, per bottle.
+    @Published private var steamLaunching: [URL: [Int: SteamClientOrchestrator.Phase]] = [:]
     /// App IDs whose own processes are in the bottle's process list.
     @Published private var steamRunning: [URL: Set<Int>] = [:]
     /// Programs whose launch call has not returned yet.
     @Published private var programLaunching: Set<URL> = []
+    /// The most recent download-stall verdict per bottle.
+    @Published private var steamDownloads: [URL: StallStatus] = [:]
 
     var sort: LibrarySort = .recent {
         didSet {
@@ -99,16 +101,46 @@ final class LibraryModel: ObservableObject {
     func state(for entry: LibraryEntry) -> LibraryEntryState {
         switch entry.launch {
         case let .program(url):
-            programLaunching.contains(url) ? .launching : .idle
+            programLaunching.contains(url) ? .launching(.program) : .idle
         case let .steam(appID):
             if steamRunning[entry.bottleURL]?.contains(appID) == true {
                 .running
-            } else if steamLaunching[entry.bottleURL]?.contains(appID) == true {
-                .launching
+            } else if let phase = steamLaunching[entry.bottleURL]?[appID] {
+                switch phase {
+                case .startingClient: .launching(.startingClient)
+                case .launching: .launching(.waitingForGame)
+                }
             } else {
                 .idle
             }
         }
+    }
+
+    /// A Steam download that has stopped making progress, if there is one.
+    ///
+    /// The monitor behind this has always run; nothing read its verdict, so a
+    /// game sat on "launching" with no way to learn the client was stuck
+    /// downloading it.
+    var stalledDownload: (bottleURL: URL, minutes: Int)? {
+        for (url, status) in steamDownloads {
+            switch status {
+            case let .likelyStalled(duration), let .confirmedStall(duration, _):
+                return (url, max(1, Int(duration / 60)))
+            case .noDownloads, .downloading:
+                continue
+            }
+        }
+        return nil
+    }
+
+    /// Whether this row's launch can still be abandoned.
+    ///
+    /// A Steam launch owns a cancellable task for its whole grace period. A
+    /// program launch does not: the call returns before the program does, so
+    /// there is nothing left holding it.
+    func canCancelLaunch(_ row: LibraryRow) -> Bool {
+        guard case let .steam(appID) = row.item.launch else { return false }
+        return steamLaunching[row.item.bottleURL]?[appID] != nil
     }
 
     // MARK: - Building
@@ -315,12 +347,17 @@ extension LibraryModel {
         let url = bottle.url
         made.$phases
             .sink { [weak self] phases in
-                self?.steamLaunching[url] = Set(phases.keys)
+                self?.steamLaunching[url] = phases
             }
             .store(in: &cancellables)
         made.$runningAppIds
             .sink { [weak self] running in
                 self?.steamRunning[url] = running
+            }
+            .store(in: &cancellables)
+        made.$downloadStatus
+            .sink { [weak self] status in
+                self?.steamDownloads[url] = status
             }
             .store(in: &cancellables)
         made.$launchError

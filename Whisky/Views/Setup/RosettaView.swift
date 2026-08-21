@@ -77,7 +77,8 @@ struct RosettaView: View {
                 }
             }
         }
-        .frame(width: 400, height: 200)
+        .frame(width: 400)
+        .frame(minHeight: 200)
         .onAppear {
             Task.detached {
                 await checkOrInstall()

@@ -38,6 +38,12 @@ struct ContentView: View {
 
     @State var toast: ToastData?
     @State var corruptRegistryBackupURL: URL?
+    @State var showMigrate: Bool = false
+
+    /// Bottles belonging to another Whisky build that this one could adopt.
+    var migratableBottles: [LegacyBottleImport.DiscoveredBottle] {
+        LegacyBottleImport.importableBottles(existingPaths: bottleVM.bottlesList.paths)
+    }
 
     var body: some View {
         NavigationSplitView {
@@ -150,6 +156,10 @@ struct ContentView: View {
         .sheet(isPresented: $showSetup) {
             SetupView(showSetup: $showSetup, firstTime: false)
         }
+        .sheet(isPresented: $showMigrate) {
+            MigrateBottlesSheet()
+                .environmentObject(bottleVM)
+        }
         .sheet(item: $openedFileURL) { url in
             FileOpenView(
                 fileURL: url,
@@ -180,6 +190,9 @@ struct ContentView: View {
         .handlesExternalEvents(preferring: [], allowing: ["*"])
         .onReceive(NotificationCenter.default.publisher(for: .whiskyCreateBottle)) { _ in
             showBottleCreation = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .whiskyImportBottles)) { _ in
+            showMigrate = true
         }
         .onOpenURL { url in
             if QuickLaunch.handle(url) { return }
@@ -245,7 +258,9 @@ struct ContentView: View {
                 let response = alert.runModal()
 
                 if response == .alertFirstButtonReturn {
-                    WhiskyWineInstaller.uninstall()
+                    // No uninstall first: `install(tarball:into:)` replaces
+                    // `Libraries/` anyway, and removing it up front meant
+                    // backing out of setup left no runtime at all.
                     showSetup = true
                 }
             }
@@ -257,4 +272,8 @@ extension Notification.Name {
     /// Posted by the File menu's Cmd-N so the window's own sheet state can
     /// present bottle creation.
     static let whiskyCreateBottle = Notification.Name("com.dappermint.WhiskyPreview.createBottle")
+
+    /// Posted by the File menu so the window presents the migrate sheet, which
+    /// the empty state also reaches.
+    static let whiskyImportBottles = Notification.Name("com.dappermint.WhiskyPreview.importBottles")
 }

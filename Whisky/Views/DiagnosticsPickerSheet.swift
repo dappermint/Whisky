@@ -43,6 +43,8 @@ struct DiagnosticsPickerSheet: View {
     @State private var showDiagnosticsResult = false
     @State private var resultDiagnosis: CrashDiagnosis?
     @State private var resultLogText: String = ""
+    @State private var isScanningPrograms = false
+    @State private var analysisFailed = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -63,6 +65,24 @@ struct DiagnosticsPickerSheet: View {
                         Text(program.name).tag(program as Program?)
                     }
                 }
+                .disabled(isScanningPrograms)
+
+                if isScanningPrograms {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text("diagnostics.scanningPrograms")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } else if bottle.programs.isEmpty {
+                    Text("diagnostics.noPrograms")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else if selectedProgram?.settings.lastLogFileURL == nil, selectedProgram != nil {
+                    Text("diagnostics.noLog")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             HStack {
@@ -77,7 +97,7 @@ struct DiagnosticsPickerSheet: View {
                     runAnalysis()
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(selectedProgram == nil || isAnalyzing)
+                .disabled(!canAnalyze)
 
                 if isAnalyzing {
                     ProgressView()
@@ -87,8 +107,22 @@ struct DiagnosticsPickerSheet: View {
         }
         .padding(20)
         .frame(minWidth: 400)
-        .onChange(of: selectedBottle) { _, _ in
+        .onChange(of: selectedBottle) { _, bottle in
             selectedProgram = nil
+            analysisFailed = false
+            // `bottle.programs` is empty until something scans it, and this
+            // sheet is reachable before any bottle view has.
+            guard let bottle else { return }
+            Task {
+                isScanningPrograms = true
+                await bottle.updateInstalledPrograms()
+                isScanningPrograms = false
+            }
+        }
+        .alert("diagnostics.analyze.failed.title", isPresented: $analysisFailed) {
+            Button("button.ok", role: .cancel) {}
+        } message: {
+            Text("diagnostics.analyze.failed.message")
         }
         .sheet(isPresented: $showDiagnosticsResult) {
             if let diagnosis = resultDiagnosis, let program = selectedProgram {
@@ -105,6 +139,13 @@ struct DiagnosticsPickerSheet: View {
         }
     }
 
+    /// Analyze needs a program that has run: the diagnosis comes out of that
+    /// run's log.
+    private var canAnalyze: Bool {
+        guard !isAnalyzing, !isScanningPrograms else { return false }
+        return selectedProgram?.settings.lastLogFileURL != nil
+    }
+
     private func runAnalysis() {
         guard let program = selectedProgram,
               let logURL = program.settings.lastLogFileURL
@@ -114,6 +155,7 @@ struct DiagnosticsPickerSheet: View {
         Task {
             guard let diagnosis = await Wine.classifyLastRun(logFileURL: logURL, exitCode: 1) else {
                 isAnalyzing = false
+                analysisFailed = true
                 return
             }
             resultDiagnosis = diagnosis

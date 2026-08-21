@@ -139,8 +139,27 @@ struct LibraryView: View {
         }
     }
 
+    /// Steam has stopped making progress on a download. Shown above the grid
+    /// rather than on a card: the stall is the client's, not one game's.
+    @ViewBuilder
+    private var stalledDownloadBanner: some View {
+        if let stall = model.stalledDownload {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.arrow.trianglehead.2.clockwise.rotate.90")
+                    .foregroundStyle(.orange)
+                Text("library.download.stalled \(stall.minutes)")
+                    .font(.callout)
+                Spacer()
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 10)
+            .background(.quaternary.opacity(0.5))
+        }
+    }
+
     private var grid: some View {
         ScrollView {
+            stalledDownloadBanner
             LazyVGrid(
                 // 180 rather than 220 so two columns fit at the window's own
                 // minimum width, where the sidebar leaves about 330pt: one
@@ -156,7 +175,9 @@ struct LibraryView: View {
                         lastPlayed: row.lastPlayed,
                         favourite: row.isFavourite,
                         state: model.state(for: row.item),
-                        launch: { model.launch(row, bottles: bottles) }
+                        launch: { model.launch(row, bottles: bottles) },
+                        onCancel: model.canCancelLaunch(row)
+                            ? { model.stop(row, bottles: bottles) } : nil
                     )
                     // Dimmed rather than gone under Show Hidden, so hiding is
                     // visibly a state and not a deletion.
@@ -173,6 +194,8 @@ struct LibraryView: View {
         Button("button.run") { model.launch(row, bottles: bottles) }
         if model.state(for: row.item) == .running {
             Button("library.card.stop") { model.stop(row, bottles: bottles) }
+        } else if model.canCancelLaunch(row) {
+            Button("library.card.cancelLaunch") { model.stop(row, bottles: bottles) }
         }
         Divider()
         Button(row.isFavourite ? "library.card.removeFavorite" : "library.card.addFavorite") {
@@ -272,6 +295,11 @@ struct LibraryView: View {
                 Button("library.empty.addGame") { openGamePanel() }
                     .buttonStyle(.borderedProminent)
                 Button("library.empty.pinHint") { selectedBottle = first.url }
+            }
+            if !LegacyBottleImport.importableBottles(existingPaths: BottleVM.shared.bottlesList.paths).isEmpty {
+                Button("migrate.menu.import") {
+                    NotificationCenter.default.post(name: .whiskyImportBottles, object: nil)
+                }
             }
         }
     }

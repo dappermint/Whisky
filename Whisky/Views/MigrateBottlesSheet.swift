@@ -60,17 +60,12 @@ struct MigrateBottlesSheet: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Import Bottles from Another Whisky")
+            Text("migrate.title")
                 .font(.headline)
-            Text(
-                """
-                These bottles were created by another Whisky build. Importing references them in \
-                place — your files aren't moved or copied, and the other build keeps working.
-                """
-            )
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+            Text("migrate.subtitle")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding()
     }
@@ -82,7 +77,7 @@ struct MigrateBottlesSheet: View {
                 Image(systemName: "tray")
                     .font(.largeTitle)
                     .foregroundStyle(.secondary)
-                Text("No bottles from another Whisky build were found.")
+                Text("migrate.empty")
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -107,12 +102,12 @@ struct MigrateBottlesSheet: View {
     private var footer: some View {
         HStack {
             if !rows.isEmpty {
-                Button(allSelected ? "Deselect All" : "Select All", action: toggleAll)
+                Button(allSelected ? "migrate.deselectAll" : "migrate.selectAll", action: toggleAll)
             }
             Spacer()
-            Button("Cancel", role: .cancel) { dismiss() }
+            Button("button.cancel", role: .cancel) { dismiss() }
                 .keyboardShortcut(.cancelAction)
-            Button("Import Selected", action: importSelected)
+            Button("migrate.importSelected", action: importSelected)
                 .keyboardShortcut(.defaultAction)
                 .disabled(selectedCount == 0)
         }

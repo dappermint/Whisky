@@ -58,7 +58,8 @@ struct WhiskyWineInstallView: View {
             }
             Spacer()
         }
-        .frame(width: 400, height: 200)
+        .frame(width: 400)
+        .frame(minHeight: 200)
         .onAppear {
             // Guard against multiple onAppear calls from NavigationStack
             guard !hasStartedInstallation else { return }

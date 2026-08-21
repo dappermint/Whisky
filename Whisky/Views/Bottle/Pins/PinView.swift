@@ -30,8 +30,63 @@ struct PinView: View {
     @State private var showRenameSheet = false
     @State private var name: String = ""
     @State private var opening: Bool = false
+    @State private var isHovering = false
+    @FocusState private var isFocused: Bool
 
     var body: some View {
+        Button(action: runProgram) {
+            pinTile
+        }
+        .buttonStyle(.plain)
+        .focusable()
+        .focused($isFocused)
+        .focusEffectDisabled()
+        .onKeyPress(.return) {
+            runProgram()
+            return .handled
+        }
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.16)) { isHovering = hovering }
+        }
+        .accessibilityLabel(name)
+        .accessibilityHint(Text("library.card.hint"))
+        .contextMenu {
+            ProgramMenuView(program: program, path: $path)
+
+            Button("button.rename", systemImage: "pencil.line") {
+                showRenameSheet.toggle()
+            }
+            .labelStyle(.titleAndIcon)
+            Button("button.showInFinder", systemImage: "folder") {
+                NSWorkspace.shared.activateFileViewerSelecting([program.url])
+            }
+            .labelStyle(.titleAndIcon)
+        }
+        .sheet(isPresented: $showRenameSheet) {
+            RenameView("rename.pin.title", name: name) { newName in
+                name = newName
+            }
+        }
+        .task {
+            name = pin.name
+            let icon = await IconCache.shared.iconOrFallback(for: program.url, peFile: program.peFile)
+            self.image = Image(nsImage: icon)
+        }
+        .onChange(of: name) {
+            if let index = bottle.settings.pins.firstIndex(where: {
+                let exists = FileManager.default.fileExists(atPath: pin.url?.path(percentEncoded: false) ?? "")
+                return $0.url == pin.url && exists
+            }) {
+                bottle.settings.pins[index].name = name
+            }
+        }
+    }
+
+    /// Hover is a mouse-only signal, so a hover-only affordance does not exist
+    /// for somebody on the keyboard.
+    private var isActive: Bool { isHovering || isFocused }
+
+    private var pinTile: some View {
         VStack {
             Group {
                 if let image {
@@ -59,46 +114,12 @@ struct PinView: View {
                     .resizable()
                     .foregroundColor(.green)
                     .frame(width: 16, height: 16)
+                    .opacity(isActive ? 1 : 0)
             }
             .frame(width: 45, height: 45)
             .padding(EdgeInsets(top: 0, leading: 0, bottom: 12, trailing: 0))
         }
-        .contextMenu {
-            ProgramMenuView(program: program, path: $path)
-
-            Button("button.rename", systemImage: "pencil.line") {
-                showRenameSheet.toggle()
-            }
-            .labelStyle(.titleAndIcon)
-            Button("button.showInFinder", systemImage: "folder") {
-                NSWorkspace.shared.activateFileViewerSelecting([program.url])
-            }
-            .labelStyle(.titleAndIcon)
-        }
-        // One click, the same as a library card. The two were a single click
-        // here and a double click there for the same object, and the library is
-        // where most launches now happen.
-        .onTapGesture {
-            runProgram()
-        }
-        .sheet(isPresented: $showRenameSheet) {
-            RenameView("rename.pin.title", name: name) { newName in
-                name = newName
-            }
-        }
-        .task {
-            name = pin.name
-            let icon = await IconCache.shared.iconOrFallback(for: program.url, peFile: program.peFile)
-            self.image = Image(nsImage: icon)
-        }
-        .onChange(of: name) {
-            if let index = bottle.settings.pins.firstIndex(where: {
-                let exists = FileManager.default.fileExists(atPath: pin.url?.path(percentEncoded: false) ?? "")
-                return $0.url == pin.url && exists
-            }) {
-                bottle.settings.pins[index].name = name
-            }
-        }
+        .contentShape(Rectangle())
     }
 
     func runProgram() {

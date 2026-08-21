@@ -79,33 +79,59 @@ class Winetricks {
         }
         let winetricksCmd = terminalCommand(command: command, bottle: bottle, resourcesURL: resourcesURL)
 
-        let script = """
-        tell application "Terminal"
-            activate
-            do script "\(winetricksCmd)"
-        end tell
-        """
+        // Via a temp script and `TerminalApp.preferred`, the same way
+        // `Bottle.openTerminal()` does it. Naming Terminal.app in the script
+        // ignored the terminal the user picked in Settings.
+        guard let scriptURL = writeTempScript(for: winetricksCmd, command: command) else { return }
+        TempFileTracker.shared.register(file: scriptURL)
 
+        let source = TerminalApp.preferred.generateAppleScript(for: scriptURL.path)
         var error: NSDictionary?
-        if let appleScript = NSAppleScript(source: script) {
+        if let appleScript = NSAppleScript(source: source) {
             appleScript.executeAndReturnError(&error)
 
             if let error {
                 logger.error("AppleScript error: \(error)")
                 if let description = error["NSAppleScriptErrorMessage"] as? String {
-                    await MainActor.run {
-                        let alert = NSAlert()
-                        alert.messageText = String(localized: "alert.message")
-                        alert.informativeText = String(localized: "alert.info")
-                            + " \(command): "
-                            + description
-                        alert.alertStyle = .critical
-                        alert.addButton(withTitle: String(localized: "button.ok"))
-                        alert.runModal()
-                    }
+                    showCommandError(command: command, description: description)
                 }
             }
         }
+
+        Task.detached(priority: .background) {
+            // The terminal has to read the file before it goes.
+            try? await Task.sleep(for: .seconds(5))
+            await TempFileTracker.shared.cleanupWithRetry(file: scriptURL)
+        }
+    }
+
+    @MainActor
+    private static func writeTempScript(for winetricksCmd: String, command: String) -> URL? {
+        let scriptURL = FileManager.default.temporaryDirectory
+            .appending(path: "whisky-winetricks-\(UUID().uuidString).sh")
+        do {
+            try "#!/bin/sh\n\(winetricksCmd)\n".write(to: scriptURL, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes(
+                [.posixPermissions: 0o755], ofItemAtPath: scriptURL.path(percentEncoded: false)
+            )
+            return scriptURL
+        } catch {
+            logger.error("Failed to write winetricks script: \(error.localizedDescription)")
+            showCommandError(command: command, description: error.localizedDescription)
+            return nil
+        }
+    }
+
+    @MainActor
+    private static func showCommandError(command: String, description: String) {
+        let alert = NSAlert()
+        alert.messageText = String(localized: "alert.message")
+        alert.informativeText = String(localized: "alert.info")
+            + " \(command): "
+            + description
+        alert.alertStyle = .critical
+        alert.addButton(withTitle: String(localized: "button.ok"))
+        alert.runModal()
     }
 
     /// Shown when the bundled winetricks resources can't be located. A missing

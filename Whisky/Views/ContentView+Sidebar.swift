@@ -136,6 +136,21 @@ extension ContentView {
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.accentColor)
+
+                    // This build has its own bundle identifier, so someone
+                    // arriving from another Whisky lands here with an empty list
+                    // and their bottles still on disk.
+                    if !migratableBottles.isEmpty {
+                        Divider()
+                            .frame(maxWidth: 260)
+                            .padding(.vertical, 8)
+                        Text("main.migrate.found \(migratableBottles.count)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Button("migrate.menu.import") {
+                            showMigrate = true
+                        }
+                    }
                 }
             }
         }
