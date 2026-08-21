@@ -37,6 +37,7 @@ struct WineConfigSection: View {
     @Binding var retinaModeLoadingState: LoadingState
     @Binding var dpiConfigLoadingState: LoadingState
     @Binding var dpiSheetPresented: Bool
+    var onRetryWindowsVersion: (() -> Void)?
     var onRetryBuildVersion: (() -> Void)?
     /// Set when a typed build belongs to a different Windows version. Shown
     /// under the field rather than written to the prefix.
@@ -50,7 +51,8 @@ struct WineConfigSection: View {
             SettingItemView(
                 title: "config.winVersion",
                 description: "config.winVersion.info",
-                loadingState: winVersionLoadingState
+                loadingState: winVersionLoadingState,
+                onRetry: onRetryWindowsVersion
             ) {
                 Picker("config.winVersion", selection: $windowsVersion) {
                     ForEach(WinVersion.allCases.reversed(), id: \.self) {

@@ -100,6 +100,7 @@ struct ConfigView: View {
                 retinaModeLoadingState: $retinaModeLoadingState,
                 dpiConfigLoadingState: $dpiConfigLoadingState,
                 dpiSheetPresented: $dpiSheetPresented,
+                onRetryWindowsVersion: loadWindowsVersion,
                 onRetryBuildVersion: loadBuildName,
                 onRetryRetinaMode: loadRetinaMode,
                 onRetryDpi: loadDpi
@@ -334,11 +335,21 @@ extension ConfigView {
     /// The two can disagree: a prefix adopted from another Whisky, or a version
     /// change whose registry write failed. When they do, the prefix wins here,
     /// and the launch path is what puts the setting back into effect.
+    /// How long a prefix read is given before the row gives up and offers a retry.
+    ///
+    /// These are single registry reads and answer in seconds. Anything longer
+    /// means something else is holding the prefix, and a spinner with no end is
+    /// the worst way to say so.
+    private static let prefixReadTimeout: Duration = .seconds(30)
+
     func loadWindowsVersion() {
         winVersionLoadingState = .loading
         Task(priority: .userInitiated) {
             do {
-                guard let reported = try await Wine.reportedWindowsVersion(bottle: bottle) else {
+                guard let reported = try await withTimeout(Self.prefixReadTimeout, operation: {
+                    try await Wine.reportedWindowsVersion(bottle: bottle)
+                })
+                else {
                     logger.warning("Prefix reports a Windows version Whisky cannot name")
                     winVersionLoadingState = .failed
                     return
@@ -357,7 +368,9 @@ extension ConfigView {
         buildVersionLoadingState = .loading
         Task(priority: .userInitiated) {
             do {
-                buildVersion = try await Wine.buildVersion(bottle: bottle) ?? ""
+                buildVersion = try await withTimeout(Self.prefixReadTimeout) {
+                    try await Wine.buildVersion(bottle: bottle)
+                } ?? ""
                 buildVersionLoadingState = .success
             } catch {
                 logger.error("Failed to load build version: \(error.localizedDescription)")
@@ -370,7 +383,9 @@ extension ConfigView {
         retinaModeLoadingState = .loading
         Task(priority: .userInitiated) {
             do {
-                let value = try await Wine.retinaMode(bottle: bottle)
+                let value = try await withTimeout(Self.prefixReadTimeout) {
+                    try await Wine.retinaMode(bottle: bottle)
+                }
                 switch value {
                 case .some(true):
                     retinaModeState = .enabled
@@ -393,7 +408,9 @@ extension ConfigView {
             do {
                 // Wine.dpiResolution returns nil if registry key doesn't exist (expected for unedited DPI)
                 // It throws only on actual Wine/registry errors
-                dpiConfig = try await Wine.dpiResolution(bottle: bottle) ?? 0
+                dpiConfig = try await withTimeout(Self.prefixReadTimeout) {
+                    try await Wine.dpiResolution(bottle: bottle)
+                } ?? 0
                 dpiConfigLoadingState = .success
             } catch {
                 logger.error("Failed to load DPI resolution: \(error.localizedDescription)")

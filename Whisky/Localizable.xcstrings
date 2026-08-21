@@ -53300,6 +53300,154 @@
         }
       }
     },
+    "error.timedOut %lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gave up after %lld seconds. Something else is holding this bottle open, most often a Wine process that is still starting up."
+          }
+        }
+      }
+    },
     "gameConfig.apply.failed %@" : {
       "localizations" : {
         "ar" : {
