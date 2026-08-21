@@ -356,6 +356,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Launch environments reach the system log by name only, matching what the run's
   own log file already did. A value can be a token.
 
+### Fixed
+- The Wine section no longer spins forever when the bottle is busy. Windows
+  Version, Build Version, Retina Mode and DPI Scaling each read the prefix
+  registry and waited on that read with no deadline, so a Wine process holding
+  the prefix left four spinners with no explanation and, for Windows Version, no
+  way to retry. Each read now gets 30 seconds, the row then offers a retry, and
+  the section says the bottle is busy rather than that the values are
+  unavailable. A read that runs out of time is cancelled rather than left
+  running.
+
 ### Changed
 - **Import Bottles from Another Whisky…** is offered where it is needed. Whisky
   Preview has its own bundle identifier, so arriving from another Whisky build
