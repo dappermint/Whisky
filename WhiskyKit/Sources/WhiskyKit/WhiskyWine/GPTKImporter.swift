@@ -95,8 +95,9 @@ public enum GPTKImporter {
     /// `nvapi64` is kept in the store and never deployed: a stock runtime ships
     /// no `nvapi64` at all, so placing Apple's makes every process that probes
     /// for an NVIDIA GPU load D3DMetal, and Chromium does exactly that, which takes
-    /// Steam's helper process down with it. NGX reports DLSS available without
-    /// it, so MetalFX does not pay for that risk.
+    /// Steam's helper process down with it. The cost is that a Streamline title
+    /// asks NVAPI about the GPU before it will offer DLSS at all, so it never
+    /// reaches MetalFX, see ``installMetalFXBridge(intoLibraryFolder:usingStore:)``.
     static let nvidiaBridgeDLLNames = ["nvapi64.dll", "nvngx-on-metalfx.dll"]
 
     /// Enough bytes to hold the winebuild marker at offset 0x40.

@@ -85,10 +85,20 @@ struct GPTKMetalFXTests {
     func installIsIdempotent() throws {
         let (store, runtime) = try makeBridgeableRuntime()
         try GPTKImporter.deploy(fromStore: store, intoLibraryFolder: runtime)
+        let bridge = GPTKImporter.metalFXBridgePE(inLibraryFolder: runtime)
+        let before = try FileManager.default.attributesOfItem(
+            atPath: bridge.path(percentEncoded: false)
+        )[.creationDate] as? Date
 
         try GPTKImporter.installMetalFXBridge(intoLibraryFolder: runtime, usingStore: store)
 
         #expect(GPTKImporter.isMetalFXBridgeInstalled(inLibraryFolder: runtime, usingStore: store))
+        // launch-time install runs every time, and rewriting a file that already
+        // matches the store is work nobody asked for
+        let after = try FileManager.default.attributesOfItem(
+            atPath: bridge.path(percentEncoded: false)
+        )[.creationDate] as? Date
+        #expect(before == after)
     }
 
     // MARK: - Remove
@@ -207,6 +217,72 @@ struct GPTKMetalFXTests {
         GPTKImporter.clearMetalFXBridgePlaceholder(inBottle: bottle)
 
         #expect(FileManager.default.fileExists(atPath: placeholder.path(percentEncoded: false)))
+    }
+}
+
+@Suite("MetalFX Backend Reconciliation Tests")
+@MainActor
+struct MetalFXBackendTests {
+    private let tempDir: URL
+
+    init() throws {
+        tempDir = try makeGPTKTempDir()
+    }
+
+    private func makeBottle(metalFX: Bool) throws -> Bottle {
+        let url = tempDir.appending(path: "bottle")
+        try FileManager.default.createDirectory(
+            at: url.appending(path: "drive_c").appending(path: "windows").appending(path: "system32"),
+            withIntermediateDirectories: true
+        )
+        let bottle = Bottle(bottleUrl: url)
+        bottle.settings.metalFX = metalFX
+        return bottle
+    }
+
+    private func placeholder(inBottle bottle: Bottle) -> URL {
+        bottle.url.appending(path: "drive_c").appending(path: "windows")
+            .appending(path: "system32").appending(path: GPTKImporter.metalFXBridgeName)
+    }
+
+    private func makeRuntimeWithBridge() throws -> URL {
+        let store = try makeImportedStore(in: tempDir)
+        try makeStoreMetalFXBridge(inStore: store)
+        let runtime = tempDir.appending(path: "Libraries")
+        try makeRuntime(at: runtime)
+        try GPTKImporter.deploy(fromStore: store, intoLibraryFolder: runtime)
+        return runtime
+    }
+
+    @Test("D3DMetal with the setting on seeds the placeholder")
+    func d3dMetalSeeds() throws {
+        let runtime = try makeRuntimeWithBridge()
+        let bottle = try makeBottle(metalFX: true)
+
+        Wine.applyMetalFX(bottle: bottle, backend: .d3dMetal, libraryFolder: runtime)
+
+        #expect(FileManager.default.fileExists(
+            atPath: placeholder(inBottle: bottle).path(percentEncoded: false)
+        ))
+    }
+
+    @Test("Switching off D3DMetal clears the placeholder, setting on or not")
+    func otherBackendsClear() throws {
+        let runtime = try makeRuntimeWithBridge()
+        let bottle = try makeBottle(metalFX: true)
+
+        for backend in [GraphicsBackend.dxvk, .dxmt, .wined3d] {
+            Wine.applyMetalFX(bottle: bottle, backend: .d3dMetal, libraryFolder: runtime)
+            #expect(FileManager.default.fileExists(
+                atPath: placeholder(inBottle: bottle).path(percentEncoded: false)
+            ))
+
+            // only D3DMetal answers the DLSS entry points behind the placeholder
+            Wine.applyMetalFX(bottle: bottle, backend: backend, libraryFolder: runtime)
+            #expect(!FileManager.default.fileExists(
+                atPath: placeholder(inBottle: bottle).path(percentEncoded: false)
+            ))
+        }
     }
 }
 

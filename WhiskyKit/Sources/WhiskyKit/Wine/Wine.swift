@@ -732,17 +732,16 @@ public class Wine {
         switch backend {
         case .dxmt:
             try enableDXMT(bottle: bottle)
-        case .d3dMetal:
-            // Applied in both directions, so clearing the setting takes effect
-            // on the next launch by itself.
-            applyMetalFX(bottle: bottle)
-        case .dxvk, .wined3d, .recommended:
+        case .d3dMetal, .dxvk, .wined3d, .recommended:
             break
         }
+
+        applyMetalFX(bottle: bottle, backend: backend)
     }
 
     /// Opts a bottle in or out of D3DMetal's DLSS-to-MetalFX path, per
-    /// ``BottleSettings/metalFX``.
+    /// ``BottleSettings/metalFX`` and the backend the launch actually resolved
+    /// to.
     ///
     /// The bridge itself is a builtin in the shared Wine tree, so it cannot be
     /// installed per bottle. What can is the `system32` entry the loader needs
@@ -751,15 +750,27 @@ public class Wine {
     /// complete the tree is. So the placeholder is the switch: present means a
     /// game can reach MetalFX, absent means the bridge is inert.
     ///
-    /// - Parameter bottle: The ``Bottle`` whose opt-in state to apply.
+    /// Only D3DMetal implements the DLSS entry points behind it, so every other
+    /// backend clears, setting or no setting. Otherwise a bottle switched away
+    /// from D3DMetal with MetalFX still on keeps a placeholder for a bridge
+    /// nothing in that prefix can answer, and a DLSS-aware game reaches it under
+    /// a backend it was never meant for.
     ///
-    /// - Note: Called by `runProgram` whenever the effective backend is
-    ///   D3DMetal, in both directions, so turning the setting off takes effect
-    ///   on the next launch without the user having to repair anything.
+    /// - Parameters:
+    ///   - bottle: The ``Bottle`` whose opt-in state to apply.
+    ///   - backend: The backend this launch resolved to.
+    ///   - libraryFolder: The runtime tree holding the bridge.
+    ///
+    /// - Note: Called by `runProgram` for every launch, in both directions, so
+    ///   turning the setting off or switching backend takes effect on the next
+    ///   launch without the user having to repair anything.
     @MainActor
-    public static func applyMetalFX(bottle: Bottle) {
-        let libraryFolder = WhiskyWineInstaller.libraryFolder
-        if bottle.settings.metalFX {
+    public static func applyMetalFX(
+        bottle: Bottle,
+        backend: GraphicsBackend,
+        libraryFolder: URL = WhiskyWineInstaller.libraryFolder
+    ) {
+        if backend == .d3dMetal, bottle.settings.metalFX {
             GPTKImporter.seedMetalFXBridgePlaceholder(inBottle: bottle.url, fromLibraryFolder: libraryFolder)
         } else {
             GPTKImporter.clearMetalFXBridgePlaceholder(inBottle: bottle.url)
