@@ -181,6 +181,8 @@ public enum SteamCompatTool {
         }
         guard isWritable(root) else { throw SteamCompatToolError.directoryNotWritable(root) }
 
+        try removePreviousInstall(at: root)
+
         let directory = toolDirectory(at: root)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
@@ -196,6 +198,22 @@ public enum SteamCompatTool {
         try FileManager.default.setAttributes(
             [.posixPermissions: 0o755], ofItemAtPath: runnerURL.path(percentEncoded: false)
         )
+    }
+
+    /// Clears an install left under the identifier we used before.
+    ///
+    /// The directory is named after the identifier, so a rename leaves the old
+    /// one in place and the client lists two tools that both claim to be us.
+    static func removePreviousInstall(at root: URL) throws {
+        let stale = root.appending(path: previousName)
+        guard stale != toolDirectory(at: root),
+              FileManager.default.fileExists(atPath: stale.path(percentEncoded: false)),
+              FileManager.default.fileExists(
+                  atPath: stale.appending(path: runnerName).path(percentEncoded: false)
+              )
+        else { return }
+
+        try FileManager.default.removeItem(at: stale)
     }
 
     /// Whether the directory the client scans exists and can be written to.

@@ -1,5 +1,5 @@
 //
-//  SteamCompatToolMappingTests.swift
+//  SteamCompatToolRenameTests.swift
 //  WhiskyKitTests
 //
 //  This file is part of Whisky.
@@ -20,8 +20,8 @@ import Foundation
 import Testing
 @testable import WhiskyKit
 
-@Suite("SteamCompatTool Mapping Tests")
-struct SteamCompatToolMappingTests {
+@Suite("SteamCompatTool Rename Tests")
+struct SteamCompatToolRenameTests {
     private func makeConfig(tool: String) -> String {
         """
         "InstallConfigStore"
@@ -123,5 +123,46 @@ struct SteamCompatToolMappingTests {
 
         #expect(count == 1)
         #expect(text.contains("\"whisky-proton\""))
+    }
+
+    // MARK: - Renaming
+
+    private func makeRunner() throws -> URL {
+        let url = FileManager.default.temporaryDirectory.appending(path: "cmd_\(UUID().uuidString)")
+        try Data("#!/bin/bash\n".utf8).write(to: url)
+        return url
+    }
+
+    /// The directory is named after the identifier, so a rename leaves the old
+    /// one behind and the client lists two tools that both claim to be us.
+    @Test("Installing clears an install left under the old identifier")
+    func clearsThePreviousInstall() throws {
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory.appending(path: "tools_\(UUID().uuidString)")
+        let stale = root.appending(path: SteamCompatTool.previousName)
+        try fileManager.createDirectory(at: stale, withIntermediateDirectories: true)
+        try Data().write(to: stale.appending(path: "whisky-run"))
+        defer { try? fileManager.removeItem(at: root) }
+
+        try SteamCompatTool.install(whiskyCmd: makeRunner(), at: root)
+
+        #expect(!fileManager.fileExists(atPath: stale.path(percentEncoded: false)))
+        #expect(SteamCompatTool.isInstalled(at: root))
+    }
+
+    /// Somebody else's directory can share the name, so the runner has to be
+    /// there before we treat it as ours and delete it.
+    @Test("A directory that is not one of ours is left alone")
+    func leavesAnUnrelatedDirectoryAlone() throws {
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory.appending(path: "tools_\(UUID().uuidString)")
+        let other = root.appending(path: SteamCompatTool.previousName)
+        try fileManager.createDirectory(at: other, withIntermediateDirectories: true)
+        try Data("keep me".utf8).write(to: other.appending(path: "notes.txt"))
+        defer { try? fileManager.removeItem(at: root) }
+
+        try SteamCompatTool.install(whiskyCmd: makeRunner(), at: root)
+
+        #expect(fileManager.fileExists(atPath: other.appending(path: "notes.txt").path(percentEncoded: false)))
     }
 }
