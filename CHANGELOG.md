@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- A bottle's Steam can be pointed at a library folder that lives on macOS, so
+  the macOS Steam client and the bottle's client share one copy of a game. This
+  exists because the two clients can each do half the job: the macOS client
+  downloads Windows depots (its console takes `@sSteamCmdForcePlatformType
+  windows` and then `app_install <appid>`, and both are needed) but refuses to
+  launch them, while the bottle's client launches them but has to fetch them
+  through Wine's networking. `whisky library show` lists what a bottle shares
+  and what it could, `whisky library share` adds a folder, and
+  `whisky library unshare` takes it back out without touching the games.
+  Steam's own data folder is refused: it holds the macOS builds of native
+  games, and a Windows client scanning those decides they are the wrong build
+  and queues a redownload over them.
+
 ### Fixed
 - A GPTK runtime is no longer left without a D3D12 or DXGI DLL if Whisky is
   killed while it installs one. The interposer was put in place by removing the

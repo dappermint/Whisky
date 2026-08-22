@@ -104530,6 +104530,91 @@
         }
       }
     },
+    "steam.share.error.alreadyShared %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        }
+      }
+    },
+    "steam.share.error.hostDataDirectory" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        }
+      }
+    },
+    "steam.share.error.noClient" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        }
+      }
+    },
+    "steam.share.error.notShared %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        }
+      }
+    },
+    "steam.share.error.unreachable %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        }
+      }
+    },
     "steam.stall.detected" : {
       "localizations" : {
         "ar" : {
