@@ -155,8 +155,14 @@ extension GPTKImporter {
             withDestinationPath: unixLinkDestination
         )
 
-        try fileManager.removeItem(at: slot)
-        try fileManager.copyItem(at: shim, to: slot)
+        // Stage the shim beside the slot and swap by rename. Removing the slot
+        // before copying leaves a window where a crash strands the tree with no
+        // DLL in that slot at all, a state the guard above then refuses to
+        // repair because there is nothing left to rename aside.
+        let staged = peDir.appending(path: interposer.slotName + ".staging")
+        try? fileManager.removeItem(at: staged)
+        try fileManager.copyItem(at: shim, to: staged)
+        _ = try fileManager.replaceItemAt(slot, withItemAt: staged)
         let moved = "\(interposer.label): Apple's \(interposer.slotName) is now \(interposer.renamedName)"
         logger.info("Installed \(moved, privacy: .public)")
     }
