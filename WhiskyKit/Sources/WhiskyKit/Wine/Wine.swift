@@ -302,7 +302,9 @@ public class Wine {
         guard choice == .recommended else { return (choice, programOverrides) }
 
         let resolved = GraphicsBackendResolver.resolve(
-            for: bottle.settings.runtime, launcher: LauncherType.detect(from: url)
+            for: bottle.settings.runtime,
+            launcher: LauncherType.detect(from: url),
+            architecture: GraphicsBackendResolver.architecture(of: url)
         )
         guard resolved != GraphicsBackendResolver.resolve(for: bottle.settings.runtime) else {
             return (resolved, programOverrides)

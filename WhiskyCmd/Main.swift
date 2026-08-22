@@ -58,6 +58,7 @@ struct Whisky: AsyncParsableCommand {
             Remove.self,
             Run.self,
             Games.self,
+            Library.self,
             Launch.self,
             Shortcut.self,
             Shellenv.self
@@ -548,6 +549,115 @@ extension Whisky {
                 ])
             }
             print(table.render())
+        }
+    }
+
+    struct Library: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(
+            commandName: "library",
+            abstract: "Share a macOS Steam library folder with a bottle.",
+            discussion: """
+            The macOS Steam client can fetch Windows depots, its console takes \
+            `@sSteamCmdForcePlatformType windows` and then `app_install <appid>`, \
+            but it refuses to launch them. A folder both clients can see joins \
+            the two halves: the macOS client downloads into it, the bottle's \
+            client launches out of it.
+
+            Steam's own folder cannot be shared. It holds the macOS builds of \
+            native games, and a Windows client scanning those decides they are \
+            the wrong build and queues a redownload over them. Add a separate \
+            folder in Steam under Settings, Storage, and share that one.
+            """,
+            subcommands: [LibraryShow.self, LibraryShare.self, LibraryUnshare.self],
+            defaultSubcommand: LibraryShow.self
+        )
+
+        @MainActor
+        static func bottle(named name: String) throws -> Bottle {
+            var bottlesList = BottleData()
+            guard let bottle = bottlesList.loadBottles().first(where: { $0.settings.name == name })
+            else { throw DomainError("A bottle with that name doesn't exist.") }
+            return bottle
+        }
+
+        static func folder(at path: String) -> URL {
+            URL(filePath: (path as NSString).expandingTildeInPath).standardizedFileURL
+        }
+    }
+
+    struct LibraryShow: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(
+            commandName: "show",
+            abstract: "List the library folders a bottle shares, and the ones it could."
+        )
+
+        @Argument(help: "Name of the bottle to inspect")
+        var bottleName: String
+
+        @MainActor
+        mutating func run() async throws {
+            let bottle = try Library.bottle(named: bottleName)
+            let shared = SharedSteamLibrary.shared(bottleURL: bottle.url)
+
+            var table = TextTable(headers: ["Status", "Path"])
+            for folder in shared {
+                table.addRow(values: ["shared", folder.path(percentEncoded: false)])
+            }
+            for folder in HostSteam.libraryFolders() where !shared.contains(folder) {
+                let status = folder == HostSteam.defaultRoot ? "steam's own" : "available"
+                table.addRow(values: [status, folder.path(percentEncoded: false)])
+            }
+            print(table.render())
+        }
+    }
+
+    struct LibraryShare: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(
+            commandName: "share",
+            abstract: "Add a macOS Steam library folder to a bottle's Steam."
+        )
+
+        @Argument(help: "Name of the bottle")
+        var bottleName: String
+
+        @Argument(help: "Path of the library folder to share")
+        var path: String
+
+        @MainActor
+        mutating func run() async throws {
+            let bottle = try Library.bottle(named: bottleName)
+            let folder = Library.folder(at: path)
+            do {
+                try SharedSteamLibrary.share(folder: folder, bottleURL: bottle.url)
+            } catch {
+                throw DomainError(error.localizedDescription)
+            }
+            print("Shared \(folder.path(percentEncoded: false)) with \(bottleName).")
+        }
+    }
+
+    struct LibraryUnshare: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(
+            commandName: "unshare",
+            abstract: "Remove a library folder from a bottle's Steam, keeping the games."
+        )
+
+        @Argument(help: "Name of the bottle")
+        var bottleName: String
+
+        @Argument(help: "Path of the library folder to remove")
+        var path: String
+
+        @MainActor
+        mutating func run() async throws {
+            let bottle = try Library.bottle(named: bottleName)
+            let folder = Library.folder(at: path)
+            do {
+                try SharedSteamLibrary.unshare(folder: folder, bottleURL: bottle.url)
+            } catch {
+                throw DomainError(error.localizedDescription)
+            }
+            print("Removed \(folder.path(percentEncoded: false)) from \(bottleName).")
         }
     }
 
