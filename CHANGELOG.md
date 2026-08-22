@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Whisky can present itself to the macOS Steam client as a compatibility tool,
+  the shape that client already knows how to drive: it picks a tool for a title,
+  runs the tool's command line with the game's executable appended, and hands it
+  an environment describing where the game and its prefix live. A game launched
+  that way belongs to Steam the way a native one does, which is what the overlay
+  and the Steam API need and what a launch started behind Steam's back cannot
+  have. `SteamCompatTool` writes the two manifests and the runner, spelling the
+  target platform the one way the client accepts, and reports the environment
+  Steam has to be started with, since the client never scans its own
+  compatibility tools directory on macOS.
 - The operations the macOS Steam client will not perform for a Windows title are
   now available to Whisky. `SteamFrontend` reads which platforms a title ships
   builds for, so a Windows-only one is identified rather than guessed at; reads

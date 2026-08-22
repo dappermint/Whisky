@@ -103788,6 +103788,40 @@
         }
       }
     },
+    "steam.compattool.error.noClient" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        }
+      }
+    },
+    "steam.compattool.error.runnerMissing %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        }
+      }
+    },
     "steam.devtools.error.evaluation %@" : {
       "extractionState" : "manual",
       "localizations" : {
