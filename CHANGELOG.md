@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- DLSS frame generation is offered to games Steam launches. Whisky steers Steam
+  itself onto DXVK so its Chromium helper paints, and it was stripping
+  CX_ACTIVE_GRAPHICS_BACKEND along with the rest of the DXVK-versus-D3DMetal
+  environment. That variable selects no backend: the only thing in the runtime
+  that reads it is win32u, and all it does there is answer the hardware
+  scheduling query. Steam's games inherit Steam's environment and run on
+  D3DMetal, since DXVK has no d3d12, so stripping it left every one of them
+  reporting that frame generation needs GPU hardware scheduling turned on. It
+  now survives the DXVK and DXMT overrides, and is still dropped for wined3d,
+  which is the one path with no D3DMetal behind it.
 - DLSS reaches games that use NVIDIA Streamline, which needed one more thing
   than deploying Apple's NVAPI. Wine resolves a builtin by the name in the PE
   export directory rather than the filename, and Apple's NVAPI ships as
