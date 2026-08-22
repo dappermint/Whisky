@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- The operations the macOS Steam client will not perform for a Windows title are
+  now available to Whisky. `SteamFrontend` reads which platforms a title ships
+  builds for, so a Windows-only one is identified rather than guessed at; reads
+  and sets the compatibility tool a title runs through; downloads a title's
+  Windows build into a chosen library folder, which takes a platform override
+  and an install command together because the override alone writes a manifest
+  and fetches nothing; and hands a launch to Whisky for a title the client
+  refuses with `AppError_29`. Names that reach a script are written as JSON
+  literals, because a bottle or tool name is user input and a quote in one would
+  otherwise end the literal early.
 - Whisky can talk to the macOS Steam client's interface. That interface is a
   Chromium app whose behaviour is decided in JavaScript, which matters because
   the two things standing between the macOS client and a Windows game both live
