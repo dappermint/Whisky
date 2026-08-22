@@ -94,6 +94,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and queues a redownload over them.
 
 ### Fixed
+- Steam finds Whisky's compatibility tool however it was started, including from
+  the Dock. The tool was going into `<steam>/compatibilitytools.d`, which is the
+  directory every guide names and the one the macOS client never reads, so it
+  was only ever found when Steam was started with an environment variable
+  pointing at it. It now goes to `/usr/local/share/steam/compatibilitytools.d`,
+  which the client scans unprompted. That directory belongs to the system until
+  an administrator says otherwise, so Whisky checks first and hands over the
+  command rather than failing with a permission error.
+- Whisky no longer gives Steam a second Dock icon. Starting it ran the
+  executable inside the app bundle, which skips LaunchServices: macOS drew a
+  separate generic icon beside the real Steam and the copy would not answer a
+  normal quit. The bundle is opened instead.
 - Whisky no longer mistakes a Windows-only Steam title for a native one. The
   platform list stops separating them once Steam Play is on, because the client
   synthesises `osx` into it for any title a compatibility tool covers, so

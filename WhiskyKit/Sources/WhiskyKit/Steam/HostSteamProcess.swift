@@ -16,6 +16,7 @@
 //  If not, see https://www.gnu.org/licenses/.
 //
 
+import AppKit
 import Foundation
 import os.log
 
@@ -36,19 +37,21 @@ public enum HostSteamProcessError: LocalizedError, Equatable {
     }
 }
 
-/// Starts and stops the macOS Steam client on Whisky's terms.
+/// Starts and stops the macOS Steam client.
 ///
-/// Whisky has to be what starts Steam, for two reasons that both come from the
-/// client rather than from choice. It only looks for compatibility tools in
-/// directories named by `STEAM_EXTRA_COMPAT_TOOLS_PATHS`, never in its own
-/// `compatibilitytools.d`. And its interface only accepts changes when it was
-/// started with `-cef-enable-debugging`; the marker file that turns that on
+/// Starting it is only needed for the one thing Steam cannot be asked to do
+/// afterwards: accept changes to its interface, which requires
+/// `-cef-enable-debugging` at launch. The marker file that turns that on
 /// elsewhere does nothing on macOS.
 ///
-/// The binary launched is the downloaded client inside the data directory, not
-/// `/Applications/Steam.app`. That one is a bootstrapper which re-execs the
-/// real client, and neither an environment nor an argument list survives the
-/// hop.
+/// Finding compatibility tools is deliberately not a reason. A tool installed
+/// in the directory ``SteamCompatTool/sharedToolsDirectory`` names is found
+/// however Steam was started, so opening it from the Dock works and Whisky
+/// stays out of the way.
+///
+/// The app bundle is opened rather than the binary inside it. Running the inner
+/// executable directly skips LaunchServices, which gives Steam a second, generic
+/// Dock icon beside the real one and leaves it not answering a normal quit.
 public enum HostSteamProcess {
     private static let logger = Logger(
         subsystem: Bundle.whiskyBundleIdentifier, category: "HostSteamProcess"
@@ -87,50 +90,29 @@ public enum HostSteamProcess {
         return await SteamDevTools.isListening()
     }
 
-    /// What the client has to be started with.
-    ///
-    /// - Parameter compatToolsDirectory: The directory holding Whisky's
-    ///   compatibility tool, or `nil` to start without one.
-    public static func environment(compatToolsDirectory: URL?) -> [String: String] {
-        guard let compatToolsDirectory else { return [:] }
-        return ["STEAM_EXTRA_COMPAT_TOOLS_PATHS":
-            compatToolsDirectory.path(percentEncoded: false)]
-    }
+    /// Where the client is installed, as an app rather than as a binary.
+    public static let applicationURL = URL(filePath: "/Applications/Steam.app")
 
-    /// Starts the client.
+    /// Starts the client the way the Dock does.
     ///
     /// - Parameters:
-    ///   - steamRoot: The macOS Steam data directory.
-    ///   - compatTools: Whether to point the client at Whisky's compatibility
-    ///     tool.
-    ///   - debugging: Whether to let Whisky reach the client's interface.
+    ///   - application: The Steam app bundle.
+    ///   - debugging: Whether to let Whisky reach the client's interface
+    ///     afterwards.
     /// - Throws: ``HostSteamProcessError/clientMissing`` when Steam is not
     ///   installed.
     public static func launch(
-        steamRoot: URL = HostSteam.defaultRoot,
-        compatTools: Bool = true,
-        debugging: Bool = true
-    ) throws {
-        guard let binary = clientBinary(steamRoot: steamRoot) else {
+        application: URL = applicationURL, debugging: Bool = true
+    ) async throws {
+        guard FileManager.default.fileExists(atPath: application.path(percentEncoded: false)) else {
             throw HostSteamProcessError.clientMissing
         }
 
-        let process = Process()
-        process.executableURL = binary
-        process.arguments = debugging ? [debuggingArgument] : []
-        process.environment = ProcessInfo.processInfo.environment.merging(
-            environment(
-                compatToolsDirectory: compatTools
-                    ? SteamCompatTool.toolsDirectory(steamRoot: steamRoot)
-                    : nil
-            )
-        ) { _, new in new }
-        // The client detaches on its own and outlives this, so nothing here
-        // waits on it or reads its output.
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.arguments = debugging ? [debuggingArgument] : []
+        configuration.activates = true
 
-        try process.run()
+        _ = try await NSWorkspace.shared.openApplication(at: application, configuration: configuration)
         logger.notice("Started the macOS Steam client")
     }
 

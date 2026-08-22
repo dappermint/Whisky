@@ -20,9 +20,9 @@ import Foundation
 import Testing
 @testable import WhiskyKit
 
-/// A throwaway Steam data directory and a stand-in for WhiskyCmd.
+/// A throwaway stand-in for the directory the client scans, and for WhiskyCmd.
 private struct Fixture {
-    let steamRoot: URL
+    let toolsRoot: URL
     let whiskyCmd: URL
     let tempRoot: URL
 
@@ -31,25 +31,38 @@ private struct Fixture {
     }
 }
 
-private func makeFixture(withSteam: Bool = true) throws -> Fixture {
+private func makeFixture(writable: Bool = true) throws -> Fixture {
     let fileManager = FileManager.default
     let tempRoot = fileManager.temporaryDirectory.appending(path: "compattool_\(UUID().uuidString)")
-    let steamRoot = tempRoot.appending(path: "Steam")
-    if withSteam {
-        try fileManager.createDirectory(
-            at: steamRoot.appending(path: "steamapps"), withIntermediateDirectories: true
-        )
+    try fileManager.createDirectory(at: tempRoot, withIntermediateDirectories: true)
+
+    let toolsRoot = tempRoot.appending(path: "compatibilitytools.d")
+    if writable {
+        try fileManager.createDirectory(at: toolsRoot, withIntermediateDirectories: true)
     } else {
-        try fileManager.createDirectory(at: steamRoot, withIntermediateDirectories: true)
+        // A parent nobody can write to, which is what /usr/local looks like
+        // until an administrator says otherwise.
+        let locked = tempRoot.appending(path: "locked")
+        try fileManager.createDirectory(at: locked, withIntermediateDirectories: true)
+        try fileManager.setAttributes(
+            [.posixPermissions: 0o500], ofItemAtPath: locked.path(percentEncoded: false)
+        )
+        return try Fixture(
+            toolsRoot: locked.appending(path: "compatibilitytools.d"),
+            whiskyCmd: makeCmd(in: tempRoot), tempRoot: tempRoot
+        )
     }
 
-    let whiskyCmd = tempRoot.appending(path: "WhiskyCmd")
+    return try Fixture(toolsRoot: toolsRoot, whiskyCmd: makeCmd(in: tempRoot), tempRoot: tempRoot)
+}
+
+private func makeCmd(in directory: URL) throws -> URL {
+    let whiskyCmd = directory.appending(path: "WhiskyCmd")
     try Data("#!/bin/bash\n".utf8).write(to: whiskyCmd)
-    try fileManager.setAttributes(
+    try FileManager.default.setAttributes(
         [.posixPermissions: 0o755], ofItemAtPath: whiskyCmd.path(percentEncoded: false)
     )
-
-    return Fixture(steamRoot: steamRoot, whiskyCmd: whiskyCmd, tempRoot: tempRoot)
+    return whiskyCmd
 }
 
 @Suite("SteamCompatTool Manifest Tests")
@@ -160,11 +173,11 @@ struct SteamCompatToolInstallTests {
         let fixture = try makeFixture()
         defer { fixture.cleanUp() }
 
-        #expect(SteamCompatTool.isInstalled(steamRoot: fixture.steamRoot) == false)
-        try SteamCompatTool.install(whiskyCmd: fixture.whiskyCmd, steamRoot: fixture.steamRoot)
-        #expect(SteamCompatTool.isInstalled(steamRoot: fixture.steamRoot))
+        #expect(SteamCompatTool.isInstalled(at: fixture.toolsRoot) == false)
+        try SteamCompatTool.install(whiskyCmd: fixture.whiskyCmd, at: fixture.toolsRoot)
+        #expect(SteamCompatTool.isInstalled(at: fixture.toolsRoot))
 
-        let directory = SteamCompatTool.toolDirectory(steamRoot: fixture.steamRoot)
+        let directory = SteamCompatTool.toolDirectory(at: fixture.toolsRoot)
         for file in ["compatibilitytool.vdf", "toolmanifest.vdf", "whisky-run"] {
             #expect(
                 FileManager.default.fileExists(
@@ -180,20 +193,34 @@ struct SteamCompatToolInstallTests {
         let fixture = try makeFixture()
         defer { fixture.cleanUp() }
 
-        try SteamCompatTool.install(whiskyCmd: fixture.whiskyCmd, steamRoot: fixture.steamRoot)
-        try SteamCompatTool.install(whiskyCmd: fixture.whiskyCmd, steamRoot: fixture.steamRoot)
+        try SteamCompatTool.install(whiskyCmd: fixture.whiskyCmd, at: fixture.toolsRoot)
+        try SteamCompatTool.install(whiskyCmd: fixture.whiskyCmd, at: fixture.toolsRoot)
 
-        #expect(SteamCompatTool.isInstalled(steamRoot: fixture.steamRoot))
+        #expect(SteamCompatTool.isInstalled(at: fixture.toolsRoot))
     }
 
-    @Test("A missing Steam is refused rather than half-installed")
-    func refusesWithoutSteam() throws {
-        let fixture = try makeFixture(withSteam: false)
+    /// The directory lives under /usr/local, which is root-owned until somebody
+    /// changes that, so this is the common first failure rather than an edge.
+    @Test("A directory nobody can write to is refused, with the command to fix it")
+    func refusesAnUnwritableDirectory() throws {
+        let fixture = try makeFixture(writable: false)
         defer { fixture.cleanUp() }
 
-        #expect(throws: SteamCompatToolError.steamNotInstalled) {
-            try SteamCompatTool.install(whiskyCmd: fixture.whiskyCmd, steamRoot: fixture.steamRoot)
+        #expect(SteamCompatTool.isWritable(fixture.toolsRoot) == false)
+        #expect(throws: SteamCompatToolError.directoryNotWritable(fixture.toolsRoot)) {
+            try SteamCompatTool.install(whiskyCmd: fixture.whiskyCmd, at: fixture.toolsRoot)
         }
+        #expect(SteamCompatTool.prepareCommand(for: fixture.toolsRoot).contains("sudo"))
+    }
+
+    /// Not `<steam>/compatibilitytools.d`, which is the obvious place and is
+    /// the one the macOS client never reads.
+    @Test("The default location is the one the client scans on its own")
+    func defaultsToTheScannedDirectory() {
+        #expect(
+            SteamCompatTool.sharedToolsDirectory.path()
+                == "/usr/local/share/steam/compatibilitytools.d"
+        )
     }
 
     @Test("A runner that is not there is refused rather than written into a manifest")
@@ -203,7 +230,7 @@ struct SteamCompatToolInstallTests {
         let missing = fixture.tempRoot.appending(path: "NotHere")
 
         #expect(throws: SteamCompatToolError.runnerMissing(missing)) {
-            try SteamCompatTool.install(whiskyCmd: missing, steamRoot: fixture.steamRoot)
+            try SteamCompatTool.install(whiskyCmd: missing, at: fixture.toolsRoot)
         }
     }
 
@@ -212,14 +239,14 @@ struct SteamCompatToolInstallTests {
         let fixture = try makeFixture()
         defer { fixture.cleanUp() }
 
-        try SteamCompatTool.install(whiskyCmd: fixture.whiskyCmd, steamRoot: fixture.steamRoot)
-        let neighbour = SteamCompatTool.toolsDirectory(steamRoot: fixture.steamRoot)
+        try SteamCompatTool.install(whiskyCmd: fixture.whiskyCmd, at: fixture.toolsRoot)
+        let neighbour = SteamCompatTool.toolsDirectory(at: fixture.toolsRoot)
             .appending(path: "proton-of-some-kind")
         try FileManager.default.createDirectory(at: neighbour, withIntermediateDirectories: true)
 
-        try SteamCompatTool.remove(steamRoot: fixture.steamRoot)
+        try SteamCompatTool.remove(at: fixture.toolsRoot)
 
-        #expect(SteamCompatTool.isInstalled(steamRoot: fixture.steamRoot) == false)
+        #expect(SteamCompatTool.isInstalled(at: fixture.toolsRoot) == false)
         #expect(FileManager.default.fileExists(atPath: neighbour.path(percentEncoded: false)))
     }
 
@@ -228,19 +255,6 @@ struct SteamCompatToolInstallTests {
         let fixture = try makeFixture()
         defer { fixture.cleanUp() }
 
-        try SteamCompatTool.remove(steamRoot: fixture.steamRoot)
-    }
-
-    /// The client scans what this names and nothing else, which is the whole
-    /// reason Whisky has to be what starts Steam.
-    @Test("The launch environment points the client at the tools directory")
-    func launchEnvironmentNamesTheDirectory() throws {
-        let fixture = try makeFixture()
-        defer { fixture.cleanUp() }
-
-        let environment = SteamCompatTool.launchEnvironment(steamRoot: fixture.steamRoot)
-        let path = try #require(environment["STEAM_EXTRA_COMPAT_TOOLS_PATHS"])
-
-        #expect(path.hasSuffix("compatibilitytools.d"))
+        try SteamCompatTool.remove(at: fixture.toolsRoot)
     }
 }

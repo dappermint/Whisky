@@ -103788,6 +103788,602 @@
         }
       }
     },
+    "steam.compattool.done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky is installed as a Steam compatibility tool. Restart Steam and Windows games will offer to install."
+          }
+        }
+      }
+    },
+    "steam.compattool.error.notWritable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky can't write to the folder Steam reads compatibility tools from."
+          }
+        }
+      }
+    },
+    "steam.compattool.menu.install" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Install Compatibility Tool…"
+          }
+        }
+      }
+    },
+    "steam.compattool.needsPermission %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The folder Steam reads compatibility tools from belongs to the system, so it has to be created once with an administrator password.\n\nRun this in Terminal, then try again:\n\n%@"
+          }
+        }
+      }
+    },
     "steam.compattool.error.noClient" : {
       "extractionState" : "manual",
       "localizations" : {
