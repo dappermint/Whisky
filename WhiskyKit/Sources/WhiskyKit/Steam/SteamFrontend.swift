@@ -166,10 +166,27 @@ public actor SteamFrontend {
         )
     }
 
-    /// Whether a title has no macOS build, and therefore needs a bottle.
-    public func isWindowsOnly(appId: Int) async throws -> Bool {
+    /// Whether a title has to run in a bottle rather than natively.
+    ///
+    /// The platform list alone cannot answer this once Steam Play is on. The
+    /// client synthesises `osx` into `vecPlatforms` for any title a
+    /// compatibility tool covers, so Helldivers 2 and a genuinely native game
+    /// read the same. What separates them is the tool: the client attaches one
+    /// only where there is no native build to run, so a title with a tool
+    /// assigned is a title macOS cannot run on its own.
+    ///
+    /// The platform list is still the answer before any tool exists, which is
+    /// the state a fresh install is in.
+    public func needsBottle(appId: Int) async throws -> Bool {
+        if try await !compatTool(forAppId: appId).isEmpty { return true }
         let platforms = try await platforms(forAppId: appId)
         return platforms.contains("windows") && !platforms.contains("osx")
+    }
+
+    /// The compatibility tool a title is set to run through, empty when none.
+    public func compatTool(forAppId appId: Int) async throws -> String {
+        let value = try await devTools.evaluate(SteamFrontendScript.compatTool(forAppId: appId))
+        return Self.unquote(value) ?? ""
     }
 
     /// The compatibility tools the client offers for a title.

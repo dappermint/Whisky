@@ -75,6 +75,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and queues a redownload over them.
 
 ### Fixed
+- Whisky no longer mistakes a Windows-only Steam title for a native one. The
+  platform list stops separating them once Steam Play is on, because the client
+  synthesises `osx` into it for any title a compatibility tool covers, so
+  Helldivers 2 and a genuinely native game read the same. What still separates
+  them is the tool: the client attaches one only where there is no native build
+  to run. The platform list is still consulted where no tool exists, which is
+  the state a fresh install is in.
 - A GPTK runtime is no longer left without a D3D12 or DXGI DLL if Whisky is
   killed while it installs one. The interposer was put in place by removing the
   slot and then copying, so anything interrupting that window left the slot

@@ -103,10 +103,10 @@ struct SteamFrontendLiveTests {
         let frontend = SteamFrontend()
         try await frontend.connect()
 
-        // Helldivers 2 has no macOS build; Factorio does.
-        #expect(try await frontend.platforms(forAppId: 553_850) == ["windows"])
-        #expect(try await frontend.isWindowsOnly(appId: 553_850))
-        #expect(try await frontend.isWindowsOnly(appId: 427_520) == false)
+        // Helldivers 2 has no macOS build; Factorio does. With Steam Play on
+        // both report osx, so the tool is what tells them apart.
+        #expect(try await frontend.needsBottle(appId: 553_850))
+        #expect(try await frontend.needsBottle(appId: 427_520) == false)
 
         let folders = try await frontend.installFolders()
         #expect(!folders.isEmpty, "a logged-in client always has at least its own folder")
