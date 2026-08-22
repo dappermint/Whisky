@@ -53,31 +53,30 @@ struct HostSteamProcessTests {
         #expect(binary.lastPathComponent == "steam_osx")
     }
 
-    @Test("No client means nothing to launch, rather than a path that is not there")
+    @Test("No client means nothing to find, rather than a path that is not there")
     func reportsAMissingClient() throws {
         let root = try makeSteamRoot(withClient: false)
         defer { try? FileManager.default.removeItem(at: root) }
 
         #expect(HostSteamProcess.clientBinary(steamRoot: root) == nil)
-        #expect(throws: HostSteamProcessError.clientMissing) {
-            try HostSteamProcess.launch(steamRoot: root)
+    }
+
+    /// Opening the bundle rather than the binary inside it is what keeps Steam
+    /// a normal Dock app: running the inner executable skips LaunchServices,
+    /// which gives it a second generic icon and stops it answering a quit.
+    @Test("The app bundle is what gets opened")
+    func opensTheApplicationBundle() {
+        #expect(HostSteamProcess.applicationURL.pathExtension == "app")
+        #expect(HostSteamProcess.applicationURL.lastPathComponent == "Steam.app")
+    }
+
+    @Test("A missing application is refused")
+    func refusesAMissingApplication() async {
+        let missing = URL(filePath: "/Applications/NotSteam\(UUID().uuidString).app")
+
+        await #expect(throws: HostSteamProcessError.clientMissing) {
+            try await HostSteamProcess.launch(application: missing)
         }
-    }
-
-    /// The client never scans its own compatibilitytools.d on macOS. It scans
-    /// what this names and nothing else.
-    @Test("The compat tools directory is named in the environment")
-    func namesTheToolsDirectory() throws {
-        let directory = URL(filePath: "/Users/someone/Steam/compatibilitytools.d")
-
-        let environment = HostSteamProcess.environment(compatToolsDirectory: directory)
-
-        #expect(environment["STEAM_EXTRA_COMPAT_TOOLS_PATHS"] == directory.path())
-    }
-
-    @Test("Starting without compat tools names nothing")
-    func namesNothingWithoutTools() {
-        #expect(HostSteamProcess.environment(compatToolsDirectory: nil).isEmpty)
     }
 
     // MARK: - Finding the client

@@ -20,17 +20,18 @@ import Foundation
 
 /// Errors thrown while installing Whisky as a Steam compatibility tool.
 public enum SteamCompatToolError: LocalizedError, Equatable {
-    /// The macOS Steam client is not installed.
-    case steamNotInstalled
     /// The runner the tool manifest points at is missing.
     case runnerMissing(URL)
+    /// The directory the client scans is not writable, which it is not until
+    /// somebody with an administrator password says so.
+    case directoryNotWritable(URL)
 
     public var errorDescription: String? {
         switch self {
-        case .steamNotInstalled:
-            String(localized: "steam.compattool.error.noClient")
         case let .runnerMissing(url):
             String(localized: "steam.compattool.error.runnerMissing \(url.lastPathComponent)")
+        case .directoryNotWritable:
+            String(localized: "steam.compattool.error.notWritable")
         }
     }
 }
@@ -44,29 +45,37 @@ public enum SteamCompatToolError: LocalizedError, Equatable {
 /// one does, which is what the overlay and the Steam API need and what a launch
 /// started behind Steam's back can never have.
 ///
-/// Two things sit between this and working, and neither is here:
+/// Where it goes matters more than it looks. The client never scans
+/// `<steam>/compatibilitytools.d` on macOS, which is the directory every guide
+/// names, but it does scan `/usr/local/share/steam/compatibilitytools.d`
+/// unconditionally. A tool there is found however Steam was started, including
+/// from the Dock, which is the difference between this working and Whisky
+/// having to be what launches Steam.
 ///
-/// - the client only scans directories named in `STEAM_EXTRA_COMPAT_TOOLS_PATHS`,
-///   never `<steam>/compatibilitytools.d` on its own, so Whisky has to be the
-///   thing that starts Steam
-/// - the client decides at startup whether tools are usable at all, and that
-///   decision is a string compare against `"linux"` in `CCompatManager`'s
-///   constructor. Until that is dealt with the tool registers, is listed, and
-///   is never called
+/// The client also decides at startup whether tools are usable at all, and that
+/// decision is a string compare in `CCompatManager`'s constructor. Until
+/// ``SteamClientPatch`` has dealt with it the tool registers, is listed, and is
+/// never called.
 public enum SteamCompatTool {
     /// The internal name Steam records in `config.vdf` mappings.
     public static let name = "whisky"
     /// The name shown in the client's tool list.
     public static let displayName = "Whisky"
 
-    /// The directory the client scans, which it needs pointing at explicitly.
-    public static func toolsDirectory(steamRoot: URL = HostSteam.defaultRoot) -> URL {
-        steamRoot.appending(path: "compatibilitytools.d")
-    }
+    /// The one directory the macOS client scans on its own.
+    ///
+    /// Not `<steam>/compatibilitytools.d`, which is the obvious place and is
+    /// never read. This path is compiled into the client alongside
+    /// `/usr/share/steam/compatibilitytools.d`, and unlike the environment
+    /// variable it needs nothing from whoever starts Steam.
+    public static let sharedToolsDirectory = URL(filePath: "/usr/local/share/steam/compatibilitytools.d")
+
+    /// The directory the client scans.
+    public static func toolsDirectory(at root: URL = sharedToolsDirectory) -> URL { root }
 
     /// Where this tool's own files live.
-    public static func toolDirectory(steamRoot: URL = HostSteam.defaultRoot) -> URL {
-        toolsDirectory(steamRoot: steamRoot).appending(path: name)
+    public static func toolDirectory(at root: URL = sharedToolsDirectory) -> URL {
+        root.appending(path: name)
     }
 
     /// The name of the runner inside the tool directory.
@@ -148,19 +157,15 @@ public enum SteamCompatTool {
     ///
     /// - Parameters:
     ///   - whiskyCmd: The `WhiskyCmd` binary the runner forwards to.
-    ///   - steamRoot: The macOS Steam data directory.
+    ///   - root: The directory the client scans.
     /// - Throws: ``SteamCompatToolError``.
-    public static func install(
-        whiskyCmd: URL, steamRoot: URL = HostSteam.defaultRoot
-    ) throws {
-        guard HostSteam.installRoot(at: steamRoot) != nil else {
-            throw SteamCompatToolError.steamNotInstalled
-        }
+    public static func install(whiskyCmd: URL, at root: URL = sharedToolsDirectory) throws {
         guard FileManager.default.fileExists(atPath: whiskyCmd.path(percentEncoded: false)) else {
             throw SteamCompatToolError.runnerMissing(whiskyCmd)
         }
+        guard isWritable(root) else { throw SteamCompatToolError.directoryNotWritable(root) }
 
-        let directory = toolDirectory(steamRoot: steamRoot)
+        let directory = toolDirectory(at: root)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
         try compatibilityToolManifest().write(
@@ -177,9 +182,30 @@ public enum SteamCompatTool {
         )
     }
 
+    /// Whether the directory the client scans exists and can be written to.
+    ///
+    /// It lives under `/usr/local`, which is root-owned until somebody makes it
+    /// otherwise, so this is the thing to check before offering to install
+    /// rather than a failure to explain afterwards.
+    public static func isWritable(_ root: URL = sharedToolsDirectory) -> Bool {
+        let path = root.path(percentEncoded: false)
+        if FileManager.default.fileExists(atPath: path) {
+            return FileManager.default.isWritableFile(atPath: path)
+        }
+        let parent = root.deletingLastPathComponent().path(percentEncoded: false)
+        return FileManager.default.isWritableFile(atPath: parent)
+    }
+
+    /// The command that makes the directory writable, which needs an
+    /// administrator and so is the user's to run.
+    public static func prepareCommand(for root: URL = sharedToolsDirectory) -> String {
+        let path = root.path(percentEncoded: false)
+        return "sudo mkdir -p \(path) && sudo chown -R \"$(whoami)\" \(path)"
+    }
+
     /// Whether the tool is installed and its runner is executable.
-    public static func isInstalled(steamRoot: URL = HostSteam.defaultRoot) -> Bool {
-        let directory = toolDirectory(steamRoot: steamRoot)
+    public static func isInstalled(at root: URL = sharedToolsDirectory) -> Bool {
+        let directory = toolDirectory(at: root)
         let runner = directory.appending(path: runnerName).path(percentEncoded: false)
         return FileManager.default.fileExists(atPath: directory.appending(
             path: "compatibilitytool.vdf"
@@ -188,22 +214,12 @@ public enum SteamCompatTool {
     }
 
     /// Removes the tool, leaving any other tool in the directory alone.
-    public static func remove(steamRoot: URL = HostSteam.defaultRoot) throws {
-        let directory = toolDirectory(steamRoot: steamRoot)
+    public static func remove(at root: URL = sharedToolsDirectory) throws {
+        let directory = toolDirectory(at: root)
         guard FileManager.default.fileExists(atPath: directory.path(percentEncoded: false)) else {
             return
         }
         try FileManager.default.removeItem(at: directory)
-    }
-
-    /// The environment Steam has to be started with for the tool to be found.
-    ///
-    /// The client does not scan its own `compatibilitytools.d` on macOS. It
-    /// scans what this variable names and nothing else, which is why Whisky has
-    /// to be what starts Steam.
-    public static func launchEnvironment(steamRoot: URL = HostSteam.defaultRoot) -> [String: String] {
-        ["STEAM_EXTRA_COMPAT_TOOLS_PATHS": toolsDirectory(steamRoot: steamRoot)
-            .path(percentEncoded: false)]
     }
 
     /// The variables a game needs kept from the environment Steam started the

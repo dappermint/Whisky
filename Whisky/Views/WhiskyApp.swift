@@ -221,6 +221,10 @@ struct WhiskyApp: App {
                     Button("steam.patch.menu.apply") {
                         WhiskyApp.applySteamPatchConfirmed()
                     }
+                    Button("steam.compattool.menu.install") {
+                        WhiskyApp.installSteamCompatTool()
+                    }
+                    Divider()
                     Button("steam.patch.menu.revert") {
                         WhiskyApp.revertSteamPatchConfirmed()
                     }
@@ -569,6 +573,36 @@ extension WhiskyApp {
 
     /// Stops Steam, does the work, and says what happened.
     ///
+    /// Installs Whisky as a compatibility tool Steam can find on its own.
+    ///
+    /// It goes in the one directory the macOS client scans unprompted, which
+    /// lives under `/usr/local` and belongs to root until somebody says
+    /// otherwise. That is the common first failure rather than an edge case, so
+    /// it is answered with the command that fixes it rather than with a
+    /// permission error.
+    static func installSteamCompatTool() {
+        Task { @MainActor in
+            guard let whiskyCmd = Bundle.main.url(forResource: "WhiskyCmd", withExtension: nil) else {
+                reportSteamPatch(String(localized: "steam.compattool.error.runnerMissing WhiskyCmd"))
+                return
+            }
+            guard SteamCompatTool.isWritable() else {
+                reportSteamPatch(String(
+                    format: String(localized: "steam.compattool.needsPermission %@"),
+                    SteamCompatTool.prepareCommand()
+                ))
+                return
+            }
+
+            do {
+                try SteamCompatTool.install(whiskyCmd: whiskyCmd)
+                reportSteamPatch(String(localized: "steam.compattool.done"))
+            } catch {
+                reportSteamPatch(error.localizedDescription)
+            }
+        }
+    }
+
     /// Steam has to be down for either direction: the files being replaced are
     /// the ones it has open, and it rewrites its own configuration on exit.
     @MainActor
