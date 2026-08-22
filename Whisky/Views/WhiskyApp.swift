@@ -216,6 +216,15 @@ struct WhiskyApp: App {
                 Button("wine.clearShaderCaches") {
                     WhiskyApp.clearShaderCachesConfirmed()
                 }
+                Divider()
+                Menu("steam.patch.menu") {
+                    Button("steam.patch.menu.apply") {
+                        WhiskyApp.applySteamPatchConfirmed()
+                    }
+                    Button("steam.patch.menu.revert") {
+                        WhiskyApp.revertSteamPatchConfirmed()
+                    }
+                }
             }
             CommandGroup(replacing: .help) {
                 Button("help.github") {
@@ -509,6 +518,78 @@ extension WhiskyApp {
             }
             wipeShaderCaches()
         }
+    }
+
+    /// Turns compatibility tools on in the macOS Steam client, after saying
+    /// plainly what that costs.
+    ///
+    /// The cost is easy to miss and worth stating before the fact: the client
+    /// stops updating itself, because the check that would restore Valve's
+    /// files is the same one that has to be off for the change to survive.
+    static func applySteamPatchConfirmed() {
+        Task { @MainActor in
+            switch SteamClientPatch.status() {
+            case .steamNotInstalled:
+                reportSteamPatch(String(localized: "steam.patch.error.notInstalled"))
+                return
+            case .applied:
+                reportSteamPatch(String(localized: "steam.patch.alreadyApplied"))
+                return
+            case let .unrecognised(part):
+                reportSteamPatch(String(localized: "steam.patch.error.notFound \(part.rawValue)"))
+                return
+            case .notApplied, .partiallyApplied:
+                break
+            }
+
+            guard confirmStop(
+                title: String(localized: "steam.patch.confirm.title"),
+                message: String(localized: "steam.patch.confirm.message"),
+                confirmTitle: String(localized: "steam.patch.confirm.button")
+            )
+            else { return }
+
+            await runSteamPatch { try SteamClientPatch.apply() }
+        }
+    }
+
+    /// Puts Steam back and lets it update itself again.
+    static func revertSteamPatchConfirmed() {
+        Task { @MainActor in
+            guard confirmStop(
+                title: String(localized: "steam.patch.revert.title"),
+                message: String(localized: "steam.patch.revert.message"),
+                confirmTitle: String(localized: "steam.patch.revert.button")
+            )
+            else { return }
+
+            await runSteamPatch { try SteamClientPatch.revert() }
+        }
+    }
+
+    /// Stops Steam, does the work, and says what happened.
+    ///
+    /// Steam has to be down for either direction: the files being replaced are
+    /// the ones it has open, and it rewrites its own configuration on exit.
+    @MainActor
+    private static func runSteamPatch(_ work: () throws -> Void) async {
+        do {
+            try await HostSteamProcess.quit()
+            try work()
+            reportSteamPatch(String(localized: "steam.patch.done"))
+        } catch {
+            reportSteamPatch(error.localizedDescription)
+        }
+    }
+
+    @MainActor
+    private static func reportSteamPatch(_ message: String) {
+        let alert = NSAlert()
+        alert.messageText = String(localized: "steam.patch.menu")
+        alert.informativeText = message
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: String(localized: "button.ok"))
+        alert.runModal()
     }
 
     @MainActor

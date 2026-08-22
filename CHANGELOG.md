@@ -8,6 +8,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- A menu item turns compatibility tools on in the macOS Steam client, and
+  another puts Steam back. Both quit Steam first, because the files being
+  replaced are the ones it has open and it rewrites its own configuration on
+  exit. Turning it on says what it costs before doing it: the client stops
+  updating itself, since the check that would undo the change is the same one
+  that keeps it. Applying again after a Steam update repairs whatever the update
+  reverted, and a client that has changed too much to recognise is reported
+  rather than patched.
+- Whisky can make compatibility tools usable in the macOS Steam client, and put
+  it back. Valve builds the whole compatibility manager for macOS and then
+  switches it off with a string compare, and hides its Compatibility settings
+  behind the same question in JavaScript, so three edits are needed: the compare
+  in the client, the check in the interface bundle, and a `steam.cfg` beside the
+  client, without which the client verifies its own executables at startup and
+  undoes the other two within one launch. `SteamClientPatch` reports what state
+  the client is in, applies whatever is missing, and reverts. Nothing hunts for
+  a fixed offset: the compare is found by the shape of the code around it, so a
+  Steam update moves it without breaking this, and anything that no longer
+  matches is reported rather than patched.
+- Whisky can start and stop the macOS Steam client itself, which it has to be
+  able to do for two reasons that come from the client rather than from choice:
+  it only looks for compatibility tools in directories named by
+  `STEAM_EXTRA_COMPAT_TOOLS_PATHS`, and its interface only accepts changes when
+  it was started with a debugging argument. The binary started is the downloaded
+  client rather than the one in Applications, because that one is a bootstrapper
+  that re-execs the real client and neither an environment nor an argument list
+  survives the hop.
+- `whisky steam-compat-run` runs a game the macOS Steam client hands over
+  through the compatibility tool. It runs the executable directly in the bottle
+  rather than through the bottle's own Steam client, because Steam already
+  launched it and a second client would hand the game the wrong one, and it
+  stays in the foreground until the game exits, because Steam treats the process
+  it spawned as the game. Everything Steam named in the environment is passed
+  through, since that is how a game finds the client it belongs to.
+- Whisky can present itself to the macOS Steam client as a compatibility tool,
+  the shape that client already knows how to drive: it picks a tool for a title,
+  runs the tool's command line with the game's executable appended, and hands it
+  an environment describing where the game and its prefix live. A game launched
+  that way belongs to Steam the way a native one does, which is what the overlay
+  and the Steam API need and what a launch started behind Steam's back cannot
+  have. `SteamCompatTool` writes the two manifests and the runner, spelling the
+  target platform the one way the client accepts, and reports the environment
+  Steam has to be started with, since the client never scans its own
+  compatibility tools directory on macOS.
+- The operations the macOS Steam client will not perform for a Windows title are
+  now available to Whisky. `SteamFrontend` reads which platforms a title ships
+  builds for, so a Windows-only one is identified rather than guessed at; reads
+  and sets the compatibility tool a title runs through; downloads a title's
+  Windows build into a chosen library folder, which takes a platform override
+  and an install command together because the override alone writes a manifest
+  and fetches nothing; and hands a launch to Whisky for a title the client
+  refuses with `AppError_29`. Names that reach a script are written as JSON
+  literals, because a bottle or tool name is user input and a quote in one would
+  otherwise end the literal early.
+- Whisky can talk to the macOS Steam client's interface. That interface is a
+  Chromium app whose behaviour is decided in JavaScript, which matters because
+  the two things standing between the macOS client and a Windows game both live
+  there rather than in the client binary: it refuses a Windows launch config
+  with `AppError_29`, and it hides the compatibility settings behind a
+  one-line check for whether the platform is Linux. `SteamDevTools` attaches to
+  the client's shared scripting context, evaluates expressions in it, and
+  installs a patch that survives the reloads the client does on its own. It
+  needs the client started with `-cef-enable-debugging`; the marker file that
+  enables this elsewhere does nothing on macOS.
 - 32-bit Windows games can render. The backend resolver only ever looked at the
   machine and the launcher, so with GPTK installed it answered D3DMetal for
   every program. D3DMetal and DXMT live only in the runtime's x86_64-windows
@@ -30,6 +94,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and queues a redownload over them.
 
 ### Fixed
+- Whisky no longer mistakes a Windows-only Steam title for a native one. The
+  platform list stops separating them once Steam Play is on, because the client
+  synthesises `osx` into it for any title a compatibility tool covers, so
+  Helldivers 2 and a genuinely native game read the same. What still separates
+  them is the tool: the client attaches one only where there is no native build
+  to run. The platform list is still consulted where no tool exists, which is
+  the state a fresh install is in.
 - A GPTK runtime is no longer left without a D3D12 or DXGI DLL if Whisky is
   killed while it installs one. The interposer was put in place by removing the
   slot and then copying, so anything interrupting that window left the slot
