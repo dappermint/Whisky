@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- A menu item turns compatibility tools on in the macOS Steam client, and
+  another puts Steam back. Both quit Steam first, because the files being
+  replaced are the ones it has open and it rewrites its own configuration on
+  exit. Turning it on says what it costs before doing it: the client stops
+  updating itself, since the check that would undo the change is the same one
+  that keeps it. Applying again after a Steam update repairs whatever the update
+  reverted, and a client that has changed too much to recognise is reported
+  rather than patched.
 - Whisky can make compatibility tools usable in the macOS Steam client, and put
   it back. Valve builds the whole compatibility manager for macOS and then
   switches it off with a string compare, and hides its Compatibility settings

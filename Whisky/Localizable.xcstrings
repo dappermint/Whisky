@@ -104717,6 +104717,193 @@
         }
       }
     },
+    "steam.patch.alreadyApplied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        }
+      }
+    },
+    "steam.patch.confirm.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn On"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn On"
+          }
+        }
+      }
+    },
+    "steam.patch.confirm.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        }
+      }
+    },
+    "steam.patch.confirm.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        }
+      }
+    },
+    "steam.patch.done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        }
+      }
+    },
+    "steam.patch.menu" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam Compatibility"
+          }
+        }
+      }
+    },
+    "steam.patch.menu.apply" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        }
+      }
+    },
+    "steam.patch.menu.revert" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Put Steam Back…"
+          }
+        }
+      }
+    },
+    "steam.patch.revert.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Put Back"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Put Back"
+          }
+        }
+      }
+    },
+    "steam.patch.revert.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        }
+      }
+    },
+    "steam.patch.revert.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Put Steam back the way it was?"
+          }
+        }
+      }
+    },
     "steam.patch.error.notFound %@" : {
       "extractionState" : "manual",
       "localizations" : {
