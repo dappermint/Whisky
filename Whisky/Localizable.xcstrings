@@ -103788,6 +103788,74 @@
         }
       }
     },
+    "steam.devtools.error.evaluation %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        }
+      }
+    },
+    "steam.devtools.error.noSharedContext" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        }
+      }
+    },
+    "steam.devtools.error.notListening %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        }
+      }
+    },
+    "steam.devtools.error.protocol %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        }
+      }
+    },
     "steam.launch.error.gameNotFound %lld" : {
       "extractionState" : "manual",
       "localizations" : {

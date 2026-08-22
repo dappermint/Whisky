@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Whisky can talk to the macOS Steam client's interface. That interface is a
+  Chromium app whose behaviour is decided in JavaScript, which matters because
+  the two things standing between the macOS client and a Windows game both live
+  there rather than in the client binary: it refuses a Windows launch config
+  with `AppError_29`, and it hides the compatibility settings behind a
+  one-line check for whether the platform is Linux. `SteamDevTools` attaches to
+  the client's shared scripting context, evaluates expressions in it, and
+  installs a patch that survives the reloads the client does on its own. It
+  needs the client started with `-cef-enable-debugging`; the marker file that
+  enables this elsewhere does nothing on macOS.
+
 ### Fixed
 - A GPTK runtime is no longer left without a D3D12 or DXGI DLL if Whisky is
   killed while it installs one. The interposer was put in place by removing the
