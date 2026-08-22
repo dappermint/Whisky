@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- 32-bit Windows games can render. The backend resolver only ever looked at the
+  machine and the launcher, so with GPTK installed it answered D3DMetal for
+  every program. D3DMetal and DXMT live only in the runtime's x86_64-windows
+  tree, so a 32-bit program offered either one quietly loaded Wine's builtin
+  d3d11 on wined3d and the game reported that DirectX 11 was missing. The
+  resolver now reads the executable's architecture and sends a 32-bit one to
+  DXVK, the only backend with a 32-bit payload. An executable whose headers
+  cannot be read keeps the path it took before.
 - A bottle's Steam can be pointed at a library folder that lives on macOS, so
   the macOS Steam client and the bottle's client share one copy of a game. This
   exists because the two clients can each do half the job: the macOS client
