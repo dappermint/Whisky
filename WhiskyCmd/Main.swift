@@ -60,6 +60,7 @@ struct Whisky: AsyncParsableCommand {
             Games.self,
             Library.self,
             Launch.self,
+            SteamCompatRun.self,
             Shortcut.self,
             Shellenv.self
             /* Install.self,
@@ -658,6 +659,72 @@ extension Whisky {
                 throw DomainError(error.localizedDescription)
             }
             print("Removed \(folder.path(percentEncoded: false)) from \(bottleName).")
+        }
+    }
+
+    struct SteamCompatRun: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(
+            commandName: "steam-compat-run",
+            abstract: "Run a game the macOS Steam client handed to Whisky.",
+            discussion: """
+            Not for typing. The macOS Steam client runs this through the \
+            compatibility tool Whisky installs, with the App ID first and the \
+            game's command line after a bare `--`.
+
+            The executable is run directly in the bottle rather than through \
+            the bottle's own Steam client. Steam already launched this, so \
+            going through a second client would put two of them in the picture \
+            and hand the game the wrong one.
+
+            This stays in the foreground until the game exits, because Steam \
+            treats the process it spawned as the game: returning early would \
+            end the session the moment the game started, and take the overlay \
+            and the play time with it.
+            """
+        )
+
+        @Argument(help: "Steam App ID of the game")
+        var appId: Int
+
+        @Option(name: .long, help: "Name of the bottle to run in")
+        var bottle: String?
+
+        @Argument(parsing: .postTerminator, help: "The game's command line, after a bare --")
+        var command: [String] = []
+
+        @MainActor
+        mutating func run() async throws {
+            guard let executable = command.first else {
+                throw DomainError("No executable was passed after --.")
+            }
+
+            var bottlesList = BottleData()
+            let bottles = bottlesList.loadBottles()
+            let target: Bottle
+            if let bottleName = bottle {
+                guard let named = bottles.first(where: { $0.settings.name == bottleName }) else {
+                    throw DomainError("A bottle with that name doesn't exist.")
+                }
+                target = named
+            } else {
+                target = try SteamLauncher.resolveBottle(appId: appId, in: bottles)
+            }
+
+            // Steam described this session in the environment before running
+            // the tool, and that is how the game finds the client it belongs
+            // to. Building a fresh environment and dropping it would leave the
+            // game with no Steam at all.
+            let result = try await Wine.runProgram(
+                at: URL(filePath: executable),
+                args: Array(command.dropFirst()),
+                bottle: target,
+                environment: SteamCompatTool.passthroughEnvironment(),
+                keepAttached: true
+            )
+
+            if result.exitCode != 0 {
+                throw ExitCode(result.exitCode)
+            }
         }
     }
 

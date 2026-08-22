@@ -110,6 +110,49 @@ struct SteamCompatToolManifestTests {
     }
 }
 
+@Suite("SteamCompatTool Environment Tests")
+struct SteamCompatToolEnvironmentTests {
+    /// A game reaches the Steam API because Steam described the session in the
+    /// environment before running the tool. Dropping any of it leaves the game
+    /// unable to find the client that launched it.
+    @Test("Everything Steam named is kept")
+    func keepsWhatSteamNamed() {
+        let kept = SteamCompatTool.passthroughEnvironment(from: [
+            "STEAM_COMPAT_APP_ID": "553850",
+            "STEAM_COMPAT_DATA_PATH": "/tmp/compatdata/553850",
+            "SteamAppId": "553850",
+            "SteamGameId": "553850",
+            "SteamOverlayGameId": "553850",
+            "PATH": "/usr/bin",
+            "HOME": "/Users/someone"
+        ])
+
+        #expect(kept.count == 5)
+        #expect(kept["SteamAppId"] == "553850")
+        #expect(kept["STEAM_COMPAT_DATA_PATH"] == "/tmp/compatdata/553850")
+    }
+
+    @Test("Nothing else rides along")
+    func dropsEverythingElse() {
+        let kept = SteamCompatTool.passthroughEnvironment(from: [
+            "PATH": "/usr/bin", "DYLD_INSERT_LIBRARIES": "/tmp/evil.dylib"
+        ])
+
+        #expect(kept.isEmpty)
+    }
+
+    /// Valve spells these both ways in the same environment, so a
+    /// case-sensitive filter would keep half of them.
+    @Test("Both spellings survive")
+    func matchesEitherCase() {
+        let kept = SteamCompatTool.passthroughEnvironment(from: [
+            "SteamAppId": "1", "STEAM_COMPAT_APP_ID": "1", "steam_lowercase": "1"
+        ])
+
+        #expect(kept.count == 3)
+    }
+}
+
 @Suite("SteamCompatTool Install Tests")
 struct SteamCompatToolInstallTests {
     @Test("Installing writes both manifests and an executable runner")

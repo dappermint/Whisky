@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `whisky steam-compat-run` runs a game the macOS Steam client hands over
+  through the compatibility tool. It runs the executable directly in the bottle
+  rather than through the bottle's own Steam client, because Steam already
+  launched it and a second client would hand the game the wrong one, and it
+  stays in the foreground until the game exits, because Steam treats the process
+  it spawned as the game. Everything Steam named in the environment is passed
+  through, since that is how a game finds the client it belongs to.
 - Whisky can present itself to the macOS Steam client as a compatibility tool,
   the shape that client already knows how to drive: it picks a tool for a title,
   runs the tool's command line with the game's executable appended, and hands it

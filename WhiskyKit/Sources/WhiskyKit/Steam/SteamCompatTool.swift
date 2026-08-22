@@ -206,6 +206,24 @@ public enum SteamCompatTool {
             .path(percentEncoded: false)]
     }
 
+    /// The variables a game needs kept from the environment Steam started the
+    /// tool in.
+    ///
+    /// A game launched through a compatibility tool reaches the Steam API
+    /// because Steam described the session in the environment before running
+    /// the tool. Building a fresh environment for the game and dropping that
+    /// would leave it unable to find the client it was launched by, which is
+    /// the whole reason to be a compatibility tool rather than a launcher.
+    ///
+    /// Everything Steam names is passed through rather than a chosen subset,
+    /// because the set has grown with every client and a variable missed here
+    /// fails silently inside the game.
+    public static func passthroughEnvironment(
+        from environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> [String: String] {
+        environment.filter { $0.key.lowercased().hasPrefix("steam") }
+    }
+
     /// Wraps a value in single quotes for safe shell interpolation.
     static func shellQuoted(_ value: String) -> String {
         "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
