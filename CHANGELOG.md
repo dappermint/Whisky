@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Whisky can start and stop the macOS Steam client itself, which it has to be
+  able to do for two reasons that come from the client rather than from choice:
+  it only looks for compatibility tools in directories named by
+  `STEAM_EXTRA_COMPAT_TOOLS_PATHS`, and its interface only accepts changes when
+  it was started with a debugging argument. The binary started is the downloaded
+  client rather than the one in Applications, because that one is a bootstrapper
+  that re-execs the real client and neither an environment nor an argument list
+  survives the hop.
 - `whisky steam-compat-run` runs a game the macOS Steam client hands over
   through the compatibility tool. It runs the executable directly in the bottle
   rather than through the bottle's own Steam client, because Steam already

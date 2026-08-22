@@ -104717,6 +104717,40 @@
         }
       }
     },
+    "steam.process.error.clientMissing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        }
+      }
+    },
+    "steam.process.error.didNotQuit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        }
+      }
+    },
     "steam.stall.detected" : {
       "localizations" : {
         "ar" : {
