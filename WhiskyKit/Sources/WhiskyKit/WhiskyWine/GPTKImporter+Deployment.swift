@@ -254,10 +254,12 @@ extension GPTKImporter {
             try fileManager.removeItem(at: externalDest)
         }
         try fileManager.copyItem(at: storeLib.appending(path: "external"), to: externalDest)
-        // Apple's D3D12 is in place now, which is the only moment the swap can
-        // be made: the runtime ships the interposer but has nothing to forward
+        // Apple's DLLs are in place now, which is the only moment the swaps can
+        // be made: the runtime ships the interposers but has nothing to forward
         // into until this point.
-        try installVideoProcessor(intoLibraryFolder: folder)
+        for interposer in interposers {
+            try install(interposer, intoLibraryFolder: folder)
+        }
         try installMetalFXBridge(intoLibraryFolder: folder, usingStore: store)
         try installNVAPIBridge(intoLibraryFolder: folder, usingStore: store)
         logger.info("Deployed GPTK payload into the runtime tree")
