@@ -58,7 +58,23 @@ public enum SteamCompatToolError: LocalizedError, Equatable {
 /// never called.
 public enum SteamCompatTool {
     /// The internal name Steam records in `config.vdf` mappings.
-    public static let name = "whisky"
+    /// The identifier the client keys the tool by, which has to contain `proton`.
+    ///
+    /// The client only maps `WinSavedGames` and the rest of the Windows roots
+    /// into `pfx/drive_c/users/steamuser` when a case insensitive substring
+    /// search for `proton` hits this name. Miss it and every cloud file is
+    /// skipped with "failed to resolve path", which reads like a server fault
+    /// rather than a manifest one. The same test puts `STEAM_COMPAT_PROTON` in
+    /// the game's environment, which is true of us in the sense it means: we
+    /// answer the same contract.
+    ///
+    /// This is also the string the client writes into the per app mappings in
+    /// `config.vdf`, so changing it orphans every game already set to run
+    /// through us. `migrateMappings(in:from:)` is what carries them over.
+    public static let name = "whisky-proton"
+
+    /// The identifier used before the client's `proton` test was understood.
+    public static let previousName = "whisky"
     /// The name shown in the client's tool list.
     public static let displayName = "Whisky"
 
@@ -220,6 +236,75 @@ public enum SteamCompatTool {
             return
         }
         try FileManager.default.removeItem(at: directory)
+    }
+
+    /// Makes the bottle reachable at the path Steam expects a prefix to be.
+    ///
+    /// Steam allocates `compatdata/<appid>` per game and resolves cloud save
+    /// paths inside `pfx` there. Whisky runs the game in its own bottle
+    /// instead, because that is where the backend, the GameDB profile and the
+    /// per-program overrides live, so Steam looks in an empty directory, finds
+    /// no saves, and reports that it could not sync.
+    ///
+    /// Two links close the gap without moving anything. `pfx` points at the
+    /// bottle, and `steamuser` points at the account the bottle actually uses,
+    /// because Steam resolves save paths through a user of that name and Wine
+    /// on macOS names it after the person logged in.
+    ///
+    /// - Parameters:
+    ///   - bottleURL: The bottle the game runs in.
+    ///   - compatDataPath: What Steam passed as `STEAM_COMPAT_DATA_PATH`.
+    public static func linkPrefix(bottleURL: URL, compatDataPath: URL) throws {
+        let fileManager = FileManager.default
+        try fileManager.createDirectory(at: compatDataPath, withIntermediateDirectories: true)
+
+        try replaceSymbolicLink(at: compatDataPath.appending(path: "pfx"), with: bottleURL)
+
+        let users = bottleURL.appending(path: "drive_c").appending(path: "users")
+        guard let account = bottleAccount(in: users) else { return }
+        try replaceSymbolicLink(
+            at: users.appending(path: steamUser), with: users.appending(path: account)
+        )
+    }
+
+    /// The user Steam resolves a Windows save path through.
+    static let steamUser = "steamuser"
+
+    /// The account a bottle keeps its files under.
+    ///
+    /// Wine on macOS names it after whoever is logged in, and older prefixes
+    /// use `crossover`. Backups and the shared account are not it.
+    static func bottleAccount(in users: URL, preferring name: String = NSUserName()) -> String? {
+        let fileManager = FileManager.default
+        let candidates = [name, "crossover"]
+        for candidate in candidates where fileManager.fileExists(
+            atPath: users.appending(path: candidate).path(percentEncoded: false)
+        ) {
+            return candidate
+        }
+        return nil
+    }
+
+    /// Points a link at a target, replacing whatever was there.
+    ///
+    /// Checked without following, so a link left over from a bottle that has
+    /// since moved is replaced rather than reported as already existing.
+    static func replaceSymbolicLink(at link: URL, with target: URL) throws {
+        let path = link.path(percentEncoded: false)
+        let destination = target.path(percentEncoded: false)
+
+        if let existing = try? FileManager.default.destinationOfSymbolicLink(atPath: path) {
+            if existing == destination { return }
+            try FileManager.default.removeItem(at: link)
+        } else if (try? link.checkResourceIsReachable()) == true {
+            // Something real is in the way. Steam made an empty directory here
+            // and replacing that is the point; anything else is left alone.
+            let contents = try FileManager.default.contentsOfDirectory(atPath: path)
+            guard contents.isEmpty else { return }
+            try FileManager.default.removeItem(at: link)
+        }
+
+        try FileManager.default.createSymbolicLink(atPath: path, withDestinationPath: destination)
     }
 
     /// The variables a game needs kept from the environment Steam started the

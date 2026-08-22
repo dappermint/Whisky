@@ -710,6 +710,23 @@ extension Whisky {
                 target = try SteamLauncher.resolveBottle(appId: appId, in: bottles)
             }
 
+            // Steam resolves cloud save paths inside the prefix directory it
+            // allocated, which the game never writes to because it runs in the
+            // bottle. Pointing that at the bottle is what makes Steam Cloud
+            // find the saves instead of reporting that it could not sync.
+            if let compatData = ProcessInfo.processInfo.environment["STEAM_COMPAT_DATA_PATH"] {
+                do {
+                    try SteamCompatTool.linkPrefix(
+                        bottleURL: target.url, compatDataPath: URL(filePath: compatData)
+                    )
+                } catch {
+                    // Worth saying, never worth refusing to launch over.
+                    FileHandle.standardError.write(Data(
+                        "Could not link the prefix for Steam Cloud: \(error.localizedDescription)\n".utf8
+                    ))
+                }
+            }
+
             // Steam described this session in the environment before running
             // the tool, and that is how the game finds the client it belongs
             // to. Building a fresh environment and dropping it would leave the

@@ -595,7 +595,11 @@ extension WhiskyApp {
             }
 
             do {
+                // Steam rewrites its configuration from memory on exit, so the
+                // mappings have to be carried over with the client down.
+                try await HostSteamProcess.quit()
                 try SteamCompatTool.install(whiskyCmd: whiskyCmd)
+                try SteamCompatTool.migrateMappings()
                 reportSteamPatch(String(localized: "steam.compattool.done"))
             } catch {
                 reportSteamPatch(error.localizedDescription)
