@@ -104717,6 +104717,74 @@
         }
       }
     },
+    "steam.patch.error.notFound %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        }
+      }
+    },
+    "steam.patch.error.notInstalled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        }
+      }
+    },
+    "steam.patch.error.running" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quit Steam first, then try again."
+          }
+        }
+      }
+    },
+    "steam.patch.error.signing %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        }
+      }
+    },
     "steam.process.error.clientMissing" : {
       "extractionState" : "manual",
       "localizations" : {

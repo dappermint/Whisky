@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Whisky can make compatibility tools usable in the macOS Steam client, and put
+  it back. Valve builds the whole compatibility manager for macOS and then
+  switches it off with a string compare, and hides its Compatibility settings
+  behind the same question in JavaScript, so three edits are needed: the compare
+  in the client, the check in the interface bundle, and a `steam.cfg` beside the
+  client, without which the client verifies its own executables at startup and
+  undoes the other two within one launch. `SteamClientPatch` reports what state
+  the client is in, applies whatever is missing, and reverts. Nothing hunts for
+  a fixed offset: the compare is found by the shape of the code around it, so a
+  Steam update moves it without breaking this, and anything that no longer
+  matches is reported rather than patched.
 - Whisky can start and stop the macOS Steam client itself, which it has to be
   able to do for two reasons that come from the client rather than from choice:
   it only looks for compatibility tools in directories named by
