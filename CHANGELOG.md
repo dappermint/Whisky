@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- A GPTK runtime is no longer left without a D3D12 or DXGI DLL if Whisky is
+  killed while it installs one. The interposer was put in place by removing the
+  slot and then copying, so anything interrupting that window left the slot
+  empty, and the install guard then refused to repair it because there was no
+  DLL left to rename aside. The shim is now staged beside the slot and swapped
+  in by rename.
 - Games no longer crash when a video finishes playing. The runtime's D3D12
   interposer backs each NV12 texture with a luma and a chroma texture and keeps
   a table pairing them, but nothing ever removed an entry. Once a video ended

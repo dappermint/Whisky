@@ -294,4 +294,23 @@ struct GPTKVideoProcessorTests {
             #expect(!FileManager.default.fileExists(atPath: renamed.path(percentEncoded: false)))
         }
     }
+
+    @Test("The swap leaves no staging file behind in any slot")
+    func swapLeavesNoStagingFile() throws {
+        let interposer = GPTKImporter.dxgiVersionInterposer
+        let store = try makeImportedStore(in: tempDir)
+        try makeStoreD3D12Renameable(inStore: store)
+        try makeStoreSlotRenameable(inStore: store, slotName: interposer.slotName)
+        let runtime = tempDir.appending(path: "Libraries")
+        try makeRuntime(at: runtime)
+        try makeVideoProcessorShim(at: runtime)
+        try makeInterposerShim(interposer, at: runtime, marker: "dxgi interposer")
+
+        try GPTKImporter.deploy(fromStore: store, intoLibraryFolder: runtime)
+
+        for each in GPTKImporter.interposers {
+            let staged = peDir(of: runtime).appending(path: each.slotName + ".staging")
+            #expect(!FileManager.default.fileExists(atPath: staged.path(percentEncoded: false)))
+        }
+    }
 }
