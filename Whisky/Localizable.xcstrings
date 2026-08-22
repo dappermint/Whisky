@@ -103791,6 +103791,30 @@
     "steam.compattool.error.noClient" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -103800,6 +103824,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Steam isn't installed on this Mac."
           }
         }
@@ -103808,6 +103940,30 @@
     "steam.compattool.error.runnerMissing %@" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -103817,6 +103973,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Whisky's launcher (“%@”) is missing, so the compatibility tool would have nothing to run."
           }
         }
@@ -103825,6 +104089,30 @@
     "steam.devtools.error.evaluation %@" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -103834,6 +104122,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's interface rejected the change: %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Steam's interface rejected the change: %@"
           }
         }
@@ -103842,6 +104238,30 @@
     "steam.devtools.error.noSharedContext" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -103851,6 +104271,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is running but its interface hasn't finished loading."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Steam is running but its interface hasn't finished loading."
           }
         }
@@ -103859,6 +104387,30 @@
     "steam.devtools.error.notListening %lld" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -103870,12 +104422,144 @@
             "state" : "translated",
             "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't accepting changes on port %lld. It has to be started by Whisky for that."
+          }
         }
       }
     },
     "steam.devtools.error.protocol %@" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -103885,6 +104569,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lost the connection to Steam's interface: %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Lost the connection to Steam's interface: %@"
           }
         }
@@ -104635,6 +105427,30 @@
     "steam.share.error.alreadyShared %@" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104644,6 +105460,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” is already shared with this bottle."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "“%@” is already shared with this bottle."
           }
         }
@@ -104652,6 +105576,30 @@
     "steam.share.error.hostDataDirectory" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104661,6 +105609,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Steam's own folder holds the macOS builds of your native games, and a Windows client would try to replace them. Add a separate folder for Windows games."
           }
         }
@@ -104669,6 +105725,30 @@
     "steam.share.error.noClient" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104678,6 +105758,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "This bottle doesn't have Steam installed."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "This bottle doesn't have Steam installed."
           }
         }
@@ -104686,6 +105874,30 @@
     "steam.share.error.notShared %@" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104695,6 +105907,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” isn't shared with this bottle."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "“%@” isn't shared with this bottle."
           }
         }
@@ -104703,6 +106023,30 @@
     "steam.share.error.unreachable %@" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104712,6 +106056,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No drive in this bottle reaches “%@”."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "No drive in this bottle reaches “%@”."
           }
         }
@@ -104720,6 +106172,30 @@
     "steam.patch.alreadyApplied" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104729,6 +106205,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam is already set up for compatibility tools."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Steam is already set up for compatibility tools."
           }
         }
@@ -104737,6 +106321,30 @@
     "steam.patch.confirm.button" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104746,6 +106354,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Turn On"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Turn On"
           }
         }
@@ -104754,6 +106470,30 @@
     "steam.patch.confirm.message" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104763,6 +106503,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Whisky will change two files in Steam so it can run Windows games through compatibility tools, the way it does on Linux.\n\nSteam will stop updating itself, because the check that would undo the change is the same one that keeps it. To update Steam later, use Put Steam Back, let it update, then turn this on again.\n\nSteam will be quit first. The original files are kept."
           }
         }
@@ -104771,6 +106619,30 @@
     "steam.patch.confirm.title" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104780,6 +106652,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn on compatibility tools in Steam?"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Turn on compatibility tools in Steam?"
           }
         }
@@ -104788,6 +106768,30 @@
     "steam.patch.done" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104797,6 +106801,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Done. Start Steam and Windows games will run through Whisky."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Done. Start Steam and Windows games will run through Whisky."
           }
         }
@@ -104805,6 +106917,30 @@
     "steam.patch.menu" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104814,6 +106950,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam Compatibility"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Steam Compatibility"
           }
         }
@@ -104822,6 +107066,30 @@
     "steam.patch.menu.apply" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104831,6 +107099,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Turn On Compatibility Tools…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Turn On Compatibility Tools…"
           }
         }
@@ -104839,6 +107215,30 @@
     "steam.patch.menu.revert" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104848,6 +107248,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam Back…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Put Steam Back…"
           }
         }
@@ -104856,6 +107364,30 @@
     "steam.patch.revert.button" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104865,6 +107397,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Put Back"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Back"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Put Back"
           }
         }
@@ -104873,6 +107513,30 @@
     "steam.patch.revert.message" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104882,6 +107546,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Steam's original files are restored and it will update itself again. Windows games will stop launching from Steam until you turn compatibility tools back on.\n\nSteam will be quit first."
           }
         }
@@ -104890,6 +107662,30 @@
     "steam.patch.revert.title" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104899,6 +107695,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Put Steam back the way it was?"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Put Steam back the way it was?"
           }
         }
@@ -104907,6 +107811,30 @@
     "steam.patch.error.notFound %@" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104916,6 +107844,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Steam's %@ isn't in a shape Whisky knows how to change. It may have been updated."
           }
         }
@@ -104924,6 +107960,30 @@
     "steam.patch.error.notInstalled" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104933,6 +107993,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Steam isn't installed on this Mac."
           }
         }
@@ -104941,6 +108109,30 @@
     "steam.patch.error.running" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104950,6 +108142,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quit Steam first, then try again."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Quit Steam first, then try again."
           }
         }
@@ -104958,6 +108258,30 @@
     "steam.patch.error.signing %@" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104967,6 +108291,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Whisky couldn't re-sign the file it changed: %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Whisky couldn't re-sign the file it changed: %@"
           }
         }
@@ -104975,6 +108407,30 @@
     "steam.process.error.clientMissing" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -104986,12 +108442,144 @@
             "state" : "translated",
             "value" : "Steam isn't installed on this Mac, so there's nothing to start."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam isn't installed on this Mac, so there's nothing to start."
+          }
         }
       }
     },
     "steam.process.error.didNotQuit" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -105001,6 +108589,114 @@
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steam didn't shut down. Quit it yourself and try again."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
             "value" : "Steam didn't shut down. Quit it yourself and try again."
           }
         }
