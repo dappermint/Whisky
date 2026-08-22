@@ -86,10 +86,24 @@ struct SteamCompatToolManifestTests {
 
         let manifest = try #require(tool["manifest"]?.objectValue)
         #expect(manifest["version"]?.stringValue == "2")
-        #expect(manifest["compatmanager_layer_name"]?.stringValue == "whisky")
+        #expect(manifest["compatmanager_layer_name"]?.stringValue == "whisky-proton")
 
         let tools = try #require(compatibility["compatibilitytools"]?.objectValue?["compat_tools"]?.objectValue)
-        #expect(tools["whisky"] != nil)
+        #expect(tools["whisky-proton"] != nil)
+    }
+
+    /// The client greps the tool's own identifier for `proton` before it maps
+    /// the Windows save roots into the prefix. Miss it and every cloud file is
+    /// skipped with "failed to resolve path", which reads like a server problem
+    /// rather than a manifest one, so it is worth a test that names the reason.
+    @Test("The identifier carries the marker that maps the save roots")
+    func identifierUnlocksTheSaveRoots() throws {
+        #expect(SteamCompatTool.name.lowercased().contains("proton"))
+
+        let manifest = try VDFParser.parse(SteamCompatTool.compatibilityToolManifest())
+        let tools = try #require(manifest["compatibilitytools"]?.objectValue?["compat_tools"]?.objectValue)
+
+        #expect(tools.keys.allSatisfy { $0.lowercased().contains("proton") })
     }
 
     /// Steam waits for the process it spawned and calls that the game, so the
@@ -163,6 +177,97 @@ struct SteamCompatToolEnvironmentTests {
         ])
 
         #expect(kept.count == 3)
+    }
+}
+
+@Suite("SteamCompatTool Prefix Link Tests")
+struct SteamCompatToolPrefixTests {
+    private func makeBottle(account: String) throws -> URL {
+        let root = FileManager.default.temporaryDirectory.appending(path: "pfx_\(UUID().uuidString)")
+        try FileManager.default.createDirectory(
+            at: root.appending(path: "drive_c").appending(path: "users").appending(path: account),
+            withIntermediateDirectories: true
+        )
+        return root
+    }
+
+    /// Steam resolves cloud save paths inside the directory it allocated, which
+    /// the game never writes to because it runs in the bottle. Both links have
+    /// to exist or the saves stay invisible.
+    @Test("The prefix and the steam user both point into the bottle")
+    func linksThePrefixAndTheUser() throws {
+        let bottle = try makeBottle(account: NSUserName())
+        let compatData = bottle.appending(path: "compatdata")
+        defer { try? FileManager.default.removeItem(at: bottle) }
+
+        try SteamCompatTool.linkPrefix(bottleURL: bottle, compatDataPath: compatData)
+
+        let pfx = try FileManager.default.destinationOfSymbolicLink(
+            atPath: compatData.appending(path: "pfx").path(percentEncoded: false)
+        )
+        #expect(pfx == bottle.path(percentEncoded: false))
+
+        let users = bottle.appending(path: "drive_c").appending(path: "users")
+        let steamUser = try FileManager.default.destinationOfSymbolicLink(
+            atPath: users.appending(path: "steamuser").path(percentEncoded: false)
+        )
+        #expect(steamUser.hasSuffix(NSUserName()))
+    }
+
+    /// Older prefixes keep their files under crossover rather than the person
+    /// logged in.
+    @Test("An older bottle's account is found too")
+    func findsTheOlderAccount() throws {
+        let bottle = try makeBottle(account: "crossover")
+        defer { try? FileManager.default.removeItem(at: bottle) }
+        let users = bottle.appending(path: "drive_c").appending(path: "users")
+
+        #expect(SteamCompatTool.bottleAccount(in: users, preferring: "nobody") == "crossover")
+    }
+
+    @Test("A bottle with no account at all is left alone rather than guessed at")
+    func leavesAnEmptyBottleAlone() throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "pfx_\(UUID().uuidString)")
+        let users = root.appending(path: "drive_c").appending(path: "users")
+        try FileManager.default.createDirectory(at: users, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        #expect(SteamCompatTool.bottleAccount(in: users, preferring: "nobody") == nil)
+    }
+
+    @Test("Running twice leaves one link, not an error")
+    func linkingIsRepeatable() throws {
+        let bottle = try makeBottle(account: NSUserName())
+        let compatData = bottle.appending(path: "compatdata")
+        defer { try? FileManager.default.removeItem(at: bottle) }
+
+        try SteamCompatTool.linkPrefix(bottleURL: bottle, compatDataPath: compatData)
+        try SteamCompatTool.linkPrefix(bottleURL: bottle, compatDataPath: compatData)
+
+        #expect(try FileManager.default.destinationOfSymbolicLink(
+            atPath: compatData.appending(path: "pfx").path(percentEncoded: false)
+        ) == bottle.path(percentEncoded: false))
+    }
+
+    /// Steam leaves an empty directory there, which is exactly what has to be
+    /// replaced. Anything with contents is somebody's data.
+    @Test("An empty directory is replaced, a full one is not")
+    func respectsExistingData() throws {
+        let bottle = try makeBottle(account: NSUserName())
+        let compatData = bottle.appending(path: "compatdata")
+        let occupied = compatData.appending(path: "pfx")
+        try FileManager.default.createDirectory(at: occupied, withIntermediateDirectories: true)
+        try Data("save".utf8).write(to: occupied.appending(path: "something"))
+        defer { try? FileManager.default.removeItem(at: bottle) }
+
+        try SteamCompatTool.linkPrefix(bottleURL: bottle, compatDataPath: compatData)
+
+        #expect(
+            (try? FileManager.default.destinationOfSymbolicLink(
+                atPath: occupied.path(percentEncoded: false)
+            )) == nil,
+            "a directory holding something must not be replaced with a link"
+        )
     }
 }
 
