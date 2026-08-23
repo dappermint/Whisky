@@ -2324,6 +2324,90 @@
       }
     },
     {
+      "id": "helldivers-2",
+      "title": "HELLDIVERS 2",
+      "aliases": [
+        "HD2",
+        "Helldivers II"
+      ],
+      "subtitle": "Arrowhead / Sony",
+      "store": "steam",
+      "steamAppId": 553850,
+      "rating": "playable",
+      "exeNames": [
+        "helldivers2.exe"
+      ],
+      "pathPatterns": [
+        "helldivers 2",
+        "helldivers2"
+      ],
+      "antiCheat": "nProtect GameGuard",
+      "constraints": {
+        "cpuArchitectures": [
+          "arm64"
+        ],
+        "minMacOSVersion": "15.0.0",
+        "minWineVersion": "11.0"
+      },
+      "variants": [
+        {
+          "id": "d3dmetal-without-metal-4",
+          "label": "D3DMetal without Metal 4",
+          "isDefault": true,
+          "whenToUse": "Always. The renderer wedges on a fence under Metal 4.",
+          "rationale": [
+            "DX12 title, so D3DMetal is the only backend that carries d3d12",
+            "D3DMetal takes the Metal 4 command encoding path for d3d12 devices only, and a queue fence there never signals",
+            "The game waits four times, logs the completed fence values, then dereferences null on its renderer thread"
+          ],
+          "settings": {
+            "graphicsBackend": "d3dMetal",
+            "dxvk": false,
+            "dxvkAsync": false,
+            "enhancedSync": "msync",
+            "forceD3D11": false,
+            "shaderCacheEnabled": true,
+            "avxEnabled": false,
+            "sequoiaCompatMode": false
+          },
+          "environmentVariables": {
+            "D3DM_MTL4": "0"
+          },
+          "dllOverrides": [],
+          "winetricksVerbs": [],
+          "testedWith": {
+            "lastTestedAt": "2026-08-23T00:00:00Z",
+            "macOSVersion": "27.0.0",
+            "wineVersion": "11.15",
+            "cpuArchitecture": "arm64"
+          }
+        }
+      ],
+      "notes": [
+        "Reaches the ship and loads a session. Missions have not been tested.",
+        "nProtect GameGuard loads and runs in user mode, and it refuses debugger attach, so a fault here cannot be inspected with winedbg.",
+        "The executable is packed with Themida, so crash addresses only exist after runtime unpacking and do not resolve against the file on disk."
+      ],
+      "knownIssues": [
+        {
+          "description": "Under Metal 4 the renderer waits on a d3d12 fence that never signals, then crashes with a null dereference",
+          "severity": "critical",
+          "workaround": "D3DM_MTL4=0, which this variant sets"
+        },
+        {
+          "description": "Steam has to look present inside the prefix or the game reports STEAM NOT DETECTED and never requests an auth ticket",
+          "severity": "critical",
+          "workaround": "Whisky starts its Steam presence helper alongside the game"
+        }
+      ],
+      "provenance": {
+        "source": "measured",
+        "author": "dappermint",
+        "lastUpdated": "2026-08-23T00:00:00Z",
+        "referenceURL": null
+      }
+    },
+    {
       "id": "hitman-3",
       "title": "Hitman: World of Assassination",
       "aliases": [
