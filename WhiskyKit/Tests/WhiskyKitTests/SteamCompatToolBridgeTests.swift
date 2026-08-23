@@ -93,4 +93,38 @@ struct SteamCompatToolBridgeTests {
         #expect(passed["PATH"] == nil)
         #expect(passed["SteamAppId"] == "480")
     }
+
+    // MARK: - Working directory
+
+    /// Helldivers 2 is launched as `--bundle-dir data` with `data` beside the
+    /// install root while the executable sits in `bin`, so running it from the
+    /// executable's own folder gives a black window and no error at all.
+    @Test("A game runs from the install root Steam named")
+    func runsFromTheInstallRoot() {
+        let directory = SteamCompatTool.workingDirectory(
+            for: URL(filePath: "/games/Helldivers 2/bin/helldivers2.exe"),
+            environment: ["STEAM_COMPAT_INSTALL_PATH": "/games/Helldivers 2"]
+        )
+
+        #expect(directory.path(percentEncoded: false) == "/games/Helldivers 2")
+    }
+
+    @Test("Without an install root the executable's own folder is used")
+    func fallsBackToTheExecutableFolder() {
+        let directory = SteamCompatTool.workingDirectory(
+            for: URL(filePath: "/games/Thing/thing.exe"), environment: [:]
+        )
+
+        #expect(directory.standardizedFileURL.lastPathComponent == "Thing")
+    }
+
+    @Test("An empty install root is treated as none")
+    func ignoresAnEmptyInstallRoot() {
+        let directory = SteamCompatTool.workingDirectory(
+            for: URL(filePath: "/games/Thing/thing.exe"),
+            environment: ["STEAM_COMPAT_INSTALL_PATH": ""]
+        )
+
+        #expect(directory.standardizedFileURL.lastPathComponent == "Thing")
+    }
 }

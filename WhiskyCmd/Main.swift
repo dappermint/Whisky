@@ -731,12 +731,24 @@ extension Whisky {
             // the tool, and that is how the game finds the client it belongs
             // to. Building a fresh environment and dropping it would leave the
             // game with no Steam at all.
+            // The prefix has to name the bridge before the game's steam_api
+            // looks for it. Cheap after the first launch: the value is read
+            // off disk and only written when it is not already ours.
+            do { try await SteamCompatTool.installBridge(bottle: target) } catch {
+                FileHandle.standardError.write(Data(
+                    "Could not point the prefix at the Steam bridge: \(error.localizedDescription)\n".utf8
+                ))
+            }
+
             let result = try await Wine.runProgram(
                 at: URL(filePath: executable),
                 args: Array(command.dropFirst()),
                 bottle: target,
                 environment: SteamCompatTool.passthroughEnvironment(),
-                keepAttached: true
+                keepAttached: true,
+                // Steam runs a game from its install root, not from wherever
+                // the executable happens to sit inside it.
+                workingDirectory: SteamCompatTool.workingDirectory(for: URL(filePath: executable))
             )
 
             if result.exitCode != 0 {
