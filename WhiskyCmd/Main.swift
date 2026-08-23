@@ -740,11 +740,20 @@ extension Whisky {
                 ))
             }
 
+            // The per program settings are the same ones the app's own launch
+            // path uses. Without them a game Steam started ignores the graphics
+            // backend, the overrides and everything else set against its exe,
+            // and behaves differently depending on where it was launched from.
+            let program = Program(url: URL(filePath: executable), bottle: target, peFile: nil)
+
             let result = try await Wine.runProgram(
                 at: URL(filePath: executable),
                 args: Array(command.dropFirst()),
                 bottle: target,
-                environment: SteamCompatTool.passthroughEnvironment(),
+                environment: SteamCompatTool.passthroughEnvironment()
+                    .merging(program.generateEnvironment()) { steam, _ in steam },
+                programOverrides: program.settings.overrides,
+                programSettings: program.settings,
                 keepAttached: true,
                 // Steam runs a game from its install root, not from wherever
                 // the executable happens to sit inside it.
