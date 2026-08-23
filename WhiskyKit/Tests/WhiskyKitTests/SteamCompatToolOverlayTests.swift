@@ -34,30 +34,26 @@ struct SteamCompatToolOverlayTests {
         return directory
     }
 
-    /// Injecting a dylib into every process a game starts is not something to
-    /// do to somebody who did not ask for it, and none of this is proven past
-    /// the hooks installing.
-    @Test("Nothing is injected unless the launch asked for it")
-    func staysOffByDefault() {
+    /// The client has a per-game overlay switch already. Adding a second one
+    /// in Whisky would only give somebody two places to look when the answer
+    /// surprises them.
+    @Test("With nothing stated the client's own answer is followed")
+    func followsTheClientByDefault() {
         #expect(SteamCompatTool.overlayEnvironment(
             from: ["STEAM_DYLD_INSERT_LIBRARIES": Self.overlay], clientLibrary: nil
-        ).isEmpty)
+        )["DYLD_INSERT_LIBRARIES"] == Self.overlay)
     }
 
-    @Test("The opt-in takes the spellings somebody would actually type")
-    func acceptsTheUsualSpellings() {
-        for value in ["1", "true", "TRUE", "yes"] {
+    @Test("A launch can keep the overlay out")
+    func honoursAnOptOut() {
+        for value in ["0", "false", "NO"] {
             let environment = [
                 "WHISKY_STEAM_OVERLAY": value, "STEAM_DYLD_INSERT_LIBRARIES": Self.overlay
             ]
             #expect(SteamCompatTool.overlayEnvironment(
                 from: environment, clientLibrary: nil
-            )["DYLD_INSERT_LIBRARIES"] == Self.overlay)
+            ).isEmpty)
         }
-        #expect(SteamCompatTool.overlayEnvironment(
-            from: ["WHISKY_STEAM_OVERLAY": "0", "STEAM_DYLD_INSERT_LIBRARIES": Self.overlay],
-            clientLibrary: nil
-        ).isEmpty)
     }
 
     /// dyld drops `DYLD_INSERT_LIBRARIES` on the way into a protected process,
@@ -88,7 +84,9 @@ struct SteamCompatToolOverlayTests {
         ).isEmpty)
     }
 
-    @Test("A client that names nothing falls back to its own dylib")
+    /// A client that names nothing has not made a decision, it is a client
+    /// this does not recognise, so reaching for our own copy needs asking for.
+    @Test("Our own copy is only used when a launch asks for it")
     func fallsBackToTheClientLibrary() throws {
         let directory = try makeClientLibrary(withOverlay: true)
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -97,6 +95,9 @@ struct SteamCompatToolOverlayTests {
         #expect(SteamCompatTool.overlayEnvironment(
             from: ["WHISKY_STEAM_OVERLAY": "1"], clientLibrary: directory
         )["DYLD_INSERT_LIBRARIES"] == expected.path(percentEncoded: false))
+        #expect(SteamCompatTool.overlayEnvironment(
+            from: [:], clientLibrary: directory
+        ).isEmpty)
     }
 
     /// Pointing dyld at a library that is not there turns a missing overlay

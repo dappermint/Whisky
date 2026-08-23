@@ -39,7 +39,12 @@ import Foundation
 /// So it loads, reads the app id Steam already put in our environment, and
 /// installs its presentation hooks. What it does with them once a game is
 /// really running, and whether input reaches it through `winemac.drv`, are
-/// separate questions, which is why this is a switch and not a default.
+/// separate questions.
+///
+/// Whether a game gets the overlay is the client's decision and not ours: it
+/// has a per-game switch already, and it writes the answer into the
+/// environment it hands the tool. So there is no Whisky setting for this, only
+/// an override for a launch that disagrees.
 public extension SteamCompatTool {
     /// Where Steam names the overlay's library.
     ///
@@ -50,9 +55,11 @@ public extension SteamCompatTool {
     static let overlayLibrariesKey = "STEAM_DYLD_INSERT_LIBRARIES"
     /// What dyld reads.
     static let dyldInsertKey = "DYLD_INSERT_LIBRARIES"
-    /// The switch, since none of this is proven past the hooks.
+    /// The override, for a launch that wants to decide this itself.
     ///
-    /// Set it in the game's Steam launch options: `WHISKY_STEAM_OVERLAY=1 %command%`.
+    /// Set it in the game's Steam launch options: `WHISKY_STEAM_OVERLAY=0 %command%`
+    /// to keep the overlay out of a title it disagrees with, `=1` to inject the
+    /// client's own copy even when the client named nothing.
     static let overlayOptInKey = "WHISKY_STEAM_OVERLAY"
 
     /// The overlay's own library, as the client names it.
@@ -69,20 +76,24 @@ public extension SteamCompatTool {
         from environment: [String: String] = ProcessInfo.processInfo.environment,
         clientLibrary directory: URL? = clientLibraryDirectory()
     ) -> [String: String] {
-        guard let optIn = environment[overlayOptInKey],
-              ["1", "true", "yes"].contains(optIn.lowercased())
-        else { return [:] }
+        // Three states, not two: unset follows the client, which is the whole
+        // point of not having a setting of our own for this.
+        let forced = environment[overlayOptInKey].map { value in
+            !["0", "false", "no"].contains(value.lowercased())
+        }
+        if forced == false { return [:] }
 
-        // Steam's own value wins whenever the client set one, empty included:
-        // an empty value is the client saying this game gets no overlay, and
-        // overriding that would be answering a question nobody asked us.
+        // The client already has a per-game overlay switch and puts the answer
+        // here. An empty value is that switch turned off, and overriding it
+        // would be answering a question the user has already answered.
         if let libraries = environment[overlayLibrariesKey] {
             return libraries.isEmpty ? [:] : [dyldInsertKey: libraries]
         }
 
-        // Only reached on a client that does not set the variable at all, where
-        // the alternative is the switch silently doing nothing.
-        guard let directory else { return [:] }
+        // Only reached on a client that does not set the variable at all. That
+        // is not a decision, it is a client we do not recognise, so this needs
+        // asking for.
+        guard forced == true, let directory else { return [:] }
 
         let library = directory.appending(path: overlayLibraryName)
         guard FileManager.default.fileExists(atPath: library.path(percentEncoded: false)) else {

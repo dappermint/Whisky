@@ -8,17 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- The macOS Steam overlay can be put into a game's process, behind
-  `WHISKY_STEAM_OVERLAY=1 %command%` in the game's Steam launch options. The
-  received answer is that the overlay cannot work here, because the client
-  injects a dylib into a native process and a Windows game is not one. The game
-  is not, but the process running it is, and that process presents through a
-  `CAMetalLayer`, which is what the overlay hooks. Injected into a Wine process
-  running a DXVK swapchain it loads, reads the app id the client already set,
-  and reports `Hooking _MTLCommandBuffer::presentDrawable:`. Whether it draws
-  once a real game is running, and whether input reaches it through
-  `winemac.drv`, are not answered yet, which is why this is a switch and not a
-  default.
+- The macOS Steam overlay goes into a game's process, for whichever games the
+  client says should have it. The received answer is that the overlay cannot
+  work here, because the client injects a dylib into a native process and a
+  Windows game is not one. The game is not, but the process running it is, and
+  that process presents through a `CAMetalLayer`, which is what the overlay
+  hooks. Injected into a Wine process running a DXVK swapchain it loads, reads
+  the app id the client already set, and reports
+  `Hooking _MTLCommandBuffer::presentDrawable:`. The missing piece was only ever
+  `DYLD_INSERT_LIBRARIES`, which the client carries under a name dyld does not
+  strip and expects whatever it launched to restore. There is no Whisky setting
+  for this: Steam has a per-game overlay switch already and writes the answer
+  into the environment it hands the tool. `WHISKY_STEAM_OVERLAY=0 %command%` in
+  a game's launch options keeps it out of a title that disagrees.
 - A game the macOS Steam client launches now runs under a helper that stands in
   for the client inside the bottle, and the game is the helper's child the way
   it is Proton's `steam.exe` stub's child on Linux. Several of the things a game

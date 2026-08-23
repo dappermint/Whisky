@@ -760,9 +760,12 @@ extension Whisky {
             for note in plan.provenance {
                 FileHandle.standardError.write(Data("\(note)\n".utf8))
             }
-            if let overlay = SteamCompatTool.overlayEnvironment()[SteamCompatTool.dyldInsertKey] {
-                FileHandle.standardError.write(Data("Steam overlay: \(overlay)\n".utf8))
-            }
+            // Said either way: whether the client asked for the overlay is a
+            // thing worth being able to read off a run that went wrong.
+            let overlay = SteamCompatTool.overlayEnvironment()[SteamCompatTool.dyldInsertKey]
+            FileHandle.standardError.write(Data(
+                "Steam overlay: \(overlay ?? "not injected")\n".utf8
+            ))
 
             let result = try await Wine.runProgram(
                 at: URL(filePath: executable),
