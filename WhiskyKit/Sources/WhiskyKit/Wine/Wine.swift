@@ -388,15 +388,19 @@ public class Wine {
             activeWineDebugPreset: hasWineDebug ? programSettings?.activeWineDebugPreset?.rawValue : nil
         )
 
+        // A game the Steam client launched runs under the helper, which stands
+        // in for the client inside the prefix. It has to be the game's parent:
+        // the environment it sets is what the game reads, and being the process
+        // Whisky waits on is what stops it outliving the session.
+        let runDirectory = workingDirectory ?? url.deletingLastPathComponent()
+        let command = SteamHelper.command(
+            program: url, args: args, workingDirectory: runDirectory, environment: wineEnvironment
+        ) ?? ([url.path(percentEncoded: false)] + args)
+
         let launchArgs = launchArguments(
-            for: url, args: args, programName: programName,
+            command: command, programName: programName,
             programOverrides: programOverrides, keepAttached: keepAttached
         )
-
-        // Before the program, not after: a game reads the process id and looks
-        // for Steam's window while it is starting up, and deciding Steam is
-        // absent is a decision it does not revisit.
-        SteamPresence.start(for: bottle, environment: wineEnvironment)
 
         // As late as possible: the bridge holds the prefix open only for a short
         // grace window before standing down, so it wants the smallest gap it can
@@ -511,24 +515,24 @@ public class Wine {
 
     /// The argument vector `wine` is given for this run.
     ///
-    /// An attached run names the exe itself, keeping its output and exit code on
-    /// the pipe this process holds; `start /unix` gives up both.
-    private static func launchArguments(
-        for url: URL, args: [String], programName: String,
+    /// An attached run names `command` itself, keeping its output and exit code
+    /// on the pipe this process holds; `start /unix` gives up both.
+    ///
+    /// - Parameter command: The program and its arguments, which for a Steam
+    ///   session is the helper and the game it will launch.
+    static func launchArguments(
+        command: [String], programName: String,
         programOverrides: ProgramOverrides?, keepAttached: Bool
     ) -> [String] {
         if let overrides = programOverrides, overrides.virtualDesktopEnabled == true {
             let resolution = Self.resolveVirtualDesktopResolution(from: overrides)
             let desktopName = programName.replacingOccurrences(of: " ", with: "_")
-            return [
-                "explorer", "/desktop=\(desktopName),\(resolution)",
-                url.path(percentEncoded: false)
-            ] + args
+            return ["explorer", "/desktop=\(desktopName),\(resolution)"] + command
         }
         if keepAttached {
-            return [url.path(percentEncoded: false)] + args
+            return command
         }
-        return ["start", "/unix", url.path(percentEncoded: false)] + args
+        return ["start", "/unix"] + command
     }
 
     /// Resolves the virtual desktop resolution string from per-program overrides.

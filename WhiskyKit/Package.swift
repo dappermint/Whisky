@@ -46,8 +46,8 @@ let package = Package(
                 // scripts/discord-bridge, not something the resource pipeline
                 // should try to interpret.
                 .copy("Discord/Resources/WhiskyDiscordBridge.exe"),
-                // Same reasoning, built by scripts/steam-presence.
-                .copy("Steam/Resources/WhiskySteamPresence.exe"),
+                // Same reasoning, built by scripts/steam-helper.
+                .copy("Steam/Resources/WhiskySteamHelper.exe"),
                 // Carries `client-id.txt` when a build was given one. The file
                 // is gitignored, so a plain checkout copies an empty directory.
                 .copy("Discord/Local")
