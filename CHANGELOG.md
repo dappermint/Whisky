@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Whisky makes Steam look present inside a bottle, which a game asks about
+  before it will use the Steamworks API and which the bridge to the macOS client
+  cannot answer. Two checks decide it and neither goes through that API: whether
+  the process in `ActiveProcess\pid` is alive, and whether a window of class
+  `vguiPopupWindow` exists. On Linux both come from Proton's `steam.exe` stub,
+  which its games are children of; the macOS client sits outside the prefix and
+  registers neither, so a bottle that once had the Windows client installed
+  still holds that client's long-dead process id. Helldivers 2 read its own
+  Steam ID through a healthy bridge and then span its callback loop without ever
+  requesting an auth ticket, which is what a game that has decided Steam is
+  absent does. The helper runs from the app bundle, writes nothing into a
+  prefix, and starts only when the environment names a Steam session.
+- Metal 4 can be turned off for one program while the bottle keeps it. D3DMetal
+  only takes that command encoding path for D3D12 devices, and a queue fence
+  there does not always signal: Helldivers 2 waits on three, finds one stuck
+  exactly one signal behind, retries four times and then dereferences null on
+  its renderer thread. Turning the whole bottle back is the wrong trade for one
+  title, so this is a per-program setting, and the game ships with it off.
 - A menu item turns compatibility tools on in the macOS Steam client, and
   another puts Steam back. Both quit Steam first, because the files being
   replaced are the ones it has open and it rewrites its own configuration on
@@ -94,6 +112,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and queues a redownload over them.
 
 ### Fixed
+- A game the Steam client launches now gets the same per-program settings and
+  the same game profile a direct launch does. The compatibility tool was
+  building its own environment and ignoring both, so the graphics backend, the
+  overrides and everything else set against an executable applied or did not
+  depending on where it was started from, and Helldivers 2 kept Metal 4 through
+  Steam while the identical exe run from Whisky did not.
+- Steam no longer warns that it could not sync before every game. The macOS
+  client asks the compatibility tool to run a game's install script through
+  `legacycompat/iscriptevaluator.exe` and then does not ship that binary: the
+  directory it names is created empty on every install. Wine answered "failed to
+  open", and the client read the nonzero exit as a failed launch step. Answering
+  for it skips nothing that was ever going to run.
 - Steam finds Whisky's compatibility tool however it was started, including from
   the Dock. The tool was going into `<steam>/compatibilitytools.d`, which is the
   directory every guide names and the one the macOS client never reads, so it
