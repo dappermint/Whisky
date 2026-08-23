@@ -54,14 +54,14 @@ public extension SteamCompatTool {
     static let bridgePath = #"C:\windows\system32\lsteamclient.dll"#
     static let bridgePath32 = #"C:\windows\syswow64\lsteamclient.dll"#
 
-    /// Points the prefix at the bridge so a game reaches the native client.
-    ///
-    /// `steam_api64.dll` reads `SteamClientDll64` out of `ActiveProcess`,
-    /// loads whatever it names and asks it for `SteamClient020`. A bottle that
-    /// has had the Windows client installed in it already has these, pointing
-    /// at that install, and the game then talks to a client that is not
-    /// running. Repointing them is the whole of what makes the bridge reachable.
     /// Whether the prefix already names the bridge.
+    ///
+    /// `steam_api64.dll` reads `SteamClientDll64` out of `ActiveProcess`, loads
+    /// whatever it names and asks it for `SteamClient020`. A bottle that has
+    /// had the Windows client installed in it already has these, pointing at
+    /// that install, and a game reading them then talks to a client that is not
+    /// running. ``SteamCompatTool/seedPrefix(bottle:environment:steamRoot:)``
+    /// is what repoints them.
     ///
     /// Read from the prefix's own `user.reg` rather than through Wine, because
     /// this runs on every launch and a Wine process to answer a question we can
@@ -74,19 +74,5 @@ public extension SteamCompatTool {
 
         return value.replacingOccurrences(of: #"\\"#, with: #"\"#)
             .caseInsensitiveCompare(bridgePath) == .orderedSame
-    }
-
-    @MainActor
-    static func installBridge(bottle: Bottle) async throws {
-        guard !bridgeIsInstalled(bottleURL: bottle.url) else { return }
-
-        try await Wine.addRegistryKey(
-            bottle: bottle, key: activeProcessKey, name: "SteamClientDll64",
-            data: bridgePath, type: .string
-        )
-        try await Wine.addRegistryKey(
-            bottle: bottle, key: activeProcessKey, name: "SteamClientDll",
-            data: bridgePath32, type: .string
-        )
     }
 }

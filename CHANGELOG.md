@@ -8,18 +8,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Whisky makes Steam look present inside a bottle, which a game asks about
-  before it will use the Steamworks API and which the bridge to the macOS client
-  cannot answer. Two checks decide it and neither goes through that API: whether
-  the process in `ActiveProcess\pid` is alive, and whether a window of class
-  `vguiPopupWindow` exists. On Linux both come from Proton's `steam.exe` stub,
-  which its games are children of; the macOS client sits outside the prefix and
-  registers neither, so a bottle that once had the Windows client installed
-  still holds that client's long-dead process id. Helldivers 2 read its own
-  Steam ID through a healthy bridge and then span its callback loop without ever
+- A game the macOS Steam client launches now runs under a helper that stands in
+  for the client inside the bottle, and the game is the helper's child the way
+  it is Proton's `steam.exe` stub's child on Linux. Several of the things a game
+  asks before it will use the Steamworks API do not go through that API, so the
+  bridge to the macOS client cannot answer any of them: whether the process in
+  `ActiveProcess\pid` is alive, whether a window of class `vguiPopupWindow`
+  exists, what `SteamPath` and `ValvePlatformMutex` are, and whether anything
+  answers Steam's DRM start handshake. Helldivers 2 read its own Steam ID
+  through a healthy bridge and then span its callback loop without ever
   requesting an auth ticket, which is what a game that has decided Steam is
-  absent does. The helper runs from the app bundle, writes nothing into a
-  prefix, and starts only when the environment names a Steam session.
+  absent does. Being the parent is what makes the rest work: the environment the
+  helper sets is inherited, a game that asks Steam to relaunch it gets
+  relaunched in place, a title Steam hands a launcher URL rather than an
+  executable goes through the shell, and the helper exits when the game does
+  rather than outliving the session. It runs from the app bundle, writes nothing
+  into a prefix, and starts only when the environment names a Steam session.
+- The prefix is told where Steam is, who is signed in, and what the client's UI
+  language is before a game the client launched starts. `steam_api` prefers the
+  registry and falls back to resolving `steamclient64.dll` against `SteamPath`,
+  and a clean bottle gave it nothing to fall back to; `ActiveUser` is read from
+  the macOS client's own login list; the language and the app's installed and
+  running state are filled in by `lsteamclient`, through an export that has
+  shipped in the runtime all along and that nothing called. XBox Game Studios
+  titles are told `GamingRepair` already succeeded, which is about twenty
+  seconds of a game looking hung that they otherwise spend on a repair that
+  cannot work here. Values the bottle's own Windows client wrote are left alone.
+- `steam://` URLs opened inside a bottle reach the macOS client. Wine hands a
+  scheme it does not recognise to `/usr/bin/open`, so the handler is two
+  registry values. Bottles with their own Windows client keep pointing at it.
 - Metal 4 can be turned off for one program while the bottle keeps it. D3DMetal
   only takes that command encoding path for D3D12 devices, and a queue fence
   there does not always signal: Helldivers 2 waits on three, finds one stuck
@@ -112,6 +129,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and queues a redownload over them.
 
 ### Fixed
+- Quitting a game the Steam client launched now shuts the bottle down with it.
+  The process holding Steam's presence open was started and forgotten, ran a
+  message loop with no way out and had nothing watching it, so every session
+  left one behind and a `wineserver` alive to host it. It is now the process the
+  game runs under, and Wine is told not to count it, so the prefix closes on the
+  game and not on the last thing anyone remembered to kill.
 - A game the Steam client launches now gets the same per-program settings and
   the same game profile a direct launch does. The compatibility tool was
   building its own environment and ignoring both, so the graphics backend, the

@@ -732,16 +732,13 @@ extension Whisky {
                 }
             }
 
-            // Steam described this session in the environment before running
-            // the tool, and that is how the game finds the client it belongs
-            // to. Building a fresh environment and dropping it would leave the
-            // game with no Steam at all.
-            // The prefix has to name the bridge before the game's steam_api
-            // looks for it. Cheap after the first launch: the value is read
-            // off disk and only written when it is not already ours.
-            do { try await SteamCompatTool.installBridge(bottle: target) } catch {
+            // The prefix has to name the bridge, and know where Steam is and
+            // who is signed in, before the game's steam_api looks for any of
+            // it. Cheap after the first launch: every value is read off disk
+            // and the import only runs for the ones that are missing.
+            do { try await SteamCompatTool.seedPrefix(bottle: target) } catch {
                 FileHandle.standardError.write(Data(
-                    "Could not point the prefix at the Steam bridge: \(error.localizedDescription)\n".utf8
+                    "Could not seed the prefix for Steam: \(error.localizedDescription)\n".utf8
                 ))
             }
 
@@ -768,6 +765,10 @@ extension Whisky {
                 at: URL(filePath: executable),
                 args: Array(command.dropFirst()),
                 bottle: target,
+                // Steam described this session in the environment before running
+                // the tool, and that is how the game finds the client it belongs
+                // to. Building a fresh environment and dropping it would leave
+                // the game with no Steam at all.
                 environment: SteamCompatTool.passthroughEnvironment()
                     .merging(program.generateEnvironment()) { steam, _ in steam },
                 programOverrides: plan.overrides,
