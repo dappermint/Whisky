@@ -760,6 +760,9 @@ extension Whisky {
             for note in plan.provenance {
                 FileHandle.standardError.write(Data("\(note)\n".utf8))
             }
+            if let overlay = SteamCompatTool.overlayEnvironment()[SteamCompatTool.dyldInsertKey] {
+                FileHandle.standardError.write(Data("Steam overlay: \(overlay)\n".utf8))
+            }
 
             let result = try await Wine.runProgram(
                 at: URL(filePath: executable),
@@ -770,6 +773,7 @@ extension Whisky {
                 // to. Building a fresh environment and dropping it would leave
                 // the game with no Steam at all.
                 environment: SteamCompatTool.passthroughEnvironment()
+                    .merging(SteamCompatTool.overlayEnvironment()) { _, overlay in overlay }
                     .merging(program.generateEnvironment()) { steam, _ in steam },
                 programOverrides: plan.overrides,
                 programSettings: program.settings,
