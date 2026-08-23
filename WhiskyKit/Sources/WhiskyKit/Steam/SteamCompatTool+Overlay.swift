@@ -41,10 +41,9 @@ import Foundation
 /// really running, and whether input reaches it through `winemac.drv`, are
 /// separate questions.
 ///
-/// Whether a game gets the overlay is the client's decision and not ours: it
-/// has a per-game switch already, and it writes the answer into the
-/// environment it hands the tool. So there is no Whisky setting for this, only
-/// an override for a launch that disagrees.
+/// It is not a default. Ready or Not, injected, flashed, went black and
+/// crashed, and shift+tab never reached it, so the hooks installing is as far
+/// as this is known to go.
 public extension SteamCompatTool {
     /// Where Steam names the overlay's library.
     ///
@@ -55,11 +54,9 @@ public extension SteamCompatTool {
     static let overlayLibrariesKey = "STEAM_DYLD_INSERT_LIBRARIES"
     /// What dyld reads.
     static let dyldInsertKey = "DYLD_INSERT_LIBRARIES"
-    /// The override, for a launch that wants to decide this itself.
+    /// The switch, since injecting this into Ready or Not crashed it.
     ///
-    /// Set it in the game's Steam launch options: `WHISKY_STEAM_OVERLAY=0 %command%`
-    /// to keep the overlay out of a title it disagrees with, `=1` to inject the
-    /// client's own copy even when the client named nothing.
+    /// Set it in the game's Steam launch options: `WHISKY_STEAM_OVERLAY=1 %command%`.
     static let overlayOptInKey = "WHISKY_STEAM_OVERLAY"
 
     /// The overlay's own library, as the client names it.
@@ -76,12 +73,12 @@ public extension SteamCompatTool {
         from environment: [String: String] = ProcessInfo.processInfo.environment,
         clientLibrary directory: URL? = clientLibraryDirectory()
     ) -> [String: String] {
-        // Three states, not two: unset follows the client, which is the whole
-        // point of not having a setting of our own for this.
-        let forced = environment[overlayOptInKey].map { value in
-            !["0", "false", "no"].contains(value.lowercased())
-        }
-        if forced == false { return [:] }
+        // Asked for, never assumed. Defaulting this on cost Ready or Not a
+        // flashing screen, a black one and then a crash, so until something is
+        // known about why, a launch has to say it wants this.
+        guard let optIn = environment[overlayOptInKey],
+              ["1", "true", "yes"].contains(optIn.lowercased())
+        else { return [:] }
 
         // The client already has a per-game overlay switch and puts the answer
         // here. An empty value is that switch turned off, and overriding it
@@ -90,10 +87,9 @@ public extension SteamCompatTool {
             return libraries.isEmpty ? [:] : [dyldInsertKey: libraries]
         }
 
-        // Only reached on a client that does not set the variable at all. That
-        // is not a decision, it is a client we do not recognise, so this needs
-        // asking for.
-        guard forced == true, let directory else { return [:] }
+        // Only reached on a client that does not set the variable at all, where
+        // the alternative is the switch silently doing nothing.
+        guard let directory else { return [:] }
 
         let library = directory.appending(path: overlayLibraryName)
         guard FileManager.default.fileExists(atPath: library.path(percentEncoded: false)) else {

@@ -34,18 +34,26 @@ struct SteamCompatToolOverlayTests {
         return directory
     }
 
-    /// The client has a per-game overlay switch already. Adding a second one
-    /// in Whisky would only give somebody two places to look when the answer
-    /// surprises them.
-    @Test("With nothing stated the client's own answer is followed")
-    func followsTheClientByDefault() {
+    /// Injecting a dylib into every process a game starts is not something to
+    /// do to somebody who did not ask for it. Ready or Not, injected on
+    /// D3DMetal's Metal 4 backend, flashed, went black and crashed.
+    @Test("Nothing is injected unless the launch asked for it")
+    func staysOffByDefault() {
         #expect(SteamCompatTool.overlayEnvironment(
             from: ["STEAM_DYLD_INSERT_LIBRARIES": Self.overlay], clientLibrary: nil
-        )["DYLD_INSERT_LIBRARIES"] == Self.overlay)
+        ).isEmpty)
     }
 
-    @Test("A launch can keep the overlay out")
-    func honoursAnOptOut() {
+    @Test("The switch takes the spellings somebody would actually type")
+    func acceptsTheUsualSpellings() {
+        for value in ["1", "true", "TRUE", "yes"] {
+            let environment = [
+                "WHISKY_STEAM_OVERLAY": value, "STEAM_DYLD_INSERT_LIBRARIES": Self.overlay
+            ]
+            #expect(SteamCompatTool.overlayEnvironment(
+                from: environment, clientLibrary: nil
+            )["DYLD_INSERT_LIBRARIES"] == Self.overlay)
+        }
         for value in ["0", "false", "NO"] {
             let environment = [
                 "WHISKY_STEAM_OVERLAY": value, "STEAM_DYLD_INSERT_LIBRARIES": Self.overlay
