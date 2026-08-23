@@ -162,6 +162,18 @@ public enum SteamCompatTool {
             ;;
         esac
 
+        case "${1:-}" in
+          *iscriptevaluator.exe)
+            # The client asks the tool to run a game's install script through
+            # this, and then does not ship the binary: the legacycompat
+            # directory it names is created empty on every macOS install. Wine
+            # answers "failed to open", the client reads the nonzero exit as a
+            # failed launch step and puts a sync warning in front of every game.
+            # Nothing is skipped by answering here that was ever going to run.
+            exit 0
+            ;;
+        esac
+
         exec \(shellQuoted(whiskyCmd.path(percentEncoded: false))) \\
              steam-compat-run "${STEAM_COMPAT_APP_ID:-0}" -- "$@"
         """

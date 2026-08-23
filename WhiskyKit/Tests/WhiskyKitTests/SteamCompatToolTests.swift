@@ -362,4 +362,24 @@ struct SteamCompatToolInstallTests {
 
         try SteamCompatTool.remove(at: fixture.toolsRoot)
     }
+
+    // MARK: - The install script step
+
+    /// macOS Steam names `legacycompat/iscriptevaluator.exe` and ships no such
+    /// file, so the step can only ever fail. The client reads the nonzero exit
+    /// as a failed launch and puts a sync warning in front of every game.
+    @Test("The runner answers for the evaluator the client never shipped")
+    func shortCircuitsTheInstallScriptEvaluator() {
+        let runner = SteamCompatTool.runner(whiskyCmd: URL(filePath: "/Applications/Whisky.app/WhiskyCmd"))
+
+        #expect(runner.contains("*iscriptevaluator.exe)"))
+    }
+
+    @Test("A game's own command line still reaches Whisky")
+    func stillForwardsAGame() {
+        let runner = SteamCompatTool.runner(whiskyCmd: URL(filePath: "/Applications/Whisky.app/WhiskyCmd"))
+
+        #expect(runner.contains("steam-compat-run"))
+        #expect(runner.contains(#"exec '/Applications/Whisky.app/WhiskyCmd'"#))
+    }
 }
