@@ -746,14 +746,28 @@ extension Whisky {
             // and behaves differently depending on where it was launched from.
             let program = Program(url: URL(filePath: executable), bottle: target, peFile: nil)
 
+            // The App ID is a hard identifier, so the same GameDB profile the
+            // app's own launcher applies is available here for free. Without
+            // this a game the client started is the one launch path in Whisky
+            // that ignores its own profile.
+            let plan = LaunchResolver.plan(
+                steamAppId: appId,
+                exeName: URL(filePath: executable).lastPathComponent,
+                userOverrides: program.settings.overrides
+            )
+            for note in plan.provenance {
+                FileHandle.standardError.write(Data("\(note)\n".utf8))
+            }
+
             let result = try await Wine.runProgram(
                 at: URL(filePath: executable),
                 args: Array(command.dropFirst()),
                 bottle: target,
                 environment: SteamCompatTool.passthroughEnvironment()
                     .merging(program.generateEnvironment()) { steam, _ in steam },
-                programOverrides: program.settings.overrides,
+                programOverrides: plan.overrides,
                 programSettings: program.settings,
+                gameProfileEnvironment: plan.gameProfileEnvironment,
                 keepAttached: true,
                 // Steam runs a game from its install root, not from wherever
                 // the executable happens to sit inside it.

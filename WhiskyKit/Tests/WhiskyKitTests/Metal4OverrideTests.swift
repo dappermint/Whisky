@@ -88,4 +88,13 @@ struct Metal4OverrideTests {
         #expect(variant.settings.graphicsBackend == .d3dMetal)
         #expect(variant.environmentVariables?["D3DM_MTL4"] == "0")
     }
+
+    /// The App ID is the identifier the client hands the compatibility tool, so
+    /// this is the resolution a game launched from Steam actually gets.
+    @Test("The profile reaches a launch made by App ID")
+    func planCarriesTheProfileEnvironment() {
+        let plan = LaunchResolver.plan(steamAppId: 553_850, exeName: "helldivers2.exe")
+
+        #expect(plan.gameProfileEnvironment["D3DM_MTL4"] == "0")
+    }
 }
