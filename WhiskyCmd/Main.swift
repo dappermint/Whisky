@@ -692,23 +692,28 @@ extension Whisky {
         @Argument(parsing: .postTerminator, help: "The game's command line, after a bare --")
         var command: [String] = []
 
+        /// The bottle this App ID runs in, named explicitly or resolved.
+        @MainActor
+        private func resolveTarget() throws -> Bottle {
+            var bottlesList = BottleData()
+            let bottles = bottlesList.loadBottles()
+
+            guard let bottleName = bottle else {
+                return try SteamLauncher.resolveBottle(appId: appId, in: bottles)
+            }
+            guard let named = bottles.first(where: { $0.settings.name == bottleName }) else {
+                throw DomainError("A bottle with that name doesn't exist.")
+            }
+            return named
+        }
+
         @MainActor
         mutating func run() async throws {
             guard let executable = command.first else {
                 throw DomainError("No executable was passed after --.")
             }
 
-            var bottlesList = BottleData()
-            let bottles = bottlesList.loadBottles()
-            let target: Bottle
-            if let bottleName = bottle {
-                guard let named = bottles.first(where: { $0.settings.name == bottleName }) else {
-                    throw DomainError("A bottle with that name doesn't exist.")
-                }
-                target = named
-            } else {
-                target = try SteamLauncher.resolveBottle(appId: appId, in: bottles)
-            }
+            let target = try resolveTarget()
 
             // Steam resolves cloud save paths inside the prefix directory it
             // allocated, which the game never writes to because it runs in the
