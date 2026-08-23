@@ -323,6 +323,7 @@ public class Wine {
         gameProfileEnvironment: [String: String] = [:],
         overridesApplyToDescendants: Bool = false,
         keepAttached: Bool = false,
+        workingDirectory: URL? = nil,
         onLogFile: (@MainActor (URL) -> Void)? = nil,
         onStarted: (@MainActor () -> Void)? = nil
     ) async throws -> ProgramRunResult {
@@ -407,8 +408,10 @@ public class Wine {
             environment: wineEnvironment, executableURL: wineBinary(for: bottle),
             // `start` sets the Windows working directory to the program's own
             // folder. Running the exe directly has to say so, or a game that
-            // opens its assets by relative path finds nothing.
-            directory: keepAttached ? url.deletingLastPathComponent() : nil,
+            // opens its assets by relative path finds nothing. The caller can
+            // name a different one, which is how a game whose executable sits
+            // in a subdirectory still runs from its install root.
+            directory: keepAttached ? (workingDirectory ?? url.deletingLastPathComponent()) : nil,
             fileHandle: fileHandle,
             // The loop below discards output, and a session's worth of it would
             // buffer on the way. The log file is still written line for line.

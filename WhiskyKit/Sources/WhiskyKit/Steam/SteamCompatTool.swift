@@ -338,9 +338,38 @@ public enum SteamCompatTool {
     /// because the set has grown with every client and a variable missed here
     /// fails silently inside the game.
     public static func passthroughEnvironment(
-        from environment: [String: String] = ProcessInfo.processInfo.environment
+        from environment: [String: String] = ProcessInfo.processInfo.environment,
+        clientLibrary directory: URL? = clientLibraryDirectory()
     ) -> [String: String] {
-        environment.filter { $0.key.lowercased().hasPrefix("steam") }
+        var passed = environment.filter { $0.key.lowercased().hasPrefix("steam") }
+        if let directory { passed[clientInstallPathKey] = directory.path(percentEncoded: false) }
+        return passed
+    }
+
+    /// What the bridge reads to find the native client's library.
+    static let clientInstallPathKey = "STEAM_COMPAT_CLIENT_INSTALL_PATH"
+
+    /// The directory holding `steamclient.dylib`, or nil when it is not there.
+    ///
+    /// `lsteamclient` dlopens `$STEAM_COMPAT_CLIENT_INSTALL_PATH/steamclient.dylib`,
+    /// so this has to be the directory the library actually sits in, not the
+    /// Steam install root the variable names on Linux. macOS keeps it inside
+    /// the app bundle the client downloads for itself, which is why the value
+    /// Steam sets for us is the wrong one and gets replaced.
+    public static func clientLibraryDirectory(
+        steamRoot: URL = HostSteam.defaultRoot
+    ) -> URL? {
+        let directory = steamRoot
+            .appending(path: "Steam.AppBundle")
+            .appending(path: "Steam")
+            .appending(path: "Contents")
+            .appending(path: "MacOS")
+        let library = directory.appending(path: "steamclient.dylib")
+
+        guard FileManager.default.fileExists(atPath: library.path(percentEncoded: false)) else {
+            return nil
+        }
+        return directory
     }
 
     /// Wraps a value in single quotes for safe shell interpolation.

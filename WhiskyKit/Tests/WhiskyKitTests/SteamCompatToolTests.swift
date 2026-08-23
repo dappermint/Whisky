@@ -152,7 +152,7 @@ struct SteamCompatToolEnvironmentTests {
             "SteamOverlayGameId": "553850",
             "PATH": "/usr/bin",
             "HOME": "/Users/someone"
-        ])
+        ], clientLibrary: nil)
 
         #expect(kept.count == 5)
         #expect(kept["SteamAppId"] == "553850")
@@ -163,7 +163,7 @@ struct SteamCompatToolEnvironmentTests {
     func dropsEverythingElse() {
         let kept = SteamCompatTool.passthroughEnvironment(from: [
             "PATH": "/usr/bin", "DYLD_INSERT_LIBRARIES": "/tmp/evil.dylib"
-        ])
+        ], clientLibrary: nil)
 
         #expect(kept.isEmpty)
     }
@@ -174,7 +174,7 @@ struct SteamCompatToolEnvironmentTests {
     func matchesEitherCase() {
         let kept = SteamCompatTool.passthroughEnvironment(from: [
             "SteamAppId": "1", "STEAM_COMPAT_APP_ID": "1", "steam_lowercase": "1"
-        ])
+        ], clientLibrary: nil)
 
         #expect(kept.count == 3)
     }
