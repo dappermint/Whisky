@@ -393,6 +393,11 @@ public class Wine {
             programOverrides: programOverrides, keepAttached: keepAttached
         )
 
+        // Before the program, not after: a game reads the process id and looks
+        // for Steam's window while it is starting up, and deciding Steam is
+        // absent is a decision it does not revisit.
+        SteamPresence.start(for: bottle, environment: wineEnvironment)
+
         // As late as possible: the bridge holds the prefix open only for a short
         // grace window before standing down, so it wants the smallest gap it can
         // get between itself and the program it is bridging for.
