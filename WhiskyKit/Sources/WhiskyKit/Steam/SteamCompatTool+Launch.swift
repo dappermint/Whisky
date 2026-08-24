@@ -54,6 +54,26 @@ public extension SteamCompatTool {
     static let bridgePath = #"C:\windows\system32\lsteamclient.dll"#
     static let bridgePath32 = #"C:\windows\syswow64\lsteamclient.dll"#
 
+    /// Where a launch names the Wine debug channels it wants.
+    ///
+    /// `WINEDEBUG` cannot ride in through
+    /// ``SteamCompatTool/passthroughEnvironment(from:clientLibrary:)``, which
+    /// keeps only what Steam itself named, and the per-program debug preset is
+    /// not reachable for a game whose executable lives outside the bottle. So a
+    /// launch says what it wants under a name of ours.
+    static let debugChannelsKey = "WHISKY_WINEDEBUG"
+
+    /// The debug channels this launch asked for, or nothing.
+    ///
+    /// Lands at the `programUser` layer, which is above the `fixme-all` the
+    /// base layer sets, so whatever is named here is what Wine gets.
+    static func diagnosticEnvironment(
+        from environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> [String: String] {
+        guard let channels = environment[debugChannelsKey], !channels.isEmpty else { return [:] }
+        return ["WINEDEBUG": channels]
+    }
+
     /// Whether the prefix already names the bridge.
     ///
     /// `steam_api64.dll` reads `SteamClientDll64` out of `ActiveProcess`, loads

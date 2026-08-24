@@ -766,6 +766,9 @@ extension Whisky {
             FileHandle.standardError.write(Data(
                 "Steam overlay: \(overlay ?? "not injected")\n".utf8
             ))
+            if let channels = SteamCompatTool.diagnosticEnvironment()["WINEDEBUG"] {
+                FileHandle.standardError.write(Data("Wine debug channels: \(channels)\n".utf8))
+            }
 
             let result = try await Wine.runProgram(
                 at: URL(filePath: executable),
@@ -777,7 +780,8 @@ extension Whisky {
                 // the game with no Steam at all.
                 environment: SteamCompatTool.passthroughEnvironment()
                     .merging(SteamCompatTool.overlayEnvironment()) { _, overlay in overlay }
-                    .merging(program.generateEnvironment()) { steam, _ in steam },
+                    .merging(program.generateEnvironment()) { steam, _ in steam }
+                    .merging(SteamCompatTool.diagnosticEnvironment()) { _, debug in debug },
                 programOverrides: plan.overrides,
                 programSettings: program.settings,
                 gameProfileEnvironment: plan.gameProfileEnvironment,
