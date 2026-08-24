@@ -73,6 +73,25 @@ extension Whisky {
     struct List: AsyncParsableCommand {
         static let configuration = CommandConfiguration(abstract: "List existing bottles.")
 
+        /// What this launch resolved, on stderr, where Steam keeps it.
+        ///
+        /// The overlay line is written either way: whether the client asked for
+        /// it is worth being able to read off a run that went wrong.
+        private func reportLaunch(plan: LaunchPlan) {
+            for note in plan.provenance {
+                FileHandle.standardError.write(Data("\(note)\n".utf8))
+            }
+
+            let overlay = SteamCompatTool.overlayEnvironment()[SteamCompatTool.dyldInsertKey]
+            FileHandle.standardError.write(Data(
+                "Steam overlay: \(overlay ?? "not injected")\n".utf8
+            ))
+
+            for (key, value) in SteamCompatTool.diagnosticEnvironment().sorted(by: { $0.key < $1.key }) {
+                FileHandle.standardError.write(Data("Diagnostic: \(key)=\(value)\n".utf8))
+            }
+        }
+
         @MainActor
         mutating func run() async throws {
             var bottlesList = BottleData()
@@ -757,18 +776,7 @@ extension Whisky {
                 exeName: URL(filePath: executable).lastPathComponent,
                 userOverrides: program.settings.overrides
             )
-            for note in plan.provenance {
-                FileHandle.standardError.write(Data("\(note)\n".utf8))
-            }
-            // Said either way: whether the client asked for the overlay is a
-            // thing worth being able to read off a run that went wrong.
-            let overlay = SteamCompatTool.overlayEnvironment()[SteamCompatTool.dyldInsertKey]
-            FileHandle.standardError.write(Data(
-                "Steam overlay: \(overlay ?? "not injected")\n".utf8
-            ))
-            for (key, value) in SteamCompatTool.diagnosticEnvironment().sorted(by: { $0.key < $1.key }) {
-                FileHandle.standardError.write(Data("Diagnostic: \(key)=\(value)\n".utf8))
-            }
+            reportLaunch(plan: plan)
 
             let result = try await Wine.runProgram(
                 at: URL(filePath: executable),
