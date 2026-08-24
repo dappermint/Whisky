@@ -151,7 +151,11 @@ extension Wine {
         // Apply per-program overrides to the programUser layer
         if let overrides = programOverrides {
             applyProgramOverrides(
-                overrides, runtime: bottle.settings.runtime, builder: &builder, dllResolver: &dllResolver
+                overrides,
+                runtime: bottle.settings.runtime,
+                frameGeneration: bottle.settings.frameGeneration,
+                builder: &builder,
+                dllResolver: &dllResolver
             )
         }
 

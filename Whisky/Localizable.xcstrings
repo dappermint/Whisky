@@ -37607,6 +37607,302 @@
         }
       }
     },
+    "config.frameGeneration" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "DLSS Frame Generation"
+          }
+        }
+      }
+    },
+    "config.frameGeneration.info" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Off by default. Frame generation reaches MetalFX frame interpolation, which on current macOS can leave the GPU driver unresponsive and end the login session. DLSS upscaling above is unaffected."
+          }
+        }
+      }
+    },
     "config.forceD3D11" : {
       "localizations" : {
         "ar" : {

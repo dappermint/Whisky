@@ -143,6 +143,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   games, and a Windows client scanning those decides they are the wrong build
   and queues a redownload over them.
 
+### Changed
+- DLSS frame generation is now its own bottle setting, separate from the MetalFX
+  toggle, and it is off by default. Upscaling and frame generation reach MetalFX
+  through the same bridge but fail differently: upscaling is measured good, and
+  frame generation on Ready or Not ended the login session. Every command buffer
+  carrying MetalFX work failed, 542 in one eight minute session against 8 with
+  it off, and WindowServer then blocked in `IOGPUFamily` until its watchdog
+  killed it, with NotificationCenter and WarpPreview parked in the same driver
+  at the same instant. The switch is `CX_ACTIVE_GRAPHICS_BACKEND`, which makes
+  win32u answer `KMTQAITYPE_WDDM_2_7_CAPS` and is the only reason NVIDIA
+  Streamline will enter its DLSS-G path; leaving it unset costs nothing else.
+  A per-program D3DMetal override reads the same setting, so a game the Steam
+  launcher steered onto D3DMetal inside a DXVK bottle cannot keep frame
+  generation after the bottle turned it off.
+
 ### Fixed
 - Quitting a game the Steam client launched now shuts the bottle down with it.
   The process holding Steam's presence open was started and forgotten, ran a

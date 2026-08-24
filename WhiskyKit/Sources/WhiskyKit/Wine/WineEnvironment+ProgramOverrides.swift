@@ -39,6 +39,7 @@ extension Wine {
     static func applyProgramOverrides(
         _ overrides: ProgramOverrides,
         runtime: String? = nil,
+        frameGeneration: Bool = false,
         builder: inout EnvironmentBuilder,
         dllResolver: inout DLLOverrideResolver
     ) {
@@ -57,22 +58,26 @@ extension Wine {
                 builder.remove("DXVK_HUD", layer: .programUser)
                 builder.remove("DXVK_ASYNC", layer: .programUser)
                 builder.remove("WINED3DMETAL", layer: .programUser)
-                // One game on D3DMetal inside a DXVK bottle still has to be told
-                // hardware scheduling exists, or Streamline refuses DLSS frame
-                // generation. See the bottle-managed layer for what reads this.
-                builder.set("CX_ACTIVE_GRAPHICS_BACKEND", "d3dmetal", layer: .programUser)
+                // A DXVK bottle never sets this, so a program forced onto
+                // D3DMetal inside one has to claim hardware scheduling itself
+                // or Streamline refuses DLSS frame generation. Gated on the
+                // same bottle setting as the bottle-managed layer, or turning
+                // frame generation off would leave this one route still open.
+                if frameGeneration {
+                    builder.set("CX_ACTIVE_GRAPHICS_BACKEND", "d3dmetal", layer: .programUser)
+                }
 
             case .dxvk:
                 // Enable DXVK DLLs at program level
                 dllResolver.programCustom.append(contentsOf: DLLOverrideResolver.dxvkPreset)
                 builder.remove("WINED3DMETAL", layer: .programUser)
-                // CX_ACTIVE_GRAPHICS_BACKEND deliberately survives. It selects no
-                // backend: win32u is the only thing in the runtime that reads it,
-                // and all it does is answer KMTQAITYPE_WDDM_2_7_CAPS. Stripping it
-                // here starved every child of a DXVK-steered launcher, because
-                // Steam runs its games on D3DMetal (DXVK has no d3d12) while they
-                // inherit Steam's environment, and Streamline then refuses DLSS
-                // frame generation. D3DM_ENABLE_METALFX and D3DM_MTL4 already
+                // CX_ACTIVE_GRAPHICS_BACKEND deliberately survives, on the
+                // bottles that set it at all. It selects no backend: win32u is
+                // the only thing in the runtime that reads it, and all it does
+                // is answer KMTQAITYPE_WDDM_2_7_CAPS. Stripping it here starved
+                // every child of a DXVK-steered launcher, because Steam runs its
+                // games on D3DMetal (DXVK has no d3d12) while they inherit
+                // Steam's environment. D3DM_ENABLE_METALFX and D3DM_MTL4 already
                 // survive this branch for the same reason.
 
             case .dxmt:
