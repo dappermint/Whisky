@@ -680,6 +680,40 @@ final class EnvironmentVariablesTests: XCTestCase {
         XCTAssertEqual(env["CX_ACTIVE_GRAPHICS_BACKEND"], "d3dmetal")
     }
 
+    func testProgramCanTurnFrameGenerationOffWithoutTheBottleLosingIt() {
+        // The point of the per-program switch: one title deadlocks its RHI
+        // thread on frame generation while the rest of the bottle keeps it.
+        var settings = BottleSettings()
+        settings.graphicsBackend = .d3dMetal
+        settings.frameGeneration = true
+
+        var overrides = ProgramOverrides()
+        overrides.frameGeneration = false
+
+        let env = resolvedEnvironment(bottleSettings: settings, programOverrides: overrides)
+        XCTAssertNil(env["CX_ACTIVE_GRAPHICS_BACKEND"])
+    }
+
+    func testProgramCanTurnFrameGenerationOnInsideABottleWithItOff() {
+        var settings = BottleSettings()
+        settings.graphicsBackend = .d3dMetal
+
+        var overrides = ProgramOverrides()
+        overrides.frameGeneration = true
+
+        let env = resolvedEnvironment(bottleSettings: settings, programOverrides: overrides)
+        XCTAssertEqual(env["CX_ACTIVE_GRAPHICS_BACKEND"], "d3dmetal")
+    }
+
+    func testProgramSayingNothingAboutFrameGenerationInheritsTheBottle() {
+        var settings = BottleSettings()
+        settings.graphicsBackend = .d3dMetal
+        settings.frameGeneration = true
+
+        let env = resolvedEnvironment(bottleSettings: settings, programOverrides: ProgramOverrides())
+        XCTAssertEqual(env["CX_ACTIVE_GRAPHICS_BACKEND"], "d3dmetal")
+    }
+
     func testWineD3DProgramOverrideDropsHardwareSchedulingClaim() {
         // wined3d is the one override that switches D3DMetal off outright, so
         // there is nothing behind the claim.

@@ -184,6 +184,18 @@ extension Wine {
             builder.set("D3DM_MTL4", metal4Enabled ? "1" : "0", layer: .programUser)
         }
 
+        // Frame generation override. `CX_ACTIVE_GRAPHICS_BACKEND` is the whole
+        // switch, since Streamline only enters its DLSS-G path once win32u
+        // answers `KMTQAITYPE_WDDM_2_7_CAPS`, and the graphics-backend branch
+        // above only reaches it for a program that also overrides its backend.
+        if let frameGeneration = overrides.frameGeneration {
+            if frameGeneration {
+                builder.set("CX_ACTIVE_GRAPHICS_BACKEND", "d3dmetal", layer: .programUser)
+            } else {
+                builder.remove("CX_ACTIVE_GRAPHICS_BACKEND", layer: .programUser)
+            }
+        }
+
         // Shader cache override, on the variable DXVK actually reads.
         if let shaderCache = overrides.shaderCacheEnabled {
             if !shaderCache {

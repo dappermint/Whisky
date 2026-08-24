@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- DLSS frame generation can be set per program, beside the Metal 4 override in a
+  program's graphics overrides. It is the setting most likely to be right for one
+  title and wrong for the next: a title that ships DLSS-G and holds is worth the
+  frames, and one that deadlocks is not, and neither answer should decide it for
+  every game in the bottle.
 - The macOS Steam overlay can be put into a game's process, behind
   `WHISKY_STEAM_OVERLAY=1 %command%` in the game's Steam launch options. The
   received answer is that the overlay cannot work here, because the client

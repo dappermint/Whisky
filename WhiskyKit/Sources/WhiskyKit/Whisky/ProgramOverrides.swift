@@ -59,6 +59,13 @@ public struct ProgramOverrides: Codable, Equatable, Sendable {
     /// graphics setting a single D3D12 title needs to turn off on its own while
     /// the rest of the bottle keeps it.
     public var metal4Enabled: Bool?
+    /// Whether DLSS frame generation is offered to this program. `nil` inherits
+    /// from bottle.
+    ///
+    /// Only titles that ship DLSS-G read it at all, and it is the setting most
+    /// likely to be right for one game and wrong for the next, so it belongs
+    /// per program as much as per bottle.
+    public var frameGeneration: Bool?
 
     // MARK: - Performance
 
@@ -117,6 +124,7 @@ public struct ProgramOverrides: Codable, Equatable, Sendable {
             && enhancedSync == nil
             && forceD3D11 == nil
             && metal4Enabled == nil
+            && frameGeneration == nil
             && performancePreset == nil
             && shaderCacheEnabled == nil
             && controllerCompatibilityMode == nil
@@ -143,6 +151,7 @@ public struct ProgramOverrides: Codable, Equatable, Sendable {
         self.enhancedSync = try container.decodeIfPresent(EnhancedSync.self, forKey: .enhancedSync)
         self.forceD3D11 = try container.decodeIfPresent(Bool.self, forKey: .forceD3D11)
         self.metal4Enabled = try container.decodeIfPresent(Bool.self, forKey: .metal4Enabled)
+        self.frameGeneration = try container.decodeIfPresent(Bool.self, forKey: .frameGeneration)
         self.performancePreset = container.decodeLenientIfPresent(PerformancePreset.self, forKey: .performancePreset)
         self.shaderCacheEnabled = try container.decodeIfPresent(Bool.self, forKey: .shaderCacheEnabled)
         self.controllerCompatibilityMode = try container.decodeIfPresent(

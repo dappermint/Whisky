@@ -302,6 +302,7 @@ struct ProgramOverrideSettingsView: View {
                 // able to turn off while the bottle keeps it.
                 if resolvedOverriddenBackend == .d3dMetal {
                     Toggle("config.metal4", isOn: metal4Binding)
+                    Toggle("config.frameGeneration", isOn: frameGenerationBinding)
                 }
 
                 // "Takes effect next launch" note
@@ -651,12 +652,14 @@ struct ProgramOverrideSettingsView: View {
                     program.settings.overrides?.dxvkAsync = bottle.settings.dxvkAsync
                     program.settings.overrides?.dxvkHud = bottle.settings.dxvkHud
                     program.settings.overrides?.metal4Enabled = bottle.settings.metal4Enabled
+                    program.settings.overrides?.frameGeneration = bottle.settings.frameGeneration
                 } else {
                     program.settings.overrides?.graphicsBackend = nil
                     program.settings.overrides?.dxvk = nil
                     program.settings.overrides?.dxvkAsync = nil
                     program.settings.overrides?.dxvkHud = nil
                     program.settings.overrides?.metal4Enabled = nil
+                    program.settings.overrides?.frameGeneration = nil
                 }
             }
         )
@@ -771,6 +774,13 @@ struct ProgramOverrideSettingsView: View {
         Binding(
             get: { program.settings.overrides?.metal4Enabled ?? bottle.settings.metal4Enabled },
             set: { program.settings.overrides?.metal4Enabled = $0 }
+        )
+    }
+
+    private var frameGenerationBinding: Binding<Bool> {
+        Binding(
+            get: { program.settings.overrides?.frameGeneration ?? bottle.settings.frameGeneration },
+            set: { program.settings.overrides?.frameGeneration = $0 }
         )
     }
 
