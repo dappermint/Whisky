@@ -62,16 +62,25 @@ public extension SteamCompatTool {
     /// not reachable for a game whose executable lives outside the bottle. So a
     /// launch says what it wants under a name of ours.
     static let debugChannelsKey = "WHISKY_WINEDEBUG"
+    /// The same, for GStreamer's own level, which the base layer pins to `1`.
+    static let gstDebugKey = "WHISKY_GST_DEBUG"
 
     /// The debug channels this launch asked for, or nothing.
     ///
-    /// Lands at the `programUser` layer, which is above the `fixme-all` the
-    /// base layer sets, so whatever is named here is what Wine gets.
+    /// Lands at the `programUser` layer, which is above the `fixme-all` and the
+    /// `GST_DEBUG=1` the base layer sets, so whatever is named here is what the
+    /// launch gets.
     static func diagnosticEnvironment(
         from environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> [String: String] {
-        guard let channels = environment[debugChannelsKey], !channels.isEmpty else { return [:] }
-        return ["WINEDEBUG": channels]
+        var diagnostic: [String: String] = [:]
+        if let channels = environment[debugChannelsKey], !channels.isEmpty {
+            diagnostic["WINEDEBUG"] = channels
+        }
+        if let level = environment[gstDebugKey], !level.isEmpty {
+            diagnostic["GST_DEBUG"] = level
+        }
+        return diagnostic
     }
 
     /// Whether the prefix already names the bridge.

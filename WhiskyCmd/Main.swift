@@ -766,8 +766,8 @@ extension Whisky {
             FileHandle.standardError.write(Data(
                 "Steam overlay: \(overlay ?? "not injected")\n".utf8
             ))
-            if let channels = SteamCompatTool.diagnosticEnvironment()["WINEDEBUG"] {
-                FileHandle.standardError.write(Data("Wine debug channels: \(channels)\n".utf8))
+            for (key, value) in SteamCompatTool.diagnosticEnvironment().sorted(by: { $0.key < $1.key }) {
+                FileHandle.standardError.write(Data("Diagnostic: \(key)=\(value)\n".utf8))
             }
 
             let result = try await Wine.runProgram(
