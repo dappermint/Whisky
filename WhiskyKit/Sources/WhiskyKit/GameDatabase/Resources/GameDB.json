@@ -3716,7 +3716,7 @@
           "whenToUse": "Always. DX12 is the renderer this title runs here.",
           "rationale": [
             "UE 5.3 title whose D3D12 path works on D3DMetal, where DXVK caps at 1.10.3 and offers no D3D12 at all",
-            "Metal 4 holds through a session, unlike Helldivers 2, so there is nothing to gain by dropping to Metal 3",
+            "Metal 3, because Metal 4 fails every command buffer carrying MetalFX work and WindowServer then blocks in IOGPUFamily until its watchdog ends the login session",
             "MetalFX is reachable, which is what DLSS resolves to through the nvngx bridge"
           ],
           "settings": {
@@ -3730,7 +3730,7 @@
             "sequoiaCompatMode": false
           },
           "environmentVariables": {
-            "D3DM_MTL4": "1",
+            "D3DM_MTL4": "0",
             "D3DM_ENABLE_METALFX": "1"
           },
           "dllOverrides": [],

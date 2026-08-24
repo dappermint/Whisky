@@ -147,11 +147,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DLSS frame generation is now its own bottle setting, separate from the MetalFX
   toggle, and it is off by default. Upscaling and frame generation reach MetalFX
   through the same bridge but fail differently: upscaling is measured good, and
-  frame generation on Ready or Not ended the login session. Every command buffer
-  carrying MetalFX work failed, 542 in one eight minute session against 8 with
-  it off, and WindowServer then blocked in `IOGPUFamily` until its watchdog
-  killed it, with NotificationCenter and WarpPreview parked in the same driver
-  at the same instant. The switch is `CX_ACTIVE_GRAPHICS_BACKEND`, which makes
+  frame generation deadlocks Ready or Not's RHI thread within five minutes, on
+  Metal 3 and Metal 4 alike, until the game gives up with `GameThread timed out
+  waiting for RenderThread after 120.00 secs`. The thread is parked in a wait
+  D3DMetal never releases. The same session with frame generation off and
+  nothing else changed plays clean, with the interpolator confirmed running
+  beforehand: the Metal HUD reported `Frame Interpolator Enabled` at 38 render
+  FPS against 138 presented. The switch is `CX_ACTIVE_GRAPHICS_BACKEND`, which makes
   win32u answer `KMTQAITYPE_WDDM_2_7_CAPS` and is the only reason NVIDIA
   Streamline will enter its DLSS-G path; leaving it unset costs nothing else.
   A per-program D3DMetal override reads the same setting, so a game the Steam
@@ -159,6 +161,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   generation after the bottle turned it off.
 
 ### Fixed
+- Turning Metal 4 off now turns it off. `D3DMDevice::MTL4OptionEnabled` seeds
+  itself from `IsAtLeastOSVersions(macOS 27)` and only reads `D3DM_MTL4` when the
+  variable is present, so omitting it left Metal 4 on for every bottle on macOS
+  27 and the toggle did nothing in the off direction. The bottle setting and the
+  per-program override both write `0` now rather than removing the variable.
+  Ready or Not's game profile forced it on besides, from a layer above the
+  bottle, and asks for Metal 3 now: on Metal 4 the title fails every command
+  buffer carrying MetalFX work, 542 in one eight minute session, and
+  WindowServer then blocks in `IOGPUFamily` until its watchdog ends the login
+  session. On Metal 3 the same sessions log none.
 - Quitting a game the Steam client launched now shuts the bottle down with it.
   The process holding Steam's presence open was started and forgotten, ran a
   message loop with no way out and had nothing watching it, so every session

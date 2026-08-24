@@ -296,10 +296,12 @@ struct Metal4SettingTests {
         _ = settings.populateBottleManagedLayer(builder: &builder, resolvedBackend: .d3dMetal)
         #expect(builder.resolve().environment["D3DM_MTL4"] == "1")
 
+        // Off has to be written, not omitted: D3DMetal defaults the option on
+        // from the OS version and only an explicit value overrides that.
         settings.metal4Enabled = false
         var offBuilder = EnvironmentBuilder()
         _ = settings.populateBottleManagedLayer(builder: &offBuilder, resolvedBackend: .d3dMetal)
-        #expect(offBuilder.resolve().environment["D3DM_MTL4"] == nil)
+        #expect(offBuilder.resolve().environment["D3DM_MTL4"] == "0")
 
         // Metal 4 is D3DMetal's own backend, so it means nothing under DXVK
         settings.metal4Enabled = true

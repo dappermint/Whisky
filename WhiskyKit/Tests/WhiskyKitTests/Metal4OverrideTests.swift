@@ -44,12 +44,14 @@ struct Metal4OverrideTests {
     /// The whole point of the override: D3DMetal only takes the Metal 4 path
     /// for D3D12 devices, so one D3D12 title whose renderer wedges on a fence
     /// has to be able to drop back while the rest of the bottle keeps it.
+    /// Dropping back means writing `0`; removing the variable leaves the option
+    /// on, because it defaults from the OS version.
     @Test("One program can turn Metal 4 off without the bottle losing it")
     func programCanOptOut() {
         var overrides = ProgramOverrides()
         overrides.metal4Enabled = false
 
-        #expect(resolved(overrides)["D3DM_MTL4"] == nil)
+        #expect(resolved(overrides)["D3DM_MTL4"] == "0")
     }
 
     @Test("Turning it on for a program is not undone by the override")

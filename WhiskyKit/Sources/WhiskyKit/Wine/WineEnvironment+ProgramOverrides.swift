@@ -177,13 +177,11 @@ extension Wine {
         // Metal 4 override. `D3DMDevice::MTL4OptionEnabled` only takes that path
         // for D3D12 devices, so a D3D12 title whose renderer wedges on a fence
         // the Metal 4 submission path never signals has to be able to drop back
-        // without the rest of the bottle losing it.
+        // without the rest of the bottle losing it. Removing the variable would
+        // not drop back: it defaults to on from the OS version alone, and only
+        // an explicit value overrides that.
         if let metal4Enabled = overrides.metal4Enabled {
-            if metal4Enabled {
-                builder.set("D3DM_MTL4", "1", layer: .programUser)
-            } else {
-                builder.remove("D3DM_MTL4", layer: .programUser)
-            }
+            builder.set("D3DM_MTL4", metal4Enabled ? "1" : "0", layer: .programUser)
         }
 
         // Shader cache override, on the variable DXVK actually reads.

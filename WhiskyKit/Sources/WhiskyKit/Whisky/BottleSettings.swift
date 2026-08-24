@@ -350,9 +350,11 @@ public struct BottleSettings: Codable, Equatable {
 
     /// Whether D3DMetal uses the Metal 4 command encoding backend.
     ///
-    /// `D3DMDevice::MTL4OptionEnabled` checks the OS version *before* it reads
-    /// `D3DM_MTL4`, and only takes the Metal 4 path for D3D12 devices, so the
-    /// variable is inert rather than harmful on older systems and D3D11 titles.
+    /// `D3DMDevice::MTL4OptionEnabled` seeds itself from
+    /// `IsAtLeastOSVersions(macOS 27)` and only reads `D3DM_MTL4` when the
+    /// variable is present, so turning this off has to write `0` rather than
+    /// leave the variable out. It only takes the Metal 4 path for D3D12
+    /// devices, so the variable is inert rather than harmful for D3D11 titles.
     public var metal4Enabled: Bool {
         get { metalConfig.metal4Enabled }
         set { metalConfig.metal4Enabled = newValue }
@@ -896,12 +898,11 @@ public struct BottleSettings: Codable, Equatable {
                 builder.set("CX_ACTIVE_GRAPHICS_BACKEND", "d3dmetal", layer: .bottleManaged)
             }
 
-            // `D3DMDevice::MTL4OptionEnabled` checks the OS version before it
-            // reads this and only takes the Metal 4 path for D3D12 devices, so
-            // the variable is inert rather than harmful everywhere else.
-            if metal4Enabled {
-                builder.set("D3DM_MTL4", "1", layer: .bottleManaged)
-            }
+            // `D3DMDevice::MTL4OptionEnabled` starts from
+            // `IsAtLeastOSVersions(macOS 27)` and only lets `D3DM_MTL4` decide
+            // when the variable is present, so omitting it leaves Metal 4 on
+            // rather than off. Both states have to be written.
+            builder.set("D3DM_MTL4", metal4Enabled ? "1" : "0", layer: .bottleManaged)
 
         case .dxvk:
             // DXVK: DLL overrides + env vars
