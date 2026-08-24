@@ -888,8 +888,8 @@ public class Wine {
     /// The DXMT files deployed into a bottle: the native D3D trio plus
     /// `winemetal.dll`. `winemetal.dll` is the builtin-marked redirect whose
     /// import resolves to the runtime's `winemetal.dll` builtin in `lib/wine`.
-    /// The NVIDIA extras (nvapi64/nvngx) in the payload are deliberately not
-    /// deployed — DXMT's vendor spoofing is out of scope.
+    /// The NVIDIA extras (nvapi64/nvngx) are not deployed into a DXMT prefix:
+    /// DXMT's vendor spoofing is out of scope. D3DMetal bottles do get them.
     private static let dxmtPrefixDLLs = dxmtNativeTrio + ["winemetal.dll"]
 
     /// Whether the installed runtime carries a DXMT payload that can actually be

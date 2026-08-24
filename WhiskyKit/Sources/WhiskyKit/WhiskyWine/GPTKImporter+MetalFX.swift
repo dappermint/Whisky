@@ -35,10 +35,12 @@ import os.log
 /// - Builtins are keyed by their PE export name, and this one exports as
 ///   `nvngx.dll` rather than the filename Apple ships it under.
 ///
-/// `nvapi64.dll`, the other half of ``nvidiaBridgeDLLNames``, deliberately stays
-/// out: Chromium probes for an NVIDIA GPU, and handing it one makes it load
-/// D3DMetal and take Steam's helper process down. Nothing probes for nvngx that
-/// way, and NGX reports DLSS available without it.
+/// `nvapi64.dll`, the other half of ``nvidiaBridgeDLLNames``, is deployed as
+/// well: Streamline asks it about the GPU before it will call NGX at all. It is
+/// disabled per launcher helper rather than withheld, because Chromium probes
+/// for an NVIDIA GPU and answering makes it load D3DMetal and take Steam's
+/// helper process down. See ``GPTKImporter/nvidiaBridgeDLLNames`` for the
+/// measurement and `WineDLLOverrideRegistry.disablingNVAPI(in:)` for the guard.
 extension GPTKImporter {
     /// Apple's bridge under the name the payload ships it as.
     static let metalFXBridgeSourceName = "nvngx-on-metalfx.dll"
