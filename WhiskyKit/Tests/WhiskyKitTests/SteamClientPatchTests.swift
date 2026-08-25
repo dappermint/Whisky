@@ -239,4 +239,23 @@ struct SteamClientPatchStatusTests {
         )
         #expect(SteamClientPatch.isInhibited(steamRoot: root))
     }
+
+    /// A backup kept just because one exists goes stale across a Steam
+    /// self-update, and revert would then install the version first patched
+    /// over the one actually running.
+    @Test("Re-applying after an update backs up the new version, not the first one")
+    func backupFollowsTheCurrentFile() throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "backup_\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let target = directory.appending(path: "steamclient.dylib")
+
+        try Data("version one".utf8).write(to: target)
+        try SteamClientPatch.refreshBackup(of: target)
+        try Data("version two".utf8).write(to: target)
+        try SteamClientPatch.refreshBackup(of: target)
+
+        let kept = try Data(contentsOf: SteamClientPatch.backup(of: target))
+        #expect(String(bytes: kept, encoding: .utf8) == "version two")
+    }
 }

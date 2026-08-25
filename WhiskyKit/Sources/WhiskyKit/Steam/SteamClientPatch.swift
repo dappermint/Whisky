@@ -207,17 +207,25 @@ public enum SteamClientPatch {
         else { throw SteamClientPatchError.notFound(.client) }
         if gate.isPatched { return }
 
-        let backup = backup(of: target)
-        if !FileManager.default.fileExists(atPath: backup.path(percentEncoded: false)) {
-            try FileManager.default.copyItem(at: target, to: backup)
-        }
+        try refreshBackup(of: target)
 
         var patched = data
         patched.replaceSubrange(
             gate.fileOffset ..< gate.fileOffset + 4, with: MachOImage.movImmediateOne(register: gate.register)
         )
-        try patched.write(to: target)
-        try resign(target)
+        // Staged, so the real dylib is only ever replaced by a signed copy:
+        // patching in place and resigning after leaves a library dyld refuses
+        // if the resign fails, with the bootstrapper repair already inhibited.
+        let staging = target.appendingPathExtension("patching")
+        try? FileManager.default.removeItem(at: staging)
+        try patched.write(to: staging)
+        do {
+            try resign(staging)
+        } catch {
+            try? FileManager.default.removeItem(at: staging)
+            throw error
+        }
+        _ = try FileManager.default.replaceItemAt(target, withItemAt: staging)
     }
 
     static func applyInterfacePatch(steamRoot: URL) throws {
@@ -229,13 +237,20 @@ public enum SteamClientPatch {
             throw SteamClientPatchError.notFound(.interface)
         }
 
-        let backup = backup(of: target)
-        if !FileManager.default.fileExists(atPath: backup.path(percentEncoded: false)) {
-            try FileManager.default.copyItem(at: target, to: backup)
-        }
+        try refreshBackup(of: target)
 
         try source.replacingCharacters(in: range, with: openedInterfaceGate)
             .write(to: target, atomically: true, encoding: .utf8)
+    }
+
+    /// Replaces any stored backup with `url` as it is now. Only called while
+    /// the file on disk is unpatched, so it is always the right thing to keep:
+    /// a backup kept just because one exists goes stale the moment Steam
+    /// updates itself, and revert would then downgrade the client.
+    static func refreshBackup(of url: URL) throws {
+        let backup = backup(of: url)
+        try? FileManager.default.removeItem(at: backup)
+        try FileManager.default.copyItem(at: url, to: backup)
     }
 
     /// Puts everything back and lets Steam update itself again.
