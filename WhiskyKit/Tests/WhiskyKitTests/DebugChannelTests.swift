@@ -92,6 +92,33 @@ struct LogTailTests {
         #expect(lines == ["first", "second", "third"])
     }
 
+    /// Neither replacement nor truncation announces itself: the path opens
+    /// fine and lseek past the new end succeeds, so a tail keyed on the seek
+    /// failing goes silent forever and skips exactly the startup lines a new
+    /// run writes.
+    @Test("A replaced or truncated file is read from its own start")
+    func startsOverOnTruncation() async throws {
+        let url = FileManager.default.temporaryDirectory.appending(path: "\(UUID().uuidString).log")
+        try "a first run with enough bytes to outweigh what follows\n".write(
+            to: url, atomically: true, encoding: .utf8
+        )
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let tail = LogTail(url: url, pollInterval: .milliseconds(20))
+        #expect(await tail.drain().count == 1)
+
+        // A new run lands as a fresh file under the same path.
+        try "new run\n".write(to: url, atomically: true, encoding: .utf8)
+        #expect(await tail.drain() == ["new run"])
+
+        // And as an in-place truncation, which keeps the inode.
+        let handle = try FileHandle(forWritingTo: url)
+        try handle.truncate(atOffset: 0)
+        try handle.write(contentsOf: Data("hi\n".utf8))
+        try handle.close()
+        #expect(await tail.drain() == ["hi"])
+    }
+
     @Test("A line without its newline is held back until the newline arrives")
     func partialLineIsHeld() async throws {
         let url = FileManager.default.temporaryDirectory.appending(path: "\(UUID().uuidString).log")

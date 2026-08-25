@@ -36,6 +36,7 @@ public actor LogTail {
     private var offset: UInt64 = 0
     private var carry = ""
     private var stopped = false
+    private var inode: UInt64?
 
     /// - Parameters:
     ///   - url: The log file. It does not have to exist yet.
@@ -102,16 +103,22 @@ public actor LogTail {
         guard let handle = try? FileHandle(forReadingFrom: url) else { return [] }
         defer { try? handle.close() }
 
-        do {
-            try handle.seek(toOffset: offset)
-        } catch {
-            // The file was replaced or truncated under us, which is what a new
-            // run looks like. Start again from the top rather than reading into
-            // the middle of a line.
+        // A replaced or truncated file, which is what a new run looks like,
+        // never announces itself: the path opens fine and lseek past the new
+        // end is legal, so the seek succeeds and every read after it returns
+        // nothing, forever. A new inode or a size below the offset is the
+        // actual signal. Start again from the top rather than reading into
+        // the middle of a line.
+        let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
+        let currentInode = (attributes?[.systemFileNumber] as? NSNumber)?.uint64Value
+        let size = (attributes?[.size] as? NSNumber)?.uint64Value ?? 0
+        if (inode != nil && currentInode != inode) || size < offset {
             offset = 0
             carry = ""
-            try? handle.seek(toOffset: 0)
         }
+        inode = currentInode
+
+        guard (try? handle.seek(toOffset: offset)) != nil else { return [] }
 
         guard let data = try? handle.read(upToCount: chunkLimit), !data.isEmpty else { return [] }
         offset += UInt64(data.count)
