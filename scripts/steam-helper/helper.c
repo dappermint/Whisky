@@ -342,11 +342,13 @@ static BOOL is_executable(const WCHAR *program)
 }
 
 /*
- * Returns the child's handle, or NULL. `awaited` says whether that NULL means
- * the launch failed or that the shell took it and there is nothing to wait on.
+ * Returns the child's handle, or NULL with `awaited` saying whether there is
+ * anything to wait on. `launched` reports whether the target started at all:
+ * a shell-handled launcher URL leaves nothing to wait on but has still
+ * succeeded, and the helper's exit code must not call it a failure.
  */
 static HANDLE start_child(const WCHAR *program, int argc, WCHAR **argv,
-                          const WCHAR *workdir, BOOL *awaited)
+                          const WCHAR *workdir, BOOL *awaited, BOOL *launched)
 {
     STARTUPINFOW startup = { 0 };
     PROCESS_INFORMATION process;
@@ -354,13 +356,17 @@ static HANDLE start_child(const WCHAR *program, int argc, WCHAR **argv,
 
     startup.cb = sizeof(startup);
     *awaited = FALSE;
+    *launched = FALSE;
 
     if (!is_executable(program))
     {
         WCHAR *parameters = argc > 0 ? build_command_line(NULL, argc, argv) : NULL;
+        HINSTANCE shell = ShellExecuteW(NULL, L"open", program, parameters, workdir, SW_SHOWNORMAL);
 
-        ShellExecuteW(NULL, L"open", program, parameters, workdir, SW_SHOWNORMAL);
         free(parameters);
+        /* Success is any value above 32; the rest of the range is an error
+         * code wearing an HINSTANCE for 16-bit reasons. */
+        *launched = (INT_PTR)shell > 32;
         return NULL;
     }
 
@@ -375,6 +381,7 @@ static HANDLE start_child(const WCHAR *program, int argc, WCHAR **argv,
     free(command_line);
     CloseHandle(process.hThread);
     *awaited = TRUE;
+    *launched = TRUE;
     return process.hProcess;
 }
 
@@ -398,6 +405,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, PWSTR command_line, 
     char app_id[64] = { 0 };
     int argc = 0, i, first = 0;
     BOOL awaited = FALSE;
+    BOOL launched = FALSE;
     DWORD code = 0;
 
     (void)instance; (void)previous; (void)command_line; (void)show;
@@ -464,8 +472,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, PWSTR command_line, 
 
     export_steam_environment();
 
-    child = start_child(program, argc - first, argv + first, workdir, &awaited);
-    if (!awaited) return child ? 0 : 1;
+    child = start_child(program, argc - first, argv + first, workdir, &awaited, &launched);
+    if (!awaited) return launched ? 0 : 1;
 
     CreateThread(NULL, 0, drm_thread, NULL, 0, NULL);
 
@@ -491,7 +499,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, PWSTR command_line, 
         if (WaitForSingleObject(child, 0) == WAIT_TIMEOUT) continue;
 
         CloseHandle(child);
-        child = start_child(program, argc - first, argv + first, workdir, &awaited);
+        child = start_child(program, argc - first, argv + first, workdir, &awaited, &launched);
         if (!awaited) break;
     }
 
