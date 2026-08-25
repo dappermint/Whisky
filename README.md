@@ -66,10 +66,42 @@ Whisky provides a clean and easy-to-use graphical wrapper for Wine built in nati
 
 - **Wine 11.14** - GPTK-capable build that executes Apple's D3DMetal payload, with GStreamer and FFmpeg
 - **DXMT & DXVK Graphics** - DirectX 11 through native Metal translation (DXMT) out of the box, with DXVK over MoltenVK as the universal fallback
+- **Steam Compatibility Tool** - Windows-only games install and launch from the macOS Steam client itself, with session tracking, cloud saves and a bridge to the client you are already signed in to. See [Steam](#steam)
 - **Launcher Compatibility** - Built-in support for Steam, Epic, EA App, Rockstar, Battle.net, and more
 - **Controller Support** - SDL environment variable controls for gamepad detection and mapping issues
 - **Stability Diagnostics** - One-click diagnostic reports for troubleshooting crashes and freezes
 - **Native SwiftUI** - Beautiful, familiar macOS interface
+
+## Steam
+
+Preview registers itself with the **macOS** Steam client as a compatibility tool, the way Proton
+does on Linux. Windows-only titles then install and launch from your normal Steam library: Steam
+downloads the Windows depot, runs the game through Whisky, tracks the session for its whole
+duration, and syncs cloud saves back into the bottle. No Windows Steam client inside the bottle,
+no per-game launch option to edit, no second library to keep in sync.
+
+Games reach that client for auth, achievements, friends and cloud through `lsteamclient`, built
+from Proton's source as a Wine builtin, plus a small presence helper that stands in for Proton's
+`steam_helper`. A game sees the Steam you are already signed in to, not a copy of it.
+
+Turn it on from the **File** menu:
+
+1. **Steam Compatibility → Turn On Compatibility Tools…** patches two files in the installed
+   Steam client. The compat gate is derived from the platform string rather than stored as a
+   setting, so there is no switch to flip without this.
+2. **Steam Compatibility → Install Compatibility Tool…** writes the tool where the client reads
+   compatibility tools from.
+3. Restart Steam, then map a game under its **Properties → Compatibility**, or turn Steam Play on
+   for everything under **Settings → Compatibility**.
+
+Two things to know first. **Steam stops updating itself while the patch is in place**, because the
+self-check that would undo the change is the same one that keeps the client current. And the change
+is reversible: **Put Steam Back…** restores the original files and lets Steam update again, after
+which you can turn compatibility tools back on.
+
+The Steam overlay is experimental and off by default. It does load into the Wine process and
+install its Metal hooks, but whether it draws over a given game is unverified. Opt a game in with
+`WHISKY_STEAM_OVERLAY=1 %command%` in that game's Steam launch options.
 
 ## System Requirements
 
