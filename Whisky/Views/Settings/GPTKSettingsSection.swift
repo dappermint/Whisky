@@ -116,13 +116,19 @@ struct GPTKSettingsSection: View {
                 try GPTKImporter.importPayload(payload)
                 // Deployment into the Wine tree is gated: on an engine build
                 // without GPTK exception-unwind support the payload would
-                // crash every process that touches it.
-                GPTKImporter.deployStoredPayloadEverywhereCapable()
+                // crash every process that touches it. A failed deploy has to
+                // reach the user: the store looks imported either way, and the
+                // runtime it missed would break its next D3DMetal launch with
+                // nothing on screen saying why.
+                let sweep = GPTKImporter.deployStoredPayloadEverywhereCapable()
                 for mount in mounts.reversed() {
                     GPTKDiskImage.detach(mount)
                 }
                 await MainActor.run {
                     importing = false
+                    if !sweep.failures.isEmpty {
+                        importError = sweep.failures.joined(separator: "\n")
+                    }
                     refresh()
                 }
             } catch {

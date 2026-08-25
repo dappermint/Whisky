@@ -110,17 +110,36 @@ extension GPTKImporter {
         }
     }
 
+    /// What a sweep across the installed runtimes did: which it deployed
+    /// into, and which capable runtime failed with what. A failure here means
+    /// a runtime the UI reports as GPTK-ready can be missing half its payload,
+    /// so the one caller with a user watching has to be able to say so.
+    public struct DeploySweep: Sendable {
+        public let deployed: [String?]
+        public let failures: [String]
+    }
+
     /// Deploys the stored payload into every installed runtime that can execute
-    /// it, returning the identifiers it reached.
+    /// it, reporting the identifiers it reached and the failures it hit.
     ///
     /// Callers that used to deploy "into the runtime" now have several to
     /// choose from, and the useful default is all of the capable ones: an
     /// incapable runtime is skipped rather than broken.
     @discardableResult
-    public static func deployStoredPayloadEverywhereCapable() -> [String?] {
-        WhiskyWineInstaller.installedRuntimes()
-            .map(\.runtime)
-            .filter { deployStoredPayloadIfCapable(for: $0) }
+    public static func deployStoredPayloadEverywhereCapable() -> DeploySweep {
+        var deployed: [String?] = []
+        var failures: [String] = []
+        for runtime in WhiskyWineInstaller.installedRuntimes().map(\.runtime) {
+            guard storedRecord() != nil, isRuntimeGPTKCapable(for: runtime) else { continue }
+            do {
+                try deployStoredPayload(for: runtime)
+                deployed.append(runtime)
+            } catch {
+                logger.error("Deploying the stored GPTK payload failed: \(error.localizedDescription)")
+                failures.append("\(runtime ?? "default"): \(error.localizedDescription)")
+            }
+        }
+        return DeploySweep(deployed: deployed, failures: failures)
     }
 
     /// The runtime version under `folder`, or `nil` if none is readable.
@@ -220,24 +239,7 @@ extension GPTKImporter {
         // interposer away as if it were Wine's own builtin.
         removeVideoProcessor(fromLibraryFolder: folder, usingStore: store)
 
-        for name in forwarderDLLNames {
-            let target = peDir.appending(path: name)
-            let backup = originals.appending(path: name)
-            // Back up whatever Wine shipped, once; a redeploy over an existing
-            // GPTK forwarder must not overwrite the original with Apple's copy.
-            if fileManager.fileExists(atPath: target.path(percentEncoded: false)) {
-                if !fileManager.fileExists(atPath: backup.path(percentEncoded: false)),
-                   !isGPTKForwarder(target, matching: storeLib) {
-                    try fileManager.moveItem(at: target, to: backup)
-                } else {
-                    try fileManager.removeItem(at: target)
-                }
-            }
-            try fileManager.copyItem(
-                at: storeLib.appending(path: "wine").appending(path: "x86_64-windows").appending(path: name),
-                to: target
-            )
-        }
+        try installForwarders(storeLib: storeLib, peDir: peDir, originals: originals)
 
         try fileManager.createDirectory(at: unixDir, withIntermediateDirectories: true)
         for name in unixLibraryNames {
@@ -249,11 +251,17 @@ extension GPTKImporter {
             )
         }
 
+        // The framework copy is the long operation, so it runs to completion
+        // beside the live tree before the old external/ is dropped: the window
+        // with neither in place shrinks from the whole copy to one rename.
         let externalDest = wineLib.appending(path: "external")
+        let externalStaged = wineLib.appending(path: "external.staging")
+        try? fileManager.removeItem(at: externalStaged)
+        try fileManager.copyItem(at: storeLib.appending(path: "external"), to: externalStaged)
         if fileManager.fileExists(atPath: externalDest.path(percentEncoded: false)) {
             try fileManager.removeItem(at: externalDest)
         }
-        try fileManager.copyItem(at: storeLib.appending(path: "external"), to: externalDest)
+        try fileManager.moveItem(at: externalStaged, to: externalDest)
         // Apple's DLLs are in place now, which is the only moment the swaps can
         // be made: the runtime ships the interposers but has nothing to forward
         // into until this point.
@@ -263,6 +271,36 @@ extension GPTKImporter {
         try installMetalFXBridge(intoLibraryFolder: folder, usingStore: store)
         try installNVAPIBridge(intoLibraryFolder: folder, usingStore: store)
         logger.info("Deployed GPTK payload into the runtime tree")
+    }
+
+    /// Swaps Wine's builtins for the store's forwarders, backing up what Wine
+    /// shipped.
+    private static func installForwarders(storeLib: URL, peDir: URL, originals: URL) throws {
+        let fileManager = FileManager.default
+        for name in forwarderDLLNames {
+            let target = peDir.appending(path: name)
+            let backup = originals.appending(path: name)
+            // The incoming copy lands beside the slot before the slot is
+            // touched, so a copy that dies partway leaves the tree exactly as
+            // it was rather than minus one builtin.
+            let staged = target.appendingPathExtension("staging")
+            try? fileManager.removeItem(at: staged)
+            try fileManager.copyItem(
+                at: storeLib.appending(path: "wine").appending(path: "x86_64-windows").appending(path: name),
+                to: staged
+            )
+            // Back up whatever Wine shipped, once; a redeploy over an existing
+            // GPTK forwarder must not overwrite the original with Apple's copy.
+            if fileManager.fileExists(atPath: target.path(percentEncoded: false)) {
+                if !fileManager.fileExists(atPath: backup.path(percentEncoded: false)),
+                   !isGPTKForwarder(target, matching: storeLib) {
+                    try fileManager.moveItem(at: target, to: backup)
+                } else {
+                    try fileManager.removeItem(at: target)
+                }
+            }
+            try fileManager.moveItem(at: staged, to: target)
+        }
     }
 
     /// Whether `dll` is byte-identical to the store's forwarder of the same
