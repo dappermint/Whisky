@@ -40,6 +40,7 @@ extension Wine {
         _ overrides: ProgramOverrides,
         runtime: String? = nil,
         frameGeneration: Bool = false,
+        metal4Enabled: Bool = true,
         builder: inout EnvironmentBuilder,
         dllResolver: inout DLLOverrideResolver
     ) {
@@ -66,6 +67,17 @@ extension Wine {
                 if frameGeneration {
                     builder.set("CX_ACTIVE_GRAPHICS_BACKEND", "d3dmetal", layer: .programUser)
                 }
+                // A DXVK/DXMT bottle never writes D3DM_MTL4 at the bottle
+                // layer because its d3d12 is disabled. This override just put
+                // d3d12 back on D3DMetal, and the variable defaults to on when
+                // absent, so the bottle's choice has to be restated here or a
+                // bottle that turned Metal 4 off silently loses that for this
+                // program.
+                builder.set(
+                    "D3DM_MTL4",
+                    (overrides.metal4Enabled ?? metal4Enabled) ? "1" : "0",
+                    layer: .programUser
+                )
 
             case .dxvk:
                 // Enable DXVK DLLs at program level

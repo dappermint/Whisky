@@ -154,6 +154,7 @@ extension Wine {
                 overrides,
                 runtime: bottle.settings.runtime,
                 frameGeneration: bottle.settings.frameGeneration,
+                metal4Enabled: bottle.settings.metal4Enabled,
                 builder: &builder,
                 dllResolver: &dllResolver
             )

@@ -79,6 +79,53 @@ struct Metal4OverrideTests {
         #expect(decoded.metal4Enabled == false)
     }
 
+    // MARK: - A backend override re-enabling D3DMetal
+
+    /// Resolves the environment on a DXVK bottle whose program overrides its
+    /// backend to D3DMetal, which is the shape every GameDB entry that
+    /// recommends D3DMetal produces inside a DXVK bottle. The bottle layer
+    /// never wrote `D3DM_MTL4` there, so the override has to.
+    private func resolvedOnDXVKBottle(
+        _ overrides: ProgramOverrides, bottleMetal4: Bool
+    ) -> [String: String] {
+        var settings = BottleSettings()
+        settings.graphicsBackend = .dxvk
+        settings.metal4Enabled = bottleMetal4
+        var builder = EnvironmentBuilder()
+        var dllResolver = DLLOverrideResolver(managed: [], bottleCustom: [], programCustom: [])
+
+        _ = settings.populateBottleManagedLayer(builder: &builder)
+        Wine.applyProgramOverrides(
+            overrides, metal4Enabled: bottleMetal4, builder: &builder, dllResolver: &dllResolver
+        )
+
+        return builder.resolve().environment
+    }
+
+    private var d3dMetalOverride: ProgramOverrides {
+        var overrides = ProgramOverrides()
+        overrides.graphicsBackend = .d3dMetal
+        return overrides
+    }
+
+    @Test("An override onto D3DMetal keeps the bottle's Metal 4 off")
+    func overrideOntoD3DMetalKeepsBottleOff() {
+        #expect(resolvedOnDXVKBottle(d3dMetalOverride, bottleMetal4: false)["D3DM_MTL4"] == "0")
+    }
+
+    @Test("An override onto D3DMetal keeps the bottle's Metal 4 on")
+    func overrideOntoD3DMetalKeepsBottleOn() {
+        #expect(resolvedOnDXVKBottle(d3dMetalOverride, bottleMetal4: true)["D3DM_MTL4"] == "1")
+    }
+
+    @Test("The program's own Metal 4 choice beats the bottle's during the override")
+    func programChoiceBeatsBottleDuringOverride() {
+        var overrides = d3dMetalOverride
+        overrides.metal4Enabled = true
+
+        #expect(resolvedOnDXVKBottle(overrides, bottleMetal4: false)["D3DM_MTL4"] == "1")
+    }
+
     // MARK: - The game this was found on
 
     @Test("Helldivers 2 ships with Metal 4 turned off")
