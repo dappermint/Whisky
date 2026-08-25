@@ -80,14 +80,18 @@ extension Winetricks {
         for bottle: Bottle
     ) -> AsyncStream<(verb: String, progress: WinetricksInstallProgress)> {
         AsyncStream { continuation in
-            Task {
+            let task = Task {
                 for verb in verbs {
+                    guard !Task.isCancelled else { break }
                     for await progress in installVerb(verb, for: bottle) {
                         continuation.yield((verb: verb, progress: progress))
                     }
                 }
                 continuation.finish()
             }
+            // Ending the stream has to end the work, or a consumer that walks
+            // away leaves the loop running every remaining verb.
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 
@@ -166,6 +170,13 @@ extension Winetricks {
         do {
             try process.run()
             logger.info("Started winetricks install for verb '\(verb)'")
+            // A consumer that stops listening mid-install (a cancelled sheet,
+            // a cancelled wrapper stream) takes the child down with it, the
+            // same way the timeout does; the install would otherwise keep
+            // running against the prefix with nothing watching it.
+            continuation.onTermination = { _ in
+                if process.isRunning { process.terminate() }
+            }
         } catch {
             logger.error("Failed to launch winetricks install: \(error.localizedDescription)")
             continuation.yield(.failed(error.localizedDescription))

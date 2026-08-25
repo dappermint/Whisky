@@ -38,6 +38,7 @@ struct DependencyInstallSheet: View {
     @State private var showLog: Bool = false
     @State private var preflightResult: PreflightResult?
     @State private var verifyStatus: DependencyInstallStatus?
+    @State private var installTask: Task<Void, Never>?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -46,6 +47,13 @@ struct DependencyInstallSheet: View {
             bottomBar
         }
         .frame(minWidth: 500, minHeight: 400)
+        // The install runs in an unstructured task that outlives the sheet,
+        // so dismissal has to take it down itself or winetricks keeps going
+        // invisibly and a reopened sheet races a second copy against the
+        // same prefix.
+        .onDisappear {
+            installTask?.cancel()
+        }
     }
 }
 
@@ -395,7 +403,7 @@ extension DependencyInstallSheet {
         isInstalling = true
         logLines = []
 
-        Task {
+        installTask = Task {
             let verbStream = Winetricks.installVerbs(definition.winetricksVerbs, for: bottle)
             var lastExitCode: Int32 = 0
             var hadError = false
@@ -416,6 +424,10 @@ extension DependencyInstallSheet {
                     }
                 }
             }
+
+            // A cancelled install has no result worth recording: the sheet is
+            // gone, and a history entry for it would say the attempt ran.
+            if Task.isCancelled { return }
 
             let result: InstallResult = if hadError {
                 .error("One or more verbs failed")
