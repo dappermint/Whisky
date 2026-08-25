@@ -127,6 +127,15 @@ extension SteamCompatTool {
     static func protocolHandler(bottleURL: URL) -> [PrefixValue] {
         guard SteamLibrary.detectInstall(bottleURL: bottleURL) == nil else { return [] }
 
+        // Wine files an HKCR import under the machine classes hive, so that is
+        // where a previous launch's values turn up. Without this read the
+        // handler re-imports on every launch, and the whole point of
+        // missingPrefixValues is that a seeded prefix costs no wine process.
+        guard WineRegistryFile.readValue(
+            bottleURL: bottleURL, key: #"HKLM\Software\Classes\steam"#, valueName: "URL Protocol"
+        ) == nil
+        else { return [] }
+
         let scheme = #"HKEY_CLASSES_ROOT\steam"#
         return [
             PrefixValue(key: scheme, name: "", literal: quoted("URL:steam protocol")),

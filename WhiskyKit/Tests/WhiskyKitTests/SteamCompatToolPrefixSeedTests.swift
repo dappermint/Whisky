@@ -24,7 +24,9 @@ import Testing
 struct SteamCompatToolPrefixSeedTests {
     // MARK: - Fixtures
 
-    private func makeBottle(userRegistry: String = "", withWindowsClient: Bool = false) throws -> URL {
+    private func makeBottle(
+        userRegistry: String = "", systemRegistry: String = "", withWindowsClient: Bool = false
+    ) throws -> URL {
         let fileManager = FileManager.default
         let bottle = fileManager.temporaryDirectory.appending(path: "prefix_\(UUID().uuidString)")
         let dosdevices = bottle.appending(path: "dosdevices")
@@ -36,6 +38,9 @@ struct SteamCompatToolPrefixSeedTests {
         )
         try userRegistry.write(
             to: bottle.appending(path: "user.reg"), atomically: true, encoding: .utf8
+        )
+        try systemRegistry.write(
+            to: bottle.appending(path: "system.reg"), atomically: true, encoding: .utf8
         )
 
         if withWindowsClient {
@@ -147,6 +152,24 @@ struct SteamCompatToolPrefixSeedTests {
         #expect(command.name.isEmpty)
         #expect(command.literal.contains("winebrowser.exe"))
         #expect(values.contains { $0.name == "URL Protocol" })
+    }
+
+    /// Wine puts an HKCR import under the machine classes hive, and that is
+    /// where the next launch has to look: reseeding regardless costs a wine
+    /// process on every single launch.
+    @Test("The steam:// handler is not seeded twice")
+    func doesNotReseedTheProtocol() throws {
+        let seeded = """
+        WINE REGISTRY Version 2
+
+        [Software\\\\Classes\\\\steam] 1700000000
+        @="URL:steam protocol"
+        "URL Protocol"=""
+        """
+        let bottle = try makeBottle(systemRegistry: seeded)
+        defer { try? FileManager.default.removeItem(at: bottle) }
+
+        #expect(SteamCompatTool.protocolHandler(bottleURL: bottle).isEmpty)
     }
 
     // MARK: - The document
