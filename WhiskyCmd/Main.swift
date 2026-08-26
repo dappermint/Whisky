@@ -137,7 +137,11 @@ extension Whisky {
         mutating func run() throws {
             // Should be sanitised
             let bottleURL = URL(filePath: path)
-            let settings = try BottleSettings.decode(from: bottleURL)
+            // decode(from:) takes the Metadata.plist, not the bottle. Handing it
+            // the directory looks like it works, because fileExists is true for
+            // one, so it skips creating defaults and then fails reading it.
+            let metadataURL = bottleURL.appending(path: "Metadata").appendingPathExtension("plist")
+            let settings = try BottleSettings.decode(from: metadataURL)
             var bottlesList = BottleData()
             bottlesList.paths.append(bottleURL)
             print("Bottle \"\(settings.name)\" added.")
