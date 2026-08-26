@@ -31,6 +31,30 @@ public enum DependencyCategory: String, Codable, CaseIterable, Sendable {
     case directx = "DirectX"
     /// Audio middleware and codecs.
     case audio = "Audio"
+    /// Typefaces Windows applications expect to find installed.
+    case fonts = "Fonts"
+}
+
+// MARK: - Registry Probe
+
+/// A registry value whose presence means a dependency's payload is installed.
+///
+/// Needed because Wine ships builtin DLLs under the same names the Microsoft
+/// redistributables use, so a file on disk proves nothing: a bottle that has
+/// never seen `vcrun2022` still has `vcruntime140.dll` and `msvcp140.dll`, and
+/// Wine's builtin `msvcp140` is in fact larger than Microsoft's, so size cannot
+/// separate them either. The registry can: the real redistributable records its
+/// version, and winetricks records the DLL override it set.
+public struct DependencyRegistryProbe: Codable, Sendable {
+    /// Full key path, `HKLM\...` or `HKCU\...`.
+    public let key: String
+    /// The value that must exist under that key.
+    public let valueName: String
+
+    public init(key: String, valueName: String) {
+        self.key = key
+        self.valueName = valueName
+    }
 }
 
 // MARK: - Dependency Definition
@@ -70,6 +94,9 @@ public struct DependencyDefinition: Codable, Identifiable, Sendable {
     /// and the dependency looks missing forever while its files sit right
     /// there. Checked when no verb accounts for it.
     public let probeFiles: [String]
+    /// Registry values that account for the payload the same way ``probeFiles``
+    /// does, for the dependencies whose files Wine also ships as builtins.
+    public let probeRegistry: [DependencyRegistryProbe]
     /// The functional category this dependency belongs to.
     public let category: DependencyCategory
     /// Rough time estimate for installation, shown in the UI.
@@ -83,7 +110,8 @@ public struct DependencyDefinition: Codable, Identifiable, Sendable {
         category: DependencyCategory,
         estimatedInstallMinutes: Int,
         equivalentVerbs: [String] = [],
-        probeFiles: [String] = []
+        probeFiles: [String] = [],
+        probeRegistry: [DependencyRegistryProbe] = []
     ) {
         self.id = id
         self.displayName = displayName
@@ -93,6 +121,7 @@ public struct DependencyDefinition: Codable, Identifiable, Sendable {
         self.estimatedInstallMinutes = estimatedInstallMinutes
         self.equivalentVerbs = equivalentVerbs
         self.probeFiles = probeFiles
+        self.probeRegistry = probeRegistry
     }
 
     public init(from decoder: Decoder) throws {
@@ -106,60 +135,10 @@ public struct DependencyDefinition: Codable, Identifiable, Sendable {
         // Absent in definitions written before equivalents existed.
         equivalentVerbs = try container.decodeIfPresent([String].self, forKey: .equivalentVerbs) ?? []
         probeFiles = try container.decodeIfPresent([String].self, forKey: .probeFiles) ?? []
+        probeRegistry = try container.decodeIfPresent(
+            [DependencyRegistryProbe].self, forKey: .probeRegistry
+        ) ?? []
     }
-}
-
-extension DependencyDefinition {
-    /// The default set of dependencies shown in the bottle configuration UI.
-    ///
-    /// Each entry maps a user-facing name to one or more winetricks verbs.
-    /// The list covers the most commonly needed Windows components for
-    /// games and applications running under Wine.
-    public static let standardDependencies: [DependencyDefinition] = [
-        DependencyDefinition(
-            id: "vcruntime",
-            displayName: "Visual C++ Runtime",
-            description: "Required by most Windows games and applications",
-            // 2022 is the redistributable Microsoft still ships, and it carries
-            // the 2015-2019 runtimes with it, so it covers what vcrun2019 did.
-            winetricksVerbs: ["vcrun2022"],
-            category: .runtime,
-            estimatedInstallMinutes: 2,
-            equivalentVerbs: ["vcrun2019"],
-            probeFiles: [
-                "windows/system32/vcruntime140.dll",
-                "windows/system32/msvcp140.dll"
-            ]
-        ),
-        DependencyDefinition(
-            id: "dotnet48",
-            displayName: ".NET Framework 4.8",
-            description: "Required by .NET applications and some game launchers",
-            winetricksVerbs: ["dotnet48"],
-            category: .runtime,
-            estimatedInstallMinutes: 10
-        ),
-        DependencyDefinition(
-            id: "directx",
-            displayName: "DirectX Runtime",
-            description: "DirectX 9/10/11 components for older games",
-            winetricksVerbs: ["d3dx9", "d3dcompiler_47"],
-            category: .directx,
-            estimatedInstallMinutes: 3,
-            probeFiles: [
-                "windows/system32/d3dx9_43.dll",
-                "windows/system32/d3dcompiler_47.dll"
-            ]
-        ),
-        DependencyDefinition(
-            id: "directx_audio",
-            displayName: "DirectX Audio",
-            description: "XACT audio framework for games using DirectX audio",
-            winetricksVerbs: ["xact"],
-            category: .audio,
-            estimatedInstallMinutes: 2
-        )
-    ]
 }
 
 // MARK: - Dependency Confidence

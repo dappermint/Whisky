@@ -28,8 +28,8 @@ public enum RegistryType: String {
 /// Reads registry values straight from a prefix's `.reg` files, so callers
 /// that cannot afford a Wine process (checks, previews) still see the
 /// current state.
-enum WineRegistryFile {
-    static func readValue(bottleURL: URL, key: String, valueName: String) -> String? {
+public enum WineRegistryFile {
+    public static func readValue(bottleURL: URL, key: String, valueName: String) -> String? {
         let regFileName: String
         if key.hasPrefix("HKCU") || key.hasPrefix("HKEY_CURRENT_USER") {
             regFileName = "user.reg"

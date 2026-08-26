@@ -58,7 +58,8 @@ enum DependencyManager {
         let confidence: DependencyConfidence = fromCache ? .cached : .authoritative
         let now = Date()
 
-        let driveC = await MainActor.run { bottle.url.appending(path: "drive_c") }
+        let bottleURL = await MainActor.run { bottle.url }
+        let driveC = bottleURL.appending(path: "drive_c")
 
         return definitions.map { definition in
             let requiredVerbs = definition.winetricksVerbs
@@ -73,12 +74,20 @@ enum DependencyManager {
             // installer, or a redistributable that refused to reinstall over a
             // newer copy of itself, leaves the payload without leaving a verb.
             var byProbe = false
-            if !missing.isEmpty, !definition.probeFiles.isEmpty {
-                byProbe = definition.probeFiles.allSatisfy { relativePath in
-                    FileManager.default.fileExists(
-                        atPath: driveC.appending(path: relativePath).path(percentEncoded: false)
-                    )
-                }
+            if !missing.isEmpty {
+                let byFile = !definition.probeFiles.isEmpty
+                    && definition.probeFiles.allSatisfy { relativePath in
+                        FileManager.default.fileExists(
+                            atPath: driveC.appending(path: relativePath).path(percentEncoded: false)
+                        )
+                    }
+                let byRegistry = !definition.probeRegistry.isEmpty
+                    && definition.probeRegistry.allSatisfy { probe in
+                        WineRegistryFile.readValue(
+                            bottleURL: bottleURL, key: probe.key, valueName: probe.valueName
+                        ) != nil
+                    }
+                byProbe = byFile || byRegistry
                 if byProbe { missing = [] }
             }
 

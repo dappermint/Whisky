@@ -321,16 +321,33 @@ final class TroubleshootingChecksTests: XCTestCase {
         XCTAssertEqual(WinVersion(currentVersion: "10.0", build: nil), .win10)
     }
 
-    func testTheVisualCPlusPlusDefinitionKnowsWhatItLeavesOnDisk() {
-        let vcruntime = DependencyDefinition.standardDependencies.first { $0.id == "vcruntime" }
-
+    func testTheRedistributablesAreNotProbedByFile() {
         // Microsoft's redistributable exits 1638 over a newer copy of itself,
-        // wine truncates that to 102, and winetricks records no verb. The files
-        // are the only remaining evidence that the runtime is there.
-        XCTAssertEqual(vcruntime?.probeFiles, [
-            "windows/system32/vcruntime140.dll",
-            "windows/system32/msvcp140.dll"
-        ])
+        // wine truncates that to 102, and winetricks records no verb, so these
+        // need a fallback probe. It cannot be the files: wine ships builtin
+        // vcruntime140.dll, msvcp140.dll, d3dx9_43.dll and d3dcompiler_47.dll,
+        // so every bottle has them from wineboot onward and a file probe reads
+        // as installed on a prefix that has none of the real payload. Size does
+        // not separate them either; wine's builtin msvcp140 is the larger one.
+        for id in ["vcruntime", "directx"] {
+            let definition = DependencyDefinition.standardDependencies.first { $0.id == id }
+            XCTAssertNotNil(definition, "\(id) missing from the standard set")
+            XCTAssertTrue(definition?.probeFiles.isEmpty ?? false, "\(id) probes a builtin filename")
+            XCTAssertFalse(definition?.probeRegistry.isEmpty ?? true, "\(id) has no fallback probe")
+        }
+    }
+
+    func testTheFontDependenciesAreProbedByFile() {
+        // Fonts are the opposite case: wine ships no Arial, so the file being
+        // there does mean the payload is.
+        let corefonts = DependencyDefinition.standardDependencies.first { $0.id == "corefonts" }
+        XCTAssertEqual(corefonts?.category, .fonts)
+        XCTAssertEqual(corefonts?.winetricksVerbs, ["corefonts"])
+        XCTAssertTrue(corefonts?.probeFiles.contains("windows/Fonts/Arial.ttf") ?? false)
+
+        let cjk = DependencyDefinition.standardDependencies.first { $0.id == "sourcehansans" }
+        XCTAssertEqual(cjk?.category, .fonts)
+        XCTAssertEqual(cjk?.probeFiles, ["windows/Fonts/sourcehansans.ttc"])
     }
 
     func testDependencyDefinitionDecodesWithoutProbeFiles() throws {
@@ -343,5 +360,6 @@ final class TroubleshootingChecksTests: XCTestCase {
         let decoded = try JSONDecoder().decode(DependencyDefinition.self, from: Data(json.utf8))
 
         XCTAssertTrue(decoded.probeFiles.isEmpty)
+        XCTAssertTrue(decoded.probeRegistry.isEmpty)
     }
 }
