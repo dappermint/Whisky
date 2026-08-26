@@ -76,7 +76,7 @@ extension SessionResumeView {
             Image(systemName: "arrow.counterclockwise.circle.fill")
                 .foregroundStyle(.blue)
                 .font(.title2)
-            Text("Resume Troubleshooting?")
+            Text("troubleshooting.resume.title")
                 .font(.title3)
                 .fontWeight(.semibold)
         }
@@ -89,15 +89,18 @@ extension SessionResumeView {
     private var sessionSummary: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let category = session.symptomCategory {
-                Text("You have a paused session for \(category.displayTitle)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                Text(String(
+                    format: String(localized: "troubleshooting.resume.description %@"),
+                    category.localizedTitle
+                ))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             }
             HStack(spacing: 4) {
                 Image(systemName: "clock")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
-                Text("Last updated: \(session.lastUpdatedAt, style: .relative) ago")
+                (Text("troubleshooting.resume.lastUpdated") + Text(" ") + Text(session.lastUpdatedAt, style: .relative))
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
@@ -110,7 +113,7 @@ extension SessionResumeView {
 extension SessionResumeView {
     private var sinceYouLeftSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Since you left:")
+            Text("troubleshooting.resume.sinceYouLeft")
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundStyle(.secondary)
@@ -142,19 +145,19 @@ extension SessionResumeView {
             Button {
                 onResume(session)
             } label: {
-                Text("Resume")
+                Text("troubleshooting.resume.resume")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
 
             HStack(spacing: 12) {
-                Button("Start Over") {
+                Button("troubleshooting.resume.startOver") {
                     onStartOver()
                 }
                 .buttonStyle(.bordered)
 
-                Button("Discard", role: .destructive) {
+                Button("troubleshooting.resume.discard", role: .destructive) {
                     onDiscard()
                 }
                 .buttonStyle(.borderless)

@@ -86,7 +86,11 @@ struct ConfigView: View {
                 onRetryRetinaMode: loadRetinaMode,
                 onRetryDpi: loadDpi
             )
-            LauncherConfigSection(bottle: bottle, isExpanded: $launcherSectionExpanded)
+            LauncherConfigSection(
+                bottle: bottle,
+                isExpanded: $launcherSectionExpanded,
+                onViewDiagnostics: loadLatestDiagnosisAndView
+            )
             InputConfigSection(bottle: bottle, isExpanded: $inputSectionExpanded)
             GraphicsConfigSection(bottle: bottle)
             AudioConfigSection(bottle: bottle)
@@ -209,7 +213,8 @@ struct ConfigView: View {
                     logText: latestDiagnosisLogText,
                     programName: program.name,
                     bottleName: bottle.settings.name,
-                    timestamp: program.settings.lastDiagnosisDate ?? Date()
+                    timestamp: program.settings.lastDiagnosisDate ?? Date(),
+                    applyBottle: bottle
                 )
                 .frame(minWidth: 600, minHeight: 400)
             }

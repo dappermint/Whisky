@@ -271,6 +271,27 @@ final class TroubleshootingFlowEngineTests: XCTestCase {
         XCTAssertEqual(store.completed.count, 1)
     }
 
+    func testCheckRunPublishesLastCheckResult() async {
+        let (engine, _) = makeEngine(nodes: [
+            "start": checkNode("start", outcome: "pass", on: ["pass": "done"]),
+            "done": infoNode("done")
+        ])
+
+        engine.selectCategory(.graphics)
+
+        await waitUntil("last check result published") { engine.lastCheckResult != nil }
+        XCTAssertEqual(engine.lastCheckResult?.outcome, .pass)
+    }
+
+    func testMarkFixFailedFlipsThePendingAttempt() {
+        let (engine, _) = makeEngine(nodes: ["start": infoNode("start")])
+
+        engine.applyFix(fixId: "fix.a", beforeValue: nil, afterValue: nil)
+        engine.markFixFailed(fixId: "fix.a")
+
+        XCTAssertEqual(engine.session.fixAttempts.last?.result, .failed)
+    }
+
     func testUndoLastFixMarksApplied() {
         let (engine, _) = makeEngine(nodes: ["start": infoNode("start")])
         engine.applyFix(fixId: "fix.a", beforeValue: nil, afterValue: nil)

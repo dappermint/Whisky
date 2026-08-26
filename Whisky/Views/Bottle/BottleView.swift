@@ -25,14 +25,12 @@ enum BottleStage {
     case programs
     case processes
     case gameConfigs
-    case steamLibrary
 }
 
 struct BottleView: View {
     @ObservedObject var bottle: Bottle
     @State private var path = NavigationPath()
     @State private var programLoading: Bool = false
-    @State private var hasSteamLibrary: Bool = false
     @State private var showWinetricksSheet: Bool = false
     @State private var showDuplicate: Bool = false
     @State private var toast: ToastData?
@@ -60,12 +58,6 @@ struct BottleView: View {
                         Label("tab.programs", systemImage: "list.bullet")
                     }
                     .accessibilityIdentifier("nav.installedPrograms")
-                    if hasSteamLibrary {
-                        NavigationLink(value: BottleStage.steamLibrary) {
-                            Label("tab.steamLibrary", systemImage: "gamecontroller")
-                        }
-                        .accessibilityIdentifier("nav.steamLibrary")
-                    }
                     NavigationLink(value: BottleStage.config) {
                         Label("tab.config", systemImage: "gearshape")
                     }
@@ -95,99 +87,13 @@ struct BottleView: View {
                 .scrollDisabled(true)
             }
             .bottomBar {
-                HStack {
-                    Spacer()
-                    Button("button.cDrive") {
-                        bottle.openCDrive()
-                    }
-                    .accessibilityIdentifier("bottle.openCDrive")
-                    Button("button.terminal") {
-                        bottle.openTerminal()
-                    }
-                    .accessibilityIdentifier("bottle.openTerminal")
-                    Button("button.winetricks") {
-                        showWinetricksSheet.toggle()
-                    }
-                    .accessibilityIdentifier("bottle.openWinetricks")
-                    Button("button.run") {
-                        let panel = NSOpenPanel()
-                        panel.allowsMultipleSelection = false
-                        panel.canChooseDirectories = false
-                        panel.canChooseFiles = true
-                        panel.allowedContentTypes = [
-                            UTType.exe,
-                            UTType(exportedAs: "com.microsoft.msi-installer"),
-                            UTType(exportedAs: "com.microsoft.bat"),
-                            UTType(exportedAs: "com.microsoft.msix-package"),
-                            UTType(exportedAs: "com.microsoft.appx-package"),
-                            UTType(exportedAs: "com.microsoft.application-reference"),
-                            UTType(exportedAs: "com.microsoft.windows-internet-shortcut")
-                        ]
-                        panel.directoryURL = bottle.url.appending(path: "drive_c")
-                        panel.begin { result in
-                            programLoading = true
-                            Task(priority: .userInitiated) {
-                                if result == .OK {
-                                    if let url = panel.urls.first {
-                                        do {
-                                            // Auto-detect launcher and apply fixes if compatibility mode enabled
-                                            // This completes synchronously on MainActor, ensuring settings are
-                                            // persisted before Wine.runProgram() reads them
-                                            LauncherFixes.detectAndApply(from: url, for: bottle)
-
-                                            Telemetry.capture(.firstProgramLaunchAttempted)
-                                            if url.pathExtension == "bat" {
-                                                try await Wine.runBatchFile(url: url, bottle: bottle)
-                                            } else {
-                                                try await Wine.runProgram(at: url, bottle: bottle)
-                                            }
-                                            await MainActor.run {
-                                                withAnimation {
-                                                    toast = ToastData(
-                                                        message: String(
-                                                            localized: "status.launched \(url.lastPathComponent)"
-                                                        ),
-                                                        style: .success
-                                                    )
-                                                }
-                                            }
-                                        } catch {
-                                            let errDesc = error.localizedDescription
-                                            await MainActor.run {
-                                                withAnimation {
-                                                    toast = ToastData(
-                                                        message: String(
-                                                            localized: "status.launchFailed \(errDesc)"
-                                                        ),
-                                                        style: .error,
-                                                        autoDismiss: false
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        await MainActor.run {
-                                            programLoading = false
-                                        }
-                                    }
-                                } else {
-                                    await MainActor.run {
-                                        programLoading = false
-                                    }
-                                }
-                                await updateStartMenu()
-                            }
-                        }
-                    }
-                    .accessibilityIdentifier("bottle.runProgram")
-                    .disabled(programLoading)
-                    if programLoading {
-                        Spacer()
-                            .frame(width: 10)
-                        ProgressView()
-                            .controlSize(.small)
-                    }
-                }
-                .padding()
+                BottleActionBar(
+                    bottle: bottle,
+                    showWinetricksSheet: $showWinetricksSheet,
+                    programLoading: $programLoading,
+                    toast: $toast,
+                    onLaunch: updateStartMenu
+                )
             }
             .task {
                 await updateStartMenu()
@@ -257,13 +163,6 @@ struct BottleView: View {
                 // Trigger a reload
                 BottleVM.shared.bottles = BottleVM.shared.bottles
             }
-            .task(id: bottle.url) {
-                // Filesystem check kept out of body evaluation
-                let bottleURL = bottle.url
-                hasSteamLibrary = await Task.detached {
-                    SteamLibrary.detectInstall(bottleURL: bottleURL) != nil
-                }.value
-            }
             .navigationDestination(for: BottleStage.self) { stage in
                 switch stage {
                 case .config:
@@ -276,8 +175,6 @@ struct BottleView: View {
                     RunningProcessesView(bottle: bottle)
                 case .gameConfigs:
                     GameConfigurationView(bottle: bottle)
-                case .steamLibrary:
-                    SteamLibraryView(bottle: bottle)
                 }
             }
             .navigationDestination(for: Program.self) { program in

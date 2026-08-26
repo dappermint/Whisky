@@ -63,26 +63,36 @@ struct GraphicsConfigSection: View {
                 runningProcessWarning
             }
 
-            // Force DX11 toggle -- always visible (Simple + Advanced)
-            Toggle(isOn: $bottle.settings.forceD3D11) {
-                Text("config.forceD3D11")
-            }
-
-            // Sequoia Compatibility Mode -- always visible
-            Toggle(isOn: $bottle.settings.sequoiaCompatMode) {
-                VStack(alignment: .leading) {
-                    Text("config.sequoiaCompat")
-                    if resolvedBackend == .wined3d {
-                        Text("config.sequoiaCompat.d3dmetalOnly")
+            // MetalFX rides on D3DMetal's DLSS bridge and Metal 4 is D3DMetal's
+            // own command-encoding backend, so both are meaningless under any
+            // other backend rather than merely inactive.
+            if resolvedBackend == .d3dMetal {
+                Toggle(isOn: $bottle.settings.metalFX) {
+                    VStack(alignment: .leading) {
+                        Text("config.metalFX")
+                        Text("config.metalFX.info")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                    } else {
-                        Text("config.sequoiaCompat.info")
+                    }
+                }
+                Toggle(isOn: $bottle.settings.metal4Enabled) {
+                    VStack(alignment: .leading) {
+                        Text("config.metal4")
+                        Text("config.metal4.info")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
+
+            // Force DX11 toggle -- always visible (Simple + Advanced)
+            Toggle(isOn: $bottle.settings.forceD3D11) {
+                Text("config.forceD3D11")
+            }
+
+            // The Sequoia compatibility toggle is gone: everything it set is a
+            // platform-layer fix applied on every supported macOS, so the
+            // switch changed nothing in either position.
 
             // "Advanced settings active" badge in Simple mode
             if !advancedMode, hasAdvancedSettingsConfigured {

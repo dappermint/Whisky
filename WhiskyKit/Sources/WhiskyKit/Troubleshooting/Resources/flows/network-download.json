@@ -13,9 +13,9 @@
       "params": {},
       "on": {
         "pass": "branch_by_launcher",
-        "fail": "check_general_network",
-        "unknown": "check_general_network",
-        "error": "check_general_network"
+        "fail": "check_wine_dns",
+        "unknown": "check_wine_dns",
+        "error": "check_wine_dns"
       },
       "evidenceMap": {
         "launcherType": "Detected launcher",
@@ -30,7 +30,7 @@
       "description": "Routing to launcher-specific network troubleshooting steps.",
       "on": {
         "steam": "check_steam_download",
-        "default": "check_general_network"
+        "default": "check_wine_dns"
       }
     },
     "check_steam_download": {
@@ -76,58 +76,22 @@
       "title": "Change Steam download region",
       "description": "Steam download stalls can sometimes be resolved by changing the download region. Open Steam Settings > Downloads and try selecting a different region closer to your location.",
       "on": {
-        "continue": "check_general_network"
-      }
-    },
-    "check_general_network": {
-      "id": "check_general_network",
-      "type": "check",
-      "phase": "checks",
-      "title": "Check network environment",
-      "description": "Checking for proxy, DNS, and other network-related environment variables that may affect connectivity.",
-      "checkId": "env.check_var",
-      "params": {
-        "vars": "http_proxy,https_proxy,no_proxy,ALL_PROXY"
-      },
-      "on": {
-        "pass": "check_wine_dns",
-        "fail": "fix_network_env",
-        "already_configured": "check_wine_dns",
-        "unknown": "check_wine_dns",
-        "error": "check_wine_dns"
-      },
-      "evidenceMap": {
-        "issueVar": "Variable",
-        "currentValue": "Current value"
-      }
-    },
-    "fix_network_env": {
-      "id": "fix_network_env",
-      "type": "fix",
-      "phase": "fix",
-      "title": "Fix network environment",
-      "description": "Correcting network-related environment variables that may be interfering with connectivity.",
-      "fixId": "fix-env-var",
-      "isReversible": true,
-      "requiresConfirmation": false,
-      "on": {
-        "applied": "verify_fix",
-        "skipped": "check_wine_dns"
+        "continue": "check_wine_dns"
       }
     },
     "check_wine_dns": {
       "id": "check_wine_dns",
       "type": "check",
       "phase": "checks",
-      "title": "Check Wine DNS settings",
-      "description": "Checking Wine registry for DNS configuration issues that may affect network connectivity.",
+      "title": "Checking for a Wine DNS override",
+      "description": "A DNS server override in the Wine registry can point downloads at a stale resolver instead of the system one.",
       "checkId": "registry.value_check",
       "params": {
         "key": "HKLM\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters",
-        "value": "NameServer"
+        "valueName": "NameServer"
       },
       "on": {
-        "pass": "escalate",
+        "pass": "fix_wine_dns",
         "fail": "fix_wine_dns",
         "already_configured": "escalate",
         "unknown": "escalate",
@@ -142,14 +106,21 @@
       "id": "fix_wine_dns",
       "type": "fix",
       "phase": "fix",
-      "title": "Fix Wine DNS configuration",
-      "description": "Correcting the Wine DNS registry settings to use system DNS resolution.",
+      "title": "Clear the Wine DNS override",
+      "description": "Removes the DNS server override from the Wine registry so Wine resolves names through macOS. Takes effect on the next launch.",
       "fixId": "set-registry-value",
       "isReversible": true,
       "requiresConfirmation": false,
       "on": {
         "applied": "verify_fix",
         "skipped": "escalate"
+      },
+      "params": {
+        "key": "HKLM\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters",
+        "valueName": "NameServer",
+        "valueType": "string",
+        "value": "",
+        "settingName": "Wine DNS override"
       }
     },
     "verify_fix": {
@@ -160,7 +131,7 @@
       "description": "Try the download or connection again to check whether the issue is resolved.",
       "on": {
         "yes": "resolved",
-        "no": "check_general_network"
+        "no": "check_wine_dns"
       }
     },
     "escalate": {

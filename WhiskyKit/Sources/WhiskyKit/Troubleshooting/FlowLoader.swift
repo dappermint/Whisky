@@ -122,11 +122,11 @@ public enum FlowLoader {
     /// Loads all shared fragment flow definitions from the SPM resource bundle.
     ///
     /// Since SPM `.process()` flattens directories, fragment files are loaded
-    /// by their resource names (e.g., "dependency-install", "export-escalation").
+    /// by their resource names (e.g., "export-escalation").
     ///
     /// - Returns: A dictionary of fragment definitions keyed by resource name.
     public static func loadFragments() -> [String: FlowDefinition] {
-        let fragmentNames = ["dependency-install", "export-escalation"]
+        let fragmentNames = ["export-escalation"]
         var fragments: [String: FlowDefinition] = [:]
 
         for name in fragmentNames {

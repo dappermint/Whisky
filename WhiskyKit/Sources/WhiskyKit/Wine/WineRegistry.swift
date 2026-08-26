@@ -25,6 +25,65 @@ public enum RegistryType: String {
     case string = "REG_SZ"
 }
 
+/// Reads registry values straight from a prefix's `.reg` files, so callers
+/// that cannot afford a Wine process (checks, previews) still see the
+/// current state.
+enum WineRegistryFile {
+    static func readValue(bottleURL: URL, key: String, valueName: String) -> String? {
+        let regFileName: String
+        if key.hasPrefix("HKCU") || key.hasPrefix("HKEY_CURRENT_USER") {
+            regFileName = "user.reg"
+        } else if key.hasPrefix("HKLM") || key.hasPrefix("HKEY_LOCAL_MACHINE") {
+            regFileName = "system.reg"
+        } else {
+            return nil
+        }
+
+        let regFileURL = bottleURL.appending(path: regFileName)
+        guard let content = try? String(contentsOf: regFileURL, encoding: .utf8) else {
+            return nil
+        }
+
+        // Normalize the key path for .reg file format
+        // HKCU\Software\Wine\Drivers -> [Software\\Wine\\Drivers]
+        let normalizedKey = key
+            .replacingOccurrences(of: "HKCU\\", with: "")
+            .replacingOccurrences(of: "HKEY_CURRENT_USER\\", with: "")
+            .replacingOccurrences(of: "HKLM\\", with: "")
+            .replacingOccurrences(of: "HKEY_LOCAL_MACHINE\\", with: "")
+            .replacingOccurrences(of: "\\", with: "\\\\")
+
+        let sectionHeader = "[" + normalizedKey + "]"
+
+        let lines = content.components(separatedBy: "\n")
+        var inSection = false
+
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            if trimmed.hasPrefix("[") {
+                inSection = trimmed.lowercased().hasPrefix(sectionHeader.lowercased())
+                continue
+            }
+
+            if inSection, trimmed.hasPrefix("\"\(valueName)\"") {
+                // Parse value: "valueName"="value" or "valueName"=dword:00000001
+                if let equalsIndex = trimmed.firstIndex(of: "=") {
+                    let rawValue = String(trimmed[trimmed.index(after: equalsIndex)...])
+                        .trimmingCharacters(in: .whitespaces)
+                    // Strip surrounding quotes if present
+                    if rawValue.hasPrefix("\""), rawValue.hasSuffix("\"") {
+                        return String(rawValue.dropFirst().dropLast())
+                    }
+                    return rawValue
+                }
+            }
+        }
+
+        return nil
+    }
+}
+
 public extension Wine {
     private enum RegistryKey: String {
         case currentVersion = #"HKLM\Software\Microsoft\Windows NT\CurrentVersion"#
@@ -42,6 +101,13 @@ public extension Wine {
             ["reg", "add", key, "-v", name, "-t", type.rawValue, "-d", data, "-f"],
             bottle: bottle
         )
+    }
+
+    @MainActor
+    static func deleteRegistryValue(
+        bottle: Bottle, key: String, name: String
+    ) async throws {
+        try await runWine(["reg", "delete", key, "/v", name, "/f"], bottle: bottle)
     }
 
     @MainActor

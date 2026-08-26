@@ -28,6 +28,63 @@ func fakePE(builtin: Bool) -> Data {
     return data
 }
 
+/// Builds a PE that is structured enough for the export name rewrite to walk:
+/// a DOS header pointing at a PE32+ header, one section, and an export
+/// directory whose name string sits inside it.
+func fakePEWithExportName(_ name: String, builtin: Bool = true) -> Data {
+    var data = Data(count: 0x400)
+    func put16(_ offset: Int, _ value: Int) {
+        for index in 0 ..< 2 {
+            data[offset + index] = UInt8((value >> (8 * index)) & 0xFF)
+        }
+    }
+    func put32(_ offset: Int, _ value: Int) {
+        for index in 0 ..< 4 {
+            data[offset + index] = UInt8((value >> (8 * index)) & 0xFF)
+        }
+    }
+
+    data[0] = 0x4D
+    data[1] = 0x5A
+    if builtin {
+        data.replaceSubrange(0x40 ..< 0x50, with: Data("Wine builtin DLL".utf8))
+    }
+    put32(0x3C, 0x80) // e_lfanew
+    put32(0x80, 0x0000_4550) // "PE\0\0"
+    put16(0x86, 1) // one section
+    put16(0x94, 240) // size of the optional header
+    put16(0x98, 0x20B) // PE32+, so the directories sit 112 bytes in
+    put32(0x108, 0x1000) // export directory rva
+    put32(0x188 + 8, 0x1000) // section virtual size
+    put32(0x188 + 12, 0x1000) // section virtual address
+    put32(0x188 + 20, 0x200) // section pointer to raw data
+    put32(0x200 + 12, 0x1050) // the export directory's name rva
+    data.replaceSubrange(0x250 ..< (0x250 + name.utf8.count), with: Data(name.utf8))
+    return data
+}
+
+/// Gives a store's `d3d12.dll` a walkable export directory, so the swap under
+/// test has something shaped like Apple's DLL to rename.
+func makeStoreD3D12Renameable(inStore store: URL) throws {
+    try fakePEWithExportName("d3d12.dll").write(
+        to: store.appending(path: "lib").appending(path: "wine")
+            .appending(path: "x86_64-windows").appending(path: "d3d12.dll")
+    )
+}
+
+/// Puts an interposer in the runtime where the build ships one.
+@discardableResult
+func makeVideoProcessorShim(at libraryFolder: URL, marker: String = "interposer") throws -> URL {
+    let shim = GPTKImporter.videoProcessorShim(inLibraryFolder: libraryFolder)
+    try FileManager.default.createDirectory(
+        at: shim.deletingLastPathComponent(), withIntermediateDirectories: true
+    )
+    var data = fakePE(builtin: true)
+    data.append(Data(marker.utf8))
+    try data.write(to: shim)
+    return shim
+}
+
 /// Assembles Apple's `redist/lib` payload layout under `libRoot`.
 func makePayload(
     at libRoot: URL,
@@ -150,6 +207,21 @@ func makePartialDeploy(store: URL, runtime: URL, runtimeVersion: String) throws 
         at: storePE.appending(path: "d3d10.dll"), to: peDir.appending(path: "d3d10.dll")
     )
     return peDir
+}
+
+/// Adds Apple's MetalFX bridge to a store's payload.
+///
+/// ``makePayload(at:version:builtinForwarders:omitting:unixEntriesAsFiles:)``
+/// leaves it out so a payload without one, which is what every GPTK before it
+/// shipped, stays the default the deployment tests see.
+@discardableResult
+func makeStoreMetalFXBridge(inStore store: URL, marker: String = "metalfx bridge") throws -> URL {
+    let dll = store.appending(path: "lib").appending(path: "wine")
+        .appending(path: "x86_64-windows").appending(path: GPTKImporter.metalFXBridgeSourceName)
+    var data = fakePE(builtin: true)
+    data.append(Data(marker.utf8))
+    try data.write(to: dll)
+    return dll
 }
 
 /// A store holding a freshly imported payload, under `tempDir`.

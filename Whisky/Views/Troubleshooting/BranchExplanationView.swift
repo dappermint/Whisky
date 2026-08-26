@@ -61,9 +61,9 @@ struct BranchExplanationView: View {
 
     private var displayText: String {
         if let reason {
-            "Path updated: \(reason)"
+            String(format: String(localized: "troubleshooting.branch.pathChangedReason %@"), reason)
         } else {
-            "The troubleshooting path has been updated based on the check results."
+            String(localized: "troubleshooting.branch.pathChangedGeneric")
         }
     }
 }

@@ -13,9 +13,9 @@
       "params": {},
       "on": {
         "pass": "branch_by_launcher",
-        "fail": "check_generic_env",
-        "unknown": "check_generic_env",
-        "error": "check_generic_env"
+        "fail": "escalate",
+        "unknown": "escalate",
+        "error": "escalate"
       },
       "evidenceMap": {
         "launcherType": "Detected launcher",
@@ -30,10 +30,10 @@
       "description": "Routing to launcher-specific troubleshooting steps based on the detected launcher.",
       "on": {
         "steam": "check_steam_process",
-        "ea": "check_launcher_env",
-        "epic": "check_launcher_env",
-        "rockstar": "check_launcher_env",
-        "default": "check_generic_env"
+        "ea": "fix_launcher_env",
+        "epic": "fix_launcher_env",
+        "rockstar": "fix_launcher_env",
+        "default": "escalate"
       }
     },
     "check_steam_process": {
@@ -47,10 +47,10 @@
         "process": "steamwebhelper"
       },
       "on": {
-        "pass": "check_steam_download",
+        "pass": "show_steam_download_info",
         "fail": "fix_restart_launcher",
-        "unknown": "check_steam_download",
-        "error": "check_steam_download"
+        "unknown": "show_steam_download_info",
+        "error": "show_steam_download_info"
       },
       "evidenceMap": {
         "processName": "Process",
@@ -69,30 +69,7 @@
       "requiresConfirmation": true,
       "on": {
         "applied": "verify_fix",
-        "skipped": "check_launcher_env"
-      }
-    },
-    "check_steam_download": {
-      "id": "check_steam_download",
-      "type": "check",
-      "phase": "checks",
-      "title": "Check Steam download settings",
-      "description": "Checking for download configuration issues that can cause Steam to stall or fail.",
-      "checkId": "setting.value_check",
-      "params": {
-        "setting": "steamDownloadRegion",
-        "scope": "launcher"
-      },
-      "on": {
-        "pass": "check_launcher_env",
-        "fail": "show_steam_download_info",
-        "already_configured": "check_launcher_env",
-        "unknown": "check_launcher_env",
-        "error": "check_launcher_env"
-      },
-      "evidenceMap": {
-        "currentValue": "Current region",
-        "recommendation": "Recommendation"
+        "skipped": "fix_launcher_env"
       }
     },
     "show_steam_download_info": {
@@ -102,65 +79,21 @@
       "title": "Steam download region",
       "description": "Try changing your Steam download region in Steam Settings > Downloads. Select a region closer to your location or try a different region if downloads are stalling.",
       "on": {
-        "continue": "check_launcher_env"
-      }
-    },
-    "check_launcher_env": {
-      "id": "check_launcher_env",
-      "type": "check",
-      "phase": "checks",
-      "title": "Check launcher environment",
-      "description": "Verifying that environment variables are correctly configured for launcher compatibility.",
-      "checkId": "env.check_var",
-      "params": {
-        "vars": "WINEDLLOVERRIDES,STEAM_COMPAT_CLIENT_INSTALL_PATH,EA_DESKTOP_INSTALL_LANG"
-      },
-      "on": {
-        "pass": "escalate",
-        "fail": "fix_launcher_env",
-        "already_configured": "escalate",
-        "unknown": "escalate",
-        "error": "escalate"
-      },
-      "evidenceMap": {
-        "issueVar": "Variable",
-        "currentValue": "Current value"
+        "continue": "fix_launcher_env"
       }
     },
     "fix_launcher_env": {
       "id": "fix_launcher_env",
       "type": "fix",
       "phase": "fix",
-      "title": "Fix launcher environment",
-      "description": "Applying known launcher compatibility fixes for Wine on macOS.",
-      "fixId": "fix-env-var",
+      "title": "Reapply launcher compatibility fixes",
+      "description": "Applies Whisky's known fixes for the detected launcher again, even if they were applied before: locale, DXVK, GPU visibility, and network timeout adjustments.",
+      "fixId": "apply-launcher-fixes",
       "isReversible": true,
       "requiresConfirmation": false,
       "on": {
         "applied": "verify_fix",
         "skipped": "escalate"
-      }
-    },
-    "check_generic_env": {
-      "id": "check_generic_env",
-      "type": "check",
-      "phase": "checks",
-      "title": "Check general launcher environment",
-      "description": "Checking general environment configuration for launcher compatibility.",
-      "checkId": "env.check_var",
-      "params": {
-        "vars": "WINEDLLOVERRIDES,WINEPREFIX"
-      },
-      "on": {
-        "pass": "escalate",
-        "fail": "fix_launcher_env",
-        "already_configured": "escalate",
-        "unknown": "escalate",
-        "error": "escalate"
-      },
-      "evidenceMap": {
-        "issueVar": "Variable",
-        "currentValue": "Current value"
       }
     },
     "verify_fix": {
@@ -171,7 +104,7 @@
       "description": "Try launching the program again to check whether the issue is resolved.",
       "on": {
         "yes": "resolved",
-        "no": "check_launcher_env"
+        "no": "escalate"
       }
     },
     "escalate": {

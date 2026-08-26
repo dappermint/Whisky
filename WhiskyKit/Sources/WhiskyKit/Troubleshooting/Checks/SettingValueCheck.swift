@@ -139,6 +139,8 @@ public struct SettingValueCheck: TroubleshootingCheck {
             settings.virtualDesktopEnabled ? "true" : "false"
         case "audioDriver":
             settings.audioDriver.rawValue
+        case "audioLatencyPreset":
+            settings.audioLatencyPreset.rawValue
         default:
             nil
         }

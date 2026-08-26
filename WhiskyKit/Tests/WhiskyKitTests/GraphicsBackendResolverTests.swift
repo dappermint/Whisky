@@ -34,8 +34,24 @@ final class GraphicsBackendResolverTests: XCTestCase {
         let runtime = WhiskyWineVersion(version: SemanticVersion(3, 1, 1), dxmtVersion: "0.80")
 
         XCTAssertEqual(
-            GraphicsBackendResolver.resolve(runtimeInfo: runtime, d3dMetalInstalled: false),
+            GraphicsBackendResolver.resolve(
+                runtimeInfo: runtime, d3dMetalInstalled: false, dxmtRuntimeNative: true
+            ),
             .dxmt
+        )
+    }
+
+    /// The version record alone is not the gate the picker applies: a
+    /// builtin-variant or missing DXMT payload fails at launch, so auto must
+    /// not promise a backend the picker would refuse.
+    func testResolvesDXVKWhenDXMTPayloadNotNative() {
+        let runtime = WhiskyWineVersion(version: SemanticVersion(3, 1, 1), dxmtVersion: "0.80")
+
+        XCTAssertEqual(
+            GraphicsBackendResolver.resolve(
+                runtimeInfo: runtime, d3dMetalInstalled: false, dxmtRuntimeNative: false
+            ),
+            .dxvk
         )
     }
 

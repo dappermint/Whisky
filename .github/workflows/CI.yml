@@ -70,6 +70,23 @@ jobs:
             exit 1
           }
 
+  # A partial en-GB is worse than none: macOS picks one localization per process
+  # and renders the raw key for anything missing from it, so a single string
+  # added without regenerating shows `config.audio.driver.auto` to every British
+  # user rather than falling back to en.
+  localization:
+    name: Localization
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check en-GB covers every string
+        run: |
+          ./scripts/british-english.py --check || {
+            echo ""
+            echo "Run ./scripts/british-english.py locally and commit the result."
+            exit 1
+          }
+
   # Detects which areas a PR touches so macOS jobs can be skipped when they
   # can't be affected. Runs on every event; the outputs are only consulted for
   # pull requests (pushes to main always run everything).
@@ -142,12 +159,19 @@ jobs:
       # at runtime but the build stays green — so assert on the built artifact.
       - name: Verify bundled app resources
         run: |
-          app=$(find ~/Library/Developer/Xcode/DerivedData -type d \
-            -path '*/Build/Products/Debug/Whisky.app' | head -1)
-          if [ -z "$app" ]; then
-            echo "::error::Whisky.app not found in DerivedData after build"
+          # Ask for the exact product path rather than globbing DerivedData:
+          # a loose glob can also catch WhiskyUITests-Runner.app.
+          app=$(xcodebuild -project Whisky.xcodeproj -scheme Whisky -configuration Debug \
+            -showBuildSettings 2>/dev/null \
+            | awk -F' = ' '
+                /^ *BUILT_PRODUCTS_DIR = /  { dir = $2 }
+                /^ *FULL_PRODUCT_NAME = /   { name = $2 }
+                END { if (dir != "" && name != "") print dir "/" name }')
+          if [ -z "$app" ] || [ ! -d "$app" ]; then
+            echo "::error::app bundle not found after build (resolved to '${app:-<empty>}')"
             exit 1
           fi
+          echo "Checking $app"
           missing=0
           for res in winetricks verbs.txt cabextract; do
             if [ ! -f "$app/Contents/Resources/$res" ]; then

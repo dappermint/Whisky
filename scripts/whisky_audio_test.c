@@ -62,8 +62,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    /* Generate 100ms audio buffer */
-    int num_samples = 44100 / 10;
+    /* 600ms: long enough that "did you hear it?" is a fair question. A 100ms
+       blip reads as a click, and a click is what a broken driver sounds like. */
+    int num_samples = (44100 * 6) / 10;
     int buf_size = num_samples * wfx.nBlockAlign;
     char *buf = (char *)calloc(1, buf_size);
 
@@ -78,9 +79,19 @@ int main(int argc, char *argv[]) {
         /* Generate 440Hz sine wave (A4) */
         short *samples = (short *)buf;
         int i;
+        /* 10ms of fade at each end: a sine cut off mid-cycle ends in a step,
+           which is audible as a click and is exactly what this test must not
+           produce on a working device. */
+        int fade = 44100 / 100;
         for (i = 0; i < num_samples; i++) {
             double t = (double)i / 44100.0;
-            short val = (short)(32767.0 * sin(2.0 * M_PI * 440.0 * t));
+            double envelope = 1.0;
+            if (i < fade) {
+                envelope = (double)i / fade;
+            } else if (i >= num_samples - fade) {
+                envelope = (double)(num_samples - 1 - i) / fade;
+            }
+            short val = (short)(24000.0 * envelope * sin(2.0 * M_PI * 440.0 * t));
             samples[i * 2] = val;       /* left channel */
             samples[i * 2 + 1] = val;   /* right channel */
         }

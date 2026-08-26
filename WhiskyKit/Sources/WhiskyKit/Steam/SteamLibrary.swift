@@ -77,15 +77,61 @@ public enum SteamLibrary {
     public static func enumerate(bottleURL: URL) -> [SteamGame] {
         guard let steamRoot = detectInstall(bottleURL: bottleURL) else { return [] }
 
+        let roots = libraryRoots(steamRoot: steamRoot, bottleURL: bottleURL)
+        let revision = revision(of: roots)
+        if let cached = cache.games(forBottleAt: bottleURL, revision: revision) {
+            return cached
+        }
+
         var byAppId: [Int: SteamGame] = [:]
-        for library in libraryRoots(steamRoot: steamRoot, bottleURL: bottleURL) {
+        for library in roots {
             for game in games(inLibrary: library) where byAppId[game.appId] == nil {
                 byAppId[game.appId] = game
             }
         }
 
-        return byAppId.values.sorted {
+        let sorted = byAppId.values.sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
+        cache.store(sorted, forBottleAt: bottleURL, revision: revision)
+        return sorted
+    }
+
+    /// A stamp that changes whenever a library's contents could have.
+    ///
+    /// The modification date of each `steamapps` directory, which moves when a
+    /// manifest is added or removed, so installing, uninstalling or moving a
+    /// game invalidates it. Merely playing one does not, which is the point: a
+    /// refresh that changed nothing costs a handful of `stat` calls instead of
+    /// parsing every manifest in every library.
+    private static func revision(of libraries: [URL]) -> [String] {
+        libraries.map { library in
+            let steamapps = library.appending(path: "steamapps")
+            let modified = try? steamapps.resourceValues(forKeys: [.contentModificationDateKey])
+                .contentModificationDate
+            return "\(steamapps.path(percentEncoded: false))@\(modified?.timeIntervalSince1970 ?? 0)"
+        }
+    }
+
+    private static let cache = EnumerationCache()
+
+    /// Remembers the last enumeration per bottle, valid while its libraries
+    /// have not been written to.
+    private final class EnumerationCache: @unchecked Sendable {
+        private let lock = NSLock()
+        private var entries: [URL: (revision: [String], games: [SteamGame])] = [:]
+
+        func games(forBottleAt url: URL, revision: [String]) -> [SteamGame]? {
+            lock.lock()
+            defer { lock.unlock() }
+            guard let entry = entries[url], entry.revision == revision else { return nil }
+            return entry.games
+        }
+
+        func store(_ games: [SteamGame], forBottleAt url: URL, revision: [String]) {
+            lock.lock()
+            defer { lock.unlock() }
+            entries[url] = (revision, games)
         }
     }
 

@@ -267,12 +267,7 @@ public class Wine {
             programOverrides = pinned
         }
 
-        // DXMT first: if launcher auto-DXVK also fires below (e.g. Rockstar),
-        // DXVK's file copy deterministically wins, matching the override-layer
-        // order where launcher-managed entries land after bottle-managed ones.
-        if effectiveBackend == .dxmt {
-            try enableDXMT(bottle: bottle)
-        }
+        try prepareBackendPrefix(effectiveBackend, bottle: bottle)
 
         // Enable DXVK if needed: effective backend, the legacy program-level
         // flag (honored only without a backend override, mirroring
@@ -727,6 +722,89 @@ public class Wine {
         return marker != Data("Wine builtin DLL".utf8)
     }
 
+    /// Places the per-bottle files a backend needs in the prefix before launch.
+    ///
+    /// DXMT goes first: if launcher auto-DXVK also fires in `runProgram`, DXVK's
+    /// file copy deterministically wins, matching the override-layer order where
+    /// launcher-managed entries land after bottle-managed ones.
+    @MainActor
+    private static func prepareBackendPrefix(_ backend: GraphicsBackend, bottle: Bottle) throws {
+        switch backend {
+        case .dxmt:
+            try enableDXMT(bottle: bottle)
+        case .d3dMetal, .dxvk, .wined3d, .recommended:
+            break
+        }
+
+        applyMetalFX(bottle: bottle, backend: backend)
+    }
+
+    /// Opts a bottle in or out of D3DMetal's DLSS-to-MetalFX path, per
+    /// ``BottleSettings/metalFX`` and the backend the launch actually resolved
+    /// to.
+    ///
+    /// The bridge itself is a builtin in the shared Wine tree, so it cannot be
+    /// installed per bottle. What can is the `system32` entry the loader needs
+    /// before it will look in the builtin directory at all: without one,
+    /// `LoadLibrary("nvngx.dll")` fails with `ERROR_MOD_NOT_FOUND` however
+    /// complete the tree is. So the placeholder is the switch: present means a
+    /// game can reach MetalFX, absent means the bridge is inert.
+    ///
+    /// Only D3DMetal implements the DLSS entry points behind it, so every other
+    /// backend clears, setting or no setting. Otherwise a bottle switched away
+    /// from D3DMetal with MetalFX still on keeps a placeholder for a bridge
+    /// nothing in that prefix can answer, and a DLSS-aware game reaches it under
+    /// a backend it was never meant for.
+    ///
+    /// - Parameters:
+    ///   - bottle: The ``Bottle`` whose opt-in state to apply.
+    ///   - backend: The backend this launch resolved to.
+    ///   - libraryFolder: The runtime tree holding the bridge.
+    ///
+    /// - Note: Called by `runProgram` for every launch, in both directions, so
+    ///   turning the setting off or switching backend takes effect on the next
+    ///   launch without the user having to repair anything.
+    @MainActor
+    public static func applyMetalFX(
+        bottle: Bottle,
+        backend: GraphicsBackend,
+        libraryFolder: URL = WhiskyWineInstaller.libraryFolder
+    ) {
+        if backend == .d3dMetal, bottle.settings.metalFX {
+            GPTKImporter.seedMetalFXBridgePlaceholder(inBottle: bottle.url, fromLibraryFolder: libraryFolder)
+            seedNGXModelConfig(inBottle: bottle.url)
+        } else {
+            GPTKImporter.clearMetalFXBridgePlaceholder(inBottle: bottle.url)
+        }
+    }
+
+    /// Where NGX keeps the manifest its updater reads, which a real NVIDIA driver
+    /// would have written.
+    static let ngxModelConfigPath = ["drive_c", "ProgramData", "NVIDIA", "NGX", "models"]
+
+    /// Writes the NGX manifest a driver install would leave behind.
+    ///
+    /// Streamline opens this before it does anything else and logs a pair of
+    /// errors per launch when it is missing:
+    ///
+    ///     [streamline][error] File 'C:\ProgramData/NVIDIA/NGX/models/nvngx_config.txt' does not exist
+    ///     [streamline][error] readServerManifest: Failed to open manifest file
+    ///
+    /// Only the over-the-air updater reads what is inside, and that updater
+    /// (`nvngx_update.exe`) does not exist here either, so the contents matter
+    /// less than the file existing. Left alone once written, so a real one from a
+    /// driver install or a user's own edit survives.
+    ///
+    /// - Parameter bottle: The bottle whose prefix to seed.
+    static func seedNGXModelConfig(inBottle bottle: URL) {
+        let fileManager = FileManager.default
+        let folder = ngxModelConfigPath.reduce(bottle) { $0.appending(path: $1) }
+        let config = folder.appending(path: "nvngx_config.txt")
+        guard !fileManager.fileExists(atPath: config.path(percentEncoded: false)) else { return }
+        try? fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
+        try? "[global]\nversion = 1\n".write(to: config, atomically: true, encoding: .utf8)
+    }
+
     /// Installs DXMT into a bottle so its Direct3D-11-to-Metal layer is used.
     ///
     /// Copies the native D3D translation trio (`d3d11`, `dxgi`, `d3d10core`) and
@@ -986,8 +1064,10 @@ public extension Wine {
 
     /// Classifies the output from a Wine process run for crash patterns.
     ///
-    /// Reads the tail of the log file (up to 500 lines / 256 KiB) and runs
-    /// classification on a background task to avoid blocking the UI.
+    /// Reads the head and the tail of the log, not the tail alone: missing-DLL
+    /// (`import_dll`) and backend-init failures are head-of-log events, and a
+    /// long session buries them under hours of output a tail-only window never
+    /// sees. Runs on a background task to avoid blocking the UI.
     ///
     /// - Parameters:
     ///   - logFileURL: URL to the Wine log file to analyze.
@@ -995,47 +1075,65 @@ public extension Wine {
     ///   - classifier: Optional pre-configured classifier. If `nil`, creates one
     ///     with default patterns.
     /// - Returns: A ``CrashDiagnosis`` if the log was readable, or `nil` on failure.
-    public static func classifyLastRun(
+    static func classifyLastRun(
         logFileURL: URL,
         exitCode: Int32,
         classifier: CrashClassifier? = nil
     ) async -> CrashDiagnosis? {
         await Task.detached(priority: .utility) {
-            let maxBytesToRead = 256 * 1_024
-            let maxLines = 500
-
-            do {
-                let handle = try FileHandle(forReadingFrom: logFileURL)
-                defer { try? handle.close() }
-
-                let end = try handle.seekToEnd()
-                let start = end > UInt64(maxBytesToRead) ? end - UInt64(maxBytesToRead) : 0
-                try handle.seek(toOffset: start)
-
-                let data = try handle.readToEnd() ?? Data()
-                guard var text = String(data: data, encoding: .utf8), !text.isEmpty else {
-                    return nil
-                }
-
-                // Drop first partial line if reading from the middle
-                if start != 0, let firstNewline = text.firstIndex(of: "\n") {
-                    text = String(text[text.index(after: firstNewline)...])
-                }
-
-                // Limit to last N lines
-                let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
-                let logText: String = if lines.count > maxLines {
-                    lines.suffix(maxLines).joined(separator: "\n")
-                } else {
-                    lines.joined(separator: "\n")
-                }
-
-                let resolvedClassifier = classifier ?? CrashClassifier()
-                return resolvedClassifier.classify(log: logText, exitCode: exitCode)
-            } catch {
+            guard let logText = try? classificationWindow(of: logFileURL), !logText.isEmpty else {
                 return nil
             }
+            let resolvedClassifier = classifier ?? CrashClassifier()
+            return resolvedClassifier.classify(log: logText, exitCode: exitCode)
         }.value
+    }
+
+    /// The head and tail of a log, joined into the window classification reads.
+    private nonisolated static func classificationWindow(of logFileURL: URL) throws -> String? {
+        let maxTailBytes = 256 * 1_024
+        let maxHeadBytes = 64 * 1_024
+        let maxTailLines = 500
+        let maxHeadLines = 200
+
+        let handle = try FileHandle(forReadingFrom: logFileURL)
+        defer { try? handle.close() }
+        let end = try handle.seekToEnd()
+
+        if end <= UInt64(maxHeadBytes + maxTailBytes) {
+            try handle.seek(toOffset: 0)
+            let data = try handle.readToEnd() ?? Data()
+            guard let text = String(data: data, encoding: .utf8), !text.isEmpty else { return nil }
+            let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+            if lines.count <= maxHeadLines + maxTailLines {
+                return text
+            }
+            return (lines.prefix(maxHeadLines) + lines.suffix(maxTailLines)).joined(separator: "\n")
+        }
+
+        try handle.seek(toOffset: 0)
+        let headData = try handle.read(upToCount: maxHeadBytes) ?? Data()
+        var head = String(data: headData, encoding: .utf8) ?? ""
+        // Drop the trailing partial line of the head window.
+        if let lastNewline = head.lastIndex(of: "\n") {
+            head = String(head[..<lastNewline])
+        }
+        let headLines = head
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .prefix(maxHeadLines)
+
+        try handle.seek(toOffset: end - UInt64(maxTailBytes))
+        let tailData = try handle.readToEnd() ?? Data()
+        var tail = String(data: tailData, encoding: .utf8) ?? ""
+        // Drop the leading partial line of the tail window.
+        if let firstNewline = tail.firstIndex(of: "\n") {
+            tail = String(tail[tail.index(after: firstNewline)...])
+        }
+        let tailLines = tail
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .suffix(maxTailLines)
+
+        return (headLines + tailLines).joined(separator: "\n")
     }
 }
 

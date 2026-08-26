@@ -26,7 +26,10 @@ env:
 jobs:
   build-docs:
     name: Build Documentation
-    runs-on: macos-14
+    # macos-15, same as CI: latest-stable Xcode on macos-14 is a generation
+    # older, and its SDK predates Sendable annotations the kit now relies on
+    # (NSImage in IconCache), so the docs build fails where CI passes.
+    runs-on: macos-15
     steps:
       - name: Checkout
         uses: actions/checkout@v6

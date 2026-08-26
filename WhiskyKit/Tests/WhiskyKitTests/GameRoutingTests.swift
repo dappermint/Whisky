@@ -115,6 +115,91 @@ struct GameRoutingTests {
         #expect(routing.bottleURL(forAppId: 2)?.lastPathComponent == "two")
     }
 
+    @Test("A launch records when it happened, which is what the library sorts on")
+    func recordsLaunchTime() {
+        let (routing, cleanup) = makeStore()
+        defer { cleanup() }
+
+        let when = Date(timeIntervalSince1970: 1_760_000_000)
+        routing.record(appId: 1_245_620, bottleURL: URL(fileURLWithPath: "/tmp/bottles/one"), at: when)
+
+        #expect(routing.lastLaunched(forAppId: 1_245_620) == when)
+        #expect(routing.lastLaunches()[1_245_620] == when)
+    }
+
+    @Test("Relaunching moves the time forward")
+    func lastLaunchTimeWins() {
+        let (routing, cleanup) = makeStore()
+        defer { cleanup() }
+
+        let bottle = URL(fileURLWithPath: "/tmp/bottles/one")
+        let earlier = Date(timeIntervalSince1970: 1_760_000_000)
+        let later = Date(timeIntervalSince1970: 1_760_003_600)
+        routing.record(appId: 1, bottleURL: bottle, at: earlier)
+        routing.record(appId: 1, bottleURL: bottle, at: later)
+
+        #expect(routing.lastLaunched(forAppId: 1) == later)
+    }
+
+    @Test("A store written before launch times reads as a route with no date")
+    func readsTheLegacyShape() throws {
+        let tempDir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let url = tempDir.appending(path: "GameRouting.plist")
+        let legacy = try PropertyListSerialization.data(
+            fromPropertyList: ["440": "/tmp/bottles/one"], format: .xml, options: 0
+        )
+        try legacy.write(to: url)
+
+        let routing = GameRouting(url: url)
+
+        #expect(routing.bottleURL(forAppId: 440)?.lastPathComponent == "one")
+        #expect(routing.lastLaunched(forAppId: 440) == nil)
+        #expect(routing.lastLaunches().isEmpty)
+    }
+
+    @Test("Only launches that have a time are reported as having one")
+    func launchesWithoutTimesAreOmitted() throws {
+        let tempDir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let url = tempDir.appending(path: "GameRouting.plist")
+        let legacy = try PropertyListSerialization.data(
+            fromPropertyList: ["440": "/tmp/bottles/one"], format: .xml, options: 0
+        )
+        try legacy.write(to: url)
+
+        let routing = GameRouting(url: url)
+        let when = Date(timeIntervalSince1970: 1_760_000_000)
+        routing.record(appId: 550, bottleURL: URL(fileURLWithPath: "/tmp/bottles/two"), at: when)
+
+        #expect(routing.routes().count == 2)
+        #expect(routing.lastLaunches() == [550: when])
+    }
+
+    @Test("A route matches its bottle whether or not the bottle still exists")
+    func pathsMatchAfterTheBottleIsDeleted() throws {
+        // `URL(fileURLWithPath:)` consults the filesystem and returns a
+        // directory URL for a path that exists, whose path keeps a trailing
+        // slash. Pruning happens after deletion, so the two must still match.
+        let tempDir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        let bottle = tempDir.appending(path: "Bottle")
+        try FileManager.default.createDirectory(at: bottle, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let routing = GameRouting(url: tempDir.appending(path: "GameRouting.plist"))
+        routing.record(appId: 1, bottleURL: URL(fileURLWithPath: bottle.path(percentEncoded: false)))
+        routing.record(appId: 2, bottleURL: URL(fileURLWithPath: bottle.path(percentEncoded: false)))
+
+        try FileManager.default.removeItem(at: bottle)
+        routing.removeRoutes(toBottle: bottle)
+
+        #expect(routing.routes().isEmpty)
+    }
+
     @Test("A corrupt store is treated as empty, not fatal")
     func corruptStoreIsEmpty() throws {
         let tempDir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)

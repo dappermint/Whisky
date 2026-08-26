@@ -392,7 +392,7 @@ final class LauncherDiagnosticsTests: XCTestCase {
 
         // DXVK should be auto-enabled because Rockstar requires it
         // DLL overrides are now composed per-DLL via DLLOverrideResolver (sorted alphabetically)
-        XCTAssertEqual(env["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d9=n,b;dxgi=n,b")
+        XCTAssertEqual(env["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d12=;d3d9=n,b;dxgi=n,b")
     }
 
     func testAutoEnableDXVKNotTriggeredForSteam() throws {
@@ -573,11 +573,12 @@ final class LauncherDiagnosticsTests: XCTestCase {
         var env: [String: String] = [:]
         bottle.settings.environmentVariables(wineEnv: &env)
 
-        // Connection pooling fixes should always be applied when launcher compat is on
-        XCTAssertEqual(env["WINE_MAX_CONNECTIONS_PER_SERVER"], "10")
-        XCTAssertEqual(env["WINE_FORCE_HTTP11"], "1")
-        XCTAssertEqual(env["WINE_ENABLE_SSL"], "1")
-        XCTAssertEqual(env["WINE_SSL_VERSION_MIN"], "TLS1.2")
+        // These variables exist in no Wine or WineCX source; asserting their
+        // absence keeps them from coming back as reassuring decoration.
+        XCTAssertNil(env["WINE_MAX_CONNECTIONS_PER_SERVER"])
+        XCTAssertNil(env["WINE_FORCE_HTTP11"])
+        XCTAssertNil(env["WINE_ENABLE_SSL"])
+        XCTAssertNil(env["WINE_SSL_VERSION_MIN"])
     }
 }
 

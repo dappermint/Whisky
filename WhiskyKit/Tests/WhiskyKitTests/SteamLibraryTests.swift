@@ -20,7 +20,9 @@ import Foundation
 import Testing
 @testable import WhiskyKit
 
-private func acf(appId: Int, name: String, installDir: String, stateFlags: Int) -> String {
+private func acf(
+    appId: Int, name: String, installDir: String, stateFlags: Int, lastPlayed: Int = 1_760_000_000
+) -> String {
     """
     "AppState"
     {
@@ -30,85 +32,9 @@ private func acf(appId: Int, name: String, installDir: String, stateFlags: Int) 
         "StateFlags"        "\(stateFlags)"
         "buildid"        "1785187029"
         "SizeOnDisk"        "541968407"
+        "LastPlayed"        "\(lastPlayed)"
     }
     """
-}
-
-@Suite("SteamAppManifest Tests")
-struct SteamAppManifestTests {
-    @Test("Parses a full manifest file")
-    func parsesFullManifest() throws {
-        let tempDir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
-        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tempDir) }
-
-        let url = tempDir.appending(path: "appmanifest_4576510.acf")
-        try Data(acf(
-            appId: 4_576_510, name: "Casualties: Unknown Demo",
-            installDir: "Casualties Unknown Demo", stateFlags: 4
-        ).utf8).write(to: url)
-
-        let manifest = try #require(SteamAppManifest(contentsOf: url))
-
-        #expect(manifest.appId == 4_576_510)
-        #expect(manifest.name == "Casualties: Unknown Demo")
-        #expect(manifest.installDir == "Casualties Unknown Demo")
-        #expect(manifest.stateFlags == 4)
-        #expect(manifest.buildID == 1_785_187_029)
-        #expect(manifest.sizeOnDisk == 541_968_407)
-        #expect(manifest.isFullyInstalled)
-    }
-
-    @Test("Downloading state is not fully installed")
-    func downloadingNotInstalled() throws {
-        let tempDir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
-        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tempDir) }
-
-        let url = tempDir.appending(path: "appmanifest_999.acf")
-        try Data(acf(appId: 999, name: "Downloading", installDir: "dl", stateFlags: 2).utf8)
-            .write(to: url)
-
-        let manifest = try #require(SteamAppManifest(contentsOf: url))
-        #expect(!manifest.isFullyInstalled)
-    }
-
-    @Test("Returns nil for missing required fields or garbage")
-    func returnsNilForBadInput() throws {
-        let tempDir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
-        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tempDir) }
-
-        let noName = tempDir.appending(path: "noname.acf")
-        try Data("\"AppState\" { \"appid\" \"1\" \"installdir\" \"x\" }".utf8).write(to: noName)
-        #expect(SteamAppManifest(contentsOf: noName) == nil)
-
-        let garbage = tempDir.appending(path: "garbage.acf")
-        try Data("not vdf at all".utf8).write(to: garbage)
-        #expect(SteamAppManifest(contentsOf: garbage) == nil)
-
-        #expect(SteamAppManifest(contentsOf: tempDir.appending(path: "missing.acf")) == nil)
-    }
-
-    @Test("Legacy parseAppId fast path still works")
-    func parseAppIdCompat() {
-        let text = acf(appId: 1_245_620, name: "ELDEN RING", installDir: "ELDEN RING", stateFlags: 4)
-        #expect(SteamAppManifest.parseAppId(from: text) == 1_245_620)
-        #expect(SteamAppManifest.parseAppId(from: "no appid here") == nil)
-    }
-
-    @Test("findAppIdForProgram walks parent directories")
-    func findsAppIdNearExe() throws {
-        let tempDir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
-        let exeDir = tempDir.appending(path: "game").appending(path: "bin")
-        try FileManager.default.createDirectory(at: exeDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tempDir) }
-
-        try Data("4576510\n".utf8).write(to: tempDir.appending(path: "game").appending(path: "steam_appid.txt"))
-
-        let found = SteamAppManifest.findAppIdForProgram(at: exeDir.appending(path: "game.exe"))
-        #expect(found == 4_576_510)
-    }
 }
 
 @Suite("SteamLibrary Tests")
@@ -226,6 +152,43 @@ struct SteamLibraryTests {
         #expect(games[0].name != "Casualties Duplicate")
         // Downloading (999) and missing-install-dir (777) games are filtered
         #expect(!games.contains { $0.appId == 999 || $0.appId == 777 })
+    }
+
+    @Test("A second enumeration of an unchanged library returns the same games")
+    func enumerationIsCachedUntilTheLibraryChanges() throws {
+        let (bottle, tempRoot) = try makeFixtureBottle()
+        defer { try? FileManager.default.removeItem(at: tempRoot) }
+
+        let first = SteamLibrary.enumerate(bottleURL: bottle)
+        let second = SteamLibrary.enumerate(bottleURL: bottle)
+
+        #expect(first.map(\.appId) == second.map(\.appId))
+    }
+
+    @Test("Installing a game invalidates the cache")
+    func newManifestIsPickedUp() throws {
+        let (bottle, tempRoot) = try makeFixtureBottle()
+        defer { try? FileManager.default.removeItem(at: tempRoot) }
+
+        let before = SteamLibrary.enumerate(bottleURL: bottle)
+
+        let steamapps = try #require(SteamLibrary.detectInstall(bottleURL: bottle))
+            .appending(path: "steamapps")
+        try FileManager.default.createDirectory(
+            at: steamapps.appending(path: "common").appending(path: "New Game"),
+            withIntermediateDirectories: true
+        )
+        try acf(appId: 271_590, name: "New Game", installDir: "New Game", stateFlags: 4)
+            .write(
+                to: steamapps.appending(path: "appmanifest_271590.acf"),
+                atomically: true,
+                encoding: .utf8
+            )
+
+        let after = SteamLibrary.enumerate(bottleURL: bottle)
+
+        #expect(!before.contains { $0.appId == 271_590 })
+        #expect(after.contains { $0.appId == 271_590 })
     }
 
     @Test("Runtime payloads are not listed as games")

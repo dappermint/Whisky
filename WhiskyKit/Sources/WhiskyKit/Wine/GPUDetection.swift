@@ -132,9 +132,6 @@ public enum GPUDetection {
         // GPU model name for launcher display
         env["GPU_DESCRIPTION"] = model ?? vendor.modelName
 
-        // Vulkan configuration (MoltenVK on macOS)
-        env["VK_ICD_FILENAMES"] = "/usr/local/share/vulkan/icd.d/MoltenVK_icd.json"
-
         // VRAM reporting (8GB minimum for modern launchers)
         env["GPU_MEMORY_SIZE"] = "8192" // 8GB in MB
 

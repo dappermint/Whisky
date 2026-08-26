@@ -36,12 +36,12 @@ struct TroubleshootingTargetPicker: View {
             Text(String(localized: "troubleshooting.wizard.title"))
                 .font(.headline)
 
-            Text("Select a bottle and optionally a program to troubleshoot.")
+            Text("troubleshooting.target.description")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
             Picker("Bottle", selection: $selectedBottle) {
-                Text("Select a bottle").tag(nil as Bottle?)
+                Text("troubleshooting.target.selectBottle").tag(nil as Bottle?)
                 ForEach(bottles) { bottle in
                     Text(bottle.settings.name).tag(bottle as Bottle?)
                 }
@@ -49,7 +49,7 @@ struct TroubleshootingTargetPicker: View {
 
             if let bottle = selectedBottle {
                 Picker("Program", selection: $selectedProgram) {
-                    Text("No specific program (bottle-level)").tag(nil as Program?)
+                    Text("troubleshooting.target.noProgram").tag(nil as Program?)
                     ForEach(bottle.programs) { program in
                         Text(program.name).tag(program as Program?)
                     }
@@ -57,7 +57,7 @@ struct TroubleshootingTargetPicker: View {
             }
 
             HStack {
-                Button("Cancel", role: .cancel) {
+                Button("button.cancel", role: .cancel) {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)

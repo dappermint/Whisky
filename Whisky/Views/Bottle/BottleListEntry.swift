@@ -38,6 +38,10 @@ struct BottleListEntry: View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
                 Text(name)
+                    // The sidebar truncates at its default width, and a bottle
+                    // named for its contents loses exactly the part that
+                    // identifies it.
+                    .help(name)
                 Spacer()
                 if runningCount > 0 {
                     Text("\(runningCount)")
@@ -48,10 +52,19 @@ struct BottleListEntry: View {
                         .clipShape(Capsule())
                         .foregroundStyle(.blue)
                 } else if hasOrphanProcesses {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .font(.caption2)
-                        .foregroundStyle(.orange)
-                        .help(String(localized: "bottle.orphan.tooltip"))
+                    // A button, not a decoration: this is the strongest signal
+                    // in the sidebar and it used to be a tooltip with nothing
+                    // behind it.
+                    Button {
+                        stopBottle()
+                    } label: {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                    }
+                    .buttonStyle(.plain)
+                    .help(String(localized: "bottle.orphan.tooltip"))
+                    .accessibilityLabel(Text("bottle.orphan.stop"))
                 }
             }
             if let phase = duplicationPhase {
@@ -212,6 +225,18 @@ struct BottleListEntry: View {
             }
             .disabled(!bottle.isAvailable)
             .labelStyle(.titleAndIcon)
+        }
+    }
+
+    /// Asks the bottle's wineserver to shut down, then re-probes so the badge
+    /// clears itself rather than waiting for the next 60-second tick.
+    @MainActor
+    private func stopBottle() {
+        Wine.killBottle(bottle: bottle)
+        ProcessRegistry.shared.clearRegistry(for: bottle.url)
+        Task {
+            try? await Task.sleep(for: .seconds(1))
+            await probeRunningState()
         }
     }
 

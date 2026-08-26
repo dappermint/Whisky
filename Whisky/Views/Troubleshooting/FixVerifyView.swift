@@ -52,14 +52,14 @@ extension FixVerifyView {
             Image(systemName: "questionmark.circle")
                 .font(.system(size: 44))
                 .foregroundStyle(.orange)
-            Text("Did this fix the problem?")
+            Text("troubleshooting.verify.title")
                 .font(.title3)
                 .fontWeight(.semibold)
         }
     }
 
     private var descriptionSection: some View {
-        Text("Try running your program again to check if the issue is resolved.")
+        Text("troubleshooting.verify.description")
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
@@ -73,9 +73,13 @@ extension FixVerifyView {
     private var attemptCounter: some View {
         let totalAttempts = engine.session.fixAttempts.count
         let maxAttempts = 3
-        return Text("Fix attempt \(totalAttempts) of \(maxAttempts)")
-            .font(.caption)
-            .foregroundStyle(.tertiary)
+        return Text(String(
+            format: String(localized: "troubleshooting.verify.attempt %d %d"),
+            totalAttempts,
+            maxAttempts
+        ))
+        .font(.caption)
+        .foregroundStyle(.tertiary)
     }
 }
 
@@ -89,7 +93,7 @@ extension FixVerifyView {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.circle.fill")
-                    Text("Yes, it's fixed")
+                    Text("troubleshooting.verify.fixed")
                 }
                 .frame(minWidth: 200)
             }
@@ -102,7 +106,7 @@ extension FixVerifyView {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "xmark.circle")
-                    Text("No, still broken")
+                    Text("troubleshooting.verify.notFixed")
                 }
                 .frame(minWidth: 200)
             }
@@ -122,7 +126,7 @@ extension FixVerifyView {
             } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "arrow.uturn.backward")
-                    Text("Undo last fix")
+                    Text("troubleshooting.verify.undoLast")
                 }
             }
             .buttonStyle(.borderless)

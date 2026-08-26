@@ -33,7 +33,7 @@ struct SymptomPickerView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("What problem are you experiencing?")
+            Text("troubleshooting.symptom.title")
                 .font(.title3)
                 .fontWeight(.medium)
 
@@ -66,10 +66,10 @@ extension SymptomPickerView {
                     .foregroundStyle(isOther ? .tertiary : .secondary)
                     .frame(width: 32)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(category.displayTitle)
+                    Text(category.localizedTitle)
                         .font(.headline)
                         .foregroundStyle(isOther ? .secondary : .primary)
-                    Text(categoryDescription(category))
+                    Text(category.localizedDescription)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
@@ -93,27 +93,58 @@ extension SymptomPickerView {
         }
         .buttonStyle(.plain)
     }
+}
 
-    private func categoryDescription(_ category: SymptomCategory) -> String {
-        switch category {
+// MARK: - Localized Category Strings
+
+/// Catalog-backed strings for ``SymptomCategory``. The kit's
+/// ``SymptomCategory/displayTitle`` is an English fallback for contexts
+/// without the app's string catalog; every view in the app goes through
+/// these instead.
+extension SymptomCategory {
+    var localizedTitle: String {
+        switch self {
         case .launchCrash:
-            "Program fails to start or crashes within seconds"
+            String(localized: "troubleshooting.symptom.launchCrash")
         case .launcherIssues:
-            "Steam, EA App, Epic Games, or Rockstar launcher problems"
+            String(localized: "troubleshooting.symptom.launcherIssues")
         case .graphics:
-            "Black screen, flickering, visual artifacts, or low frame rate"
+            String(localized: "troubleshooting.symptom.graphics")
         case .audio:
-            "No sound, crackling, popping, or wrong output device"
+            String(localized: "troubleshooting.symptom.audio")
         case .controllerInput:
-            "Controller not detected or buttons mapped incorrectly"
+            String(localized: "troubleshooting.symptom.controllerInput")
         case .installDependencies:
-            "Missing .NET, VC++, DirectX, or Winetricks components"
+            String(localized: "troubleshooting.symptom.installDependencies")
         case .networkDownload:
-            "Download timeouts, Steam stalls, or connection failures"
+            String(localized: "troubleshooting.symptom.networkDownload")
         case .performanceStability:
-            "Stuttering, frame drops, or hangs after playing for a while"
+            String(localized: "troubleshooting.symptom.performanceStability")
         case .other:
-            "Describe your issue and we will try to help"
+            String(localized: "troubleshooting.symptom.other")
+        }
+    }
+
+    var localizedDescription: String {
+        switch self {
+        case .launchCrash:
+            String(localized: "troubleshooting.symptom.launchCrash.description")
+        case .launcherIssues:
+            String(localized: "troubleshooting.symptom.launcherIssues.description")
+        case .graphics:
+            String(localized: "troubleshooting.symptom.graphics.description")
+        case .audio:
+            String(localized: "troubleshooting.symptom.audio.description")
+        case .controllerInput:
+            String(localized: "troubleshooting.symptom.controllerInput.description")
+        case .installDependencies:
+            String(localized: "troubleshooting.symptom.installDependencies.description")
+        case .networkDownload:
+            String(localized: "troubleshooting.symptom.networkDownload.description")
+        case .performanceStability:
+            String(localized: "troubleshooting.symptom.performanceStability.description")
+        case .other:
+            String(localized: "troubleshooting.symptom.other.description")
         }
     }
 }

@@ -84,6 +84,19 @@ extension Wine {
         let managedOverrides = bottle.settings.populateBottleManagedLayer(builder: &builder)
         dllResolver.managed.append(contentsOf: managedOverrides)
 
+        // DXVK reads its config from DXVK_CONFIG_FILE or the process working
+        // directory, and the working directory of a launch is never the bottle
+        // root the config editor writes to, so without this line the file is
+        // decoration. Z: maps the host filesystem and DXVK's PE build accepts
+        // forward slashes.
+        let dxvkConf = bottle.url.appending(path: "dxvk.conf")
+        if FileManager.default.fileExists(atPath: dxvkConf.path(percentEncoded: false)) {
+            builder.set(
+                "DXVK_CONFIG_FILE", "Z:\(dxvkConf.path(percentEncoded: false))",
+                layer: .bottleManaged, reason: "dxvk.conf present in the bottle"
+            )
+        }
+
         // Layer 4: Launcher managed -- launcher compatibility overrides
         let launcherOverrides = bottle.settings.populateLauncherManagedLayer(builder: &builder)
         dllResolver.managed.append(contentsOf: launcherOverrides)
@@ -181,11 +194,15 @@ extension Wine {
                 builder.remove("DXVK_HUD", layer: .programUser)
                 builder.remove("DXVK_ASYNC", layer: .programUser)
                 builder.remove("WINED3DMETAL", layer: .programUser)
+                // One program on D3DMetal inside a bottle running something else
+                // still has to be told scheduling exists; see the bottle layer.
+                builder.set("CX_ACTIVE_GRAPHICS_BACKEND", "d3dmetal", layer: .programUser)
 
             case .dxvk:
                 // Enable DXVK DLLs at program level
                 dllResolver.programCustom.append(contentsOf: DLLOverrideResolver.dxvkPreset)
                 builder.remove("WINED3DMETAL", layer: .programUser)
+                builder.remove("CX_ACTIVE_GRAPHICS_BACKEND", layer: .programUser)
 
             case .dxmt:
                 // Reset the full translation-DLL union to builtin first so a DXVK
@@ -198,10 +215,12 @@ extension Wine {
                 builder.remove("DXVK_HUD", layer: .programUser)
                 builder.remove("DXVK_ASYNC", layer: .programUser)
                 builder.remove("WINED3DMETAL", layer: .programUser)
+                builder.remove("CX_ACTIVE_GRAPHICS_BACKEND", layer: .programUser)
 
             case .wined3d:
                 // Force wined3d: disable D3DMetal + undo DXVK/DXMT DLLs
                 builder.set("WINED3DMETAL", "0", layer: .programUser)
+                builder.remove("CX_ACTIVE_GRAPHICS_BACKEND", layer: .programUser)
                 dllResolver.programCustom.append(contentsOf: Self.translationDLLResetEntries)
             }
         }
@@ -276,14 +295,12 @@ extension Wine {
             }
         }
 
-        // Shader cache override
+        // Shader cache override, on the variable DXVK actually reads.
         if let shaderCache = overrides.shaderCacheEnabled {
             if !shaderCache {
-                builder.set("DXVK_SHADER_COMPILE_THREADS", "1", layer: .programUser)
-                builder.set("__GL_SHADER_DISK_CACHE", "0", layer: .programUser)
+                builder.set("DXVK_STATE_CACHE", "0", layer: .programUser)
             } else {
-                builder.remove("DXVK_SHADER_COMPILE_THREADS", layer: .programUser)
-                builder.remove("__GL_SHADER_DISK_CACHE", layer: .programUser)
+                builder.remove("DXVK_STATE_CACHE", layer: .programUser)
             }
         }
 
