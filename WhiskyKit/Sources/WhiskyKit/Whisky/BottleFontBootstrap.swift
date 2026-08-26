@@ -21,16 +21,50 @@ import os.log
 
 private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "BottleFontBootstrap")
 
-/// Copies a small set of host fonts into a bottle's `drive_c/windows/Fonts` directory
-/// so Unity titles using dynamic font fallback don't render missing glyphs.
+/// Copies host fonts into a bottle's `drive_c/windows/Fonts` directory so
+/// Windows UIs find the faces they assume are installed.
+///
+/// This covers the same ground as the "Core Fonts" package CrossOver downloads
+/// into every bottle, which is the single most requested prerequisite in its
+/// application database. macOS ships all of it in
+/// `/System/Library/Fonts/Supplemental`, so the host copy needs no download and
+/// avoids redistributing Microsoft's font binaries, which their licence only
+/// permits as the original unmodified installers.
+///
+/// Without these, an application asking for Arial or Tahoma gets whatever the
+/// fallback picks, at different metrics, and its text overflows or clips.
 public enum BottleFontBootstrap {
+    /// Filenames as macOS names them. Looked up in `/Library/Fonts` first, then
+    /// `/System/Library/Fonts/Supplemental`; anything a given Mac lacks is
+    /// skipped, so this list may name more than one machine has.
+    private static let hostFontNames = [
+        "Andale Mono.ttf",
+        "Arial.ttf", "Arial Bold.ttf", "Arial Italic.ttf", "Arial Bold Italic.ttf",
+        "Arial Black.ttf",
+        "Arial Narrow.ttf", "Arial Narrow Bold.ttf",
+        "Arial Narrow Italic.ttf", "Arial Narrow Bold Italic.ttf",
+        "Arial Unicode.ttf",
+        "Comic Sans MS.ttf", "Comic Sans MS Bold.ttf",
+        "Courier New.ttf", "Courier New Bold.ttf",
+        "Courier New Italic.ttf", "Courier New Bold Italic.ttf",
+        "Georgia.ttf", "Georgia Bold.ttf", "Georgia Italic.ttf", "Georgia Bold Italic.ttf",
+        "Impact.ttf",
+        "Tahoma.ttf", "Tahoma Bold.ttf",
+        "Times New Roman.ttf", "Times New Roman Bold.ttf",
+        "Times New Roman Italic.ttf", "Times New Roman Bold Italic.ttf",
+        "Trebuchet MS.ttf", "Trebuchet MS Bold.ttf",
+        "Trebuchet MS Italic.ttf", "Trebuchet MS Bold Italic.ttf",
+        "Verdana.ttf", "Verdana Bold.ttf", "Verdana Italic.ttf", "Verdana Bold Italic.ttf",
+        "Webdings.ttf",
+        "Wingdings.ttf", "Wingdings 2.ttf", "Wingdings 3.ttf"
+    ]
+
     /// Host font candidates to copy into a bottle. The first existing path for each
     /// destination filename wins; missing host fonts are skipped silently.
-    private static let candidates: [(destination: String, sources: [String])] = [
-        ("Arial Unicode.ttf", ["/Library/Fonts/Arial Unicode.ttf"]),
-        ("Arial.ttf", ["/Library/Fonts/Arial.ttf", "/System/Library/Fonts/Supplemental/Arial.ttf"]),
-        ("Tahoma.ttf", ["/Library/Fonts/Tahoma.ttf", "/System/Library/Fonts/Supplemental/Tahoma.ttf"])
-    ]
+    private static let candidates: [(destination: String, sources: [String])] =
+        hostFontNames.map { name in
+            (name, ["/Library/Fonts/\(name)", "/System/Library/Fonts/Supplemental/\(name)"])
+        }
 
     /// Copies missing fonts into `<bottlePrefix>/drive_c/windows/Fonts`.
     /// Idempotent: existing destination files are left untouched.
