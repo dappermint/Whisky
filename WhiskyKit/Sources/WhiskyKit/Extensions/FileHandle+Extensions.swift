@@ -240,8 +240,14 @@ extension FileHandle {
         header += "Bottle Name: \(bottle.settings.name)\n"
         header += "Bottle URL: \(bottle.url.path)\n\n"
 
-        if let version = WhiskyWineInstaller.whiskyWineVersion() {
-            header += "WhiskyWine Version: \(version.major).\(version.minor).\(version.patch)\n"
+        // The bottle's own runtime, not the default one. Reporting the default
+        // here is worst exactly when it matters: a launch on another runtime
+        // logs a version it did not use, and the log is the first thing read
+        // when that launch goes wrong.
+        if let info = WhiskyWineInstaller.whiskyWineInfo(for: bottle.settings.runtime) {
+            let version = info.version
+            let name = info.name.map { " (\($0))" } ?? ""
+            header += "WhiskyWine Version: \(version.major).\(version.minor).\(version.patch)\(name)\n"
         }
         header += "Windows Version: \(bottle.settings.windowsVersion)\n"
         header += "Enhanced Sync: \(bottle.settings.enhancedSync)\n\n"
