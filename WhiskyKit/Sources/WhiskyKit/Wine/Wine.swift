@@ -1041,7 +1041,12 @@ public class Wine {
         let windowsDir = prefixRoot.appending(path: "drive_c").appending(path: "windows")
         let system32 = windowsDir.appending(path: "system32")
         let syswow64 = windowsDir.appending(path: "syswow64")
+        // The prefix having a 32-bit tree is not on its own a reason to deploy
+        // one: a runtime built without a 32-bit lane, which is every arm64 one,
+        // ships no x32 payload at all. Requiring it there fails a bottle whose
+        // 64-bit half is complete and correct, and DXMT is 64-bit anyway.
         let deploy32Bit = fileManager.fileExists(atPath: syswow64.path(percentEncoded: false))
+            && fileManager.fileExists(atPath: x32Payload.path(percentEncoded: false))
 
         // Validate every source BEFORE touching the prefix, and require the whole
         // trio to be the native variant. A damaged runtime (a file missing or

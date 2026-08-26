@@ -181,3 +181,82 @@ struct SteamCompatToolRuntimeTests {
         )
     }
 }
+
+@Suite("DXMT payload without a 32-bit lane")
+struct DXMTNoThirtyTwoBitLaneTests {
+    private static let trio = ["d3d11.dll", "d3d10core.dll", "dxgi.dll"]
+    private static let all = trio + ["winemetal.dll"]
+
+    /// A PE whose DOS stub carries no builtin marker, which is what
+    /// `isNativePE` looks for.
+    private static func writeNativePE(at url: URL) throws {
+        var bytes = [UInt8](repeating: 0, count: 0x60)
+        bytes[0] = 0x4D
+        bytes[1] = 0x5A
+        try Data(bytes).write(to: url)
+    }
+
+    private static func makePayload(x32: Bool) throws -> (payload: URL, prefix: URL, root: URL) {
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory.appending(path: "dxmt_\(UUID().uuidString)")
+        let payload = root.appending(path: "DXMT")
+        let x64 = payload.appending(path: "x64")
+        try fileManager.createDirectory(at: x64, withIntermediateDirectories: true)
+        for name in all {
+            try writeNativePE(at: x64.appending(path: name))
+        }
+        if x32 {
+            let folder = payload.appending(path: "x32")
+            try fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
+            for name in all {
+                try writeNativePE(at: folder.appending(path: name))
+            }
+        }
+
+        let prefix = root.appending(path: "prefix")
+        let windows = prefix.appending(path: "drive_c").appending(path: "windows")
+        try fileManager.createDirectory(
+            at: windows.appending(path: "system32"), withIntermediateDirectories: true
+        )
+        // Present but empty, exactly as an arm64 prefix configured without i386.
+        try fileManager.createDirectory(
+            at: windows.appending(path: "syswow64"), withIntermediateDirectories: true
+        )
+        return (payload, prefix, root)
+    }
+
+    /// An arm64 runtime ships no 32-bit payload, and the prefix still has an
+    /// empty syswow64. Failing there would refuse a bottle whose 64-bit half is
+    /// complete, which is the only half DXMT has.
+    @Test func anEmptySyswow64DoesNotRequireA32BitPayload() throws {
+        let (payload, prefix, root) = try Self.makePayload(x32: false)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try Wine.enableDXMT(payloadRoot: payload, prefixRoot: prefix)
+
+        let system32 = prefix.appending(path: "drive_c/windows/system32")
+        for name in Self.all {
+            #expect(FileManager.default.fileExists(
+                atPath: system32.appending(path: name).path(percentEncoded: false)
+            ), "\(name) should have been deployed")
+        }
+        #expect(try FileManager.default.contentsOfDirectory(
+            atPath: prefix.appending(path: "drive_c/windows/syswow64").path(percentEncoded: false)
+        ).isEmpty, "nothing to deploy there, so nothing should have been")
+    }
+
+    /// A runtime that does ship one still deploys it.
+    @Test func a32BitPayloadIsStillDeployedWhenPresent() throws {
+        let (payload, prefix, root) = try Self.makePayload(x32: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try Wine.enableDXMT(payloadRoot: payload, prefixRoot: prefix)
+
+        let syswow64 = prefix.appending(path: "drive_c/windows/syswow64")
+        for name in Self.all {
+            #expect(FileManager.default.fileExists(
+                atPath: syswow64.appending(path: name).path(percentEncoded: false)
+            ), "\(name) should have been deployed 32-bit")
+        }
+    }
+}
