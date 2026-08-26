@@ -104,11 +104,13 @@ public enum SteamCompatTool {
     /// `to_oslist` has to read exactly `macos`. The client rejects `osx`, and it
     /// rejects the key being absent, which was measured against three tools
     /// installed side by side that differed in nothing else.
-    public static func compatibilityToolManifest() -> String {
+    public static func compatibilityToolManifest(
+        for runtime: String? = nil, label: String? = nil
+    ) -> String {
         VDFWriter.serialize(["compatibilitytools": .object(["compat_tools": .object([
-            name: .object([
+            name(for: runtime): .object([
                 "install_path": .string("."),
-                "display_name": .string(displayName),
+                "display_name": .string(displayName(for: runtime, label: label)),
                 "from_oslist": .string("windows"),
                 "to_oslist": .string("macos")
             ])
@@ -120,11 +122,11 @@ public enum SteamCompatTool {
     /// `waitforexitandrun` is the verb that makes Steam wait for the game
     /// rather than for the launcher, which is what keeps playtime and the
     /// "currently playing" state honest.
-    public static func toolManifest() -> String {
+    public static func toolManifest(for runtime: String? = nil) -> String {
         VDFWriter.serialize(["manifest": .object([
             "version": .string("2"),
             "commandline": .string("/\(runnerName) waitforexitandrun"),
-            "compatmanager_layer_name": .string(name)
+            "compatmanager_layer_name": .string(name(for: runtime))
         ])])
     }
 
@@ -139,7 +141,7 @@ public enum SteamCompatTool {
     /// The runner stays in the foreground for the whole session. Steam treats
     /// the process it spawned as the game, so returning early would end the
     /// session the moment the game started.
-    static func runner(whiskyCmd: URL) -> String {
+    static func runner(whiskyCmd: URL, runtime: String? = nil) -> String {
         """
         #!/bin/bash
         # Written by Whisky. Steam runs this as the compatibility tool for a
@@ -175,7 +177,7 @@ public enum SteamCompatTool {
         esac
 
         exec \(shellQuoted(whiskyCmd.path(percentEncoded: false))) \\
-             steam-compat-run "${STEAM_COMPAT_APP_ID:-0}" -- "$@"
+             steam-compat-run "${STEAM_COMPAT_APP_ID:-0}"\(runtimeArgument(runtime)) -- "$@"
         """
     }
 
@@ -187,26 +189,30 @@ public enum SteamCompatTool {
     ///   - whiskyCmd: The `WhiskyCmd` binary the runner forwards to.
     ///   - root: The directory the client scans.
     /// - Throws: ``SteamCompatToolError``.
-    public static func install(whiskyCmd: URL, at root: URL = sharedToolsDirectory) throws {
+    public static func install(
+        whiskyCmd: URL, runtime: String? = nil, label: String? = nil, at root: URL = sharedToolsDirectory
+    ) throws {
         guard FileManager.default.fileExists(atPath: whiskyCmd.path(percentEncoded: false)) else {
             throw SteamCompatToolError.runnerMissing(whiskyCmd)
         }
         guard isWritable(root) else { throw SteamCompatToolError.directoryNotWritable(root) }
 
-        try removePreviousInstall(at: root)
+        if runtime == nil { try removePreviousInstall(at: root) }
 
-        let directory = toolDirectory(at: root)
+        let directory = toolDirectory(for: runtime, at: root)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
-        try compatibilityToolManifest().write(
+        try compatibilityToolManifest(for: runtime, label: label).write(
             to: directory.appending(path: "compatibilitytool.vdf"), atomically: true, encoding: .utf8
         )
-        try toolManifest().write(
+        try toolManifest(for: runtime).write(
             to: directory.appending(path: "toolmanifest.vdf"), atomically: true, encoding: .utf8
         )
 
         let runnerURL = directory.appending(path: runnerName)
-        try runner(whiskyCmd: whiskyCmd).write(to: runnerURL, atomically: true, encoding: .utf8)
+        try runner(whiskyCmd: whiskyCmd, runtime: runtime).write(
+            to: runnerURL, atomically: true, encoding: .utf8
+        )
         try FileManager.default.setAttributes(
             [.posixPermissions: 0o755], ofItemAtPath: runnerURL.path(percentEncoded: false)
         )

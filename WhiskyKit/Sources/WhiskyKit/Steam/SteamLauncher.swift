@@ -130,7 +130,6 @@ public enum SteamLauncher {
     ///   - routing: The route store to consult.
     /// - Returns: The bottle holding the game.
     /// - Throws: ``SteamLaunchError/gameNotFound(appId:)`` when no bottle has it.
-    @MainActor
     public static func resolveBottle(
         appId: Int, in bottles: [Bottle], routing: GameRouting = GameRouting()
     ) throws -> Bottle {
@@ -148,5 +147,26 @@ public enum SteamLauncher {
             throw SteamLaunchError.gameNotFound(appId: appId)
         }
         return bottle
+    }
+
+    /// Whether a bottle set to `bottleRuntime` runs on `runtime`.
+    ///
+    /// `nil` and `""` both name the default runtime and have to compare equal:
+    /// every bottle written before runtime selection existed decodes to `nil`,
+    /// and none of them would match the default tool otherwise.
+    nonisolated static func runtime(_ bottleRuntime: String?, matches runtime: String?) -> Bool {
+        (bottleRuntime ?? "") == (runtime ?? "")
+    }
+
+    /// The bottles that run on `runtime`.
+    ///
+    /// Each compatibility tool Whisky installs is a runtime, so the client
+    /// picking one means "run this in the bottle that uses it". Narrowing the
+    /// candidates is what makes that true without writing anything: a runtime
+    /// belongs to the bottle, and setting it at launch would reconfigure every
+    /// other game installed in the same one.
+    @MainActor
+    public static func bottles(_ bottles: [Bottle], on runtime: String?) -> [Bottle] {
+        bottles.filter { Self.runtime($0.settings.runtime, matches: runtime) }
     }
 }

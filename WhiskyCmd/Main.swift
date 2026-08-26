@@ -689,6 +689,14 @@ extension Whisky {
         @Option(name: .long, help: "Name of the bottle to run in")
         var bottle: String?
 
+        /// Which runtime the tool Steam picked belongs to.
+        ///
+        /// Whisky installs one compatibility tool per installed runtime, so the
+        /// client's own Compatibility picker is the switch between them. The
+        /// runner for each names its runtime here.
+        @Option(name: .long, help: "Identifier of the runtime the compatibility tool belongs to")
+        var runtime: String?
+
         @Argument(parsing: .postTerminator, help: "The game's command line, after a bare --")
         var command: [String] = []
 
@@ -717,13 +725,29 @@ extension Whisky {
             var bottlesList = BottleData()
             let bottles = bottlesList.loadBottles()
 
-            guard let bottleName = bottle else {
+            if let bottleName = bottle {
+                guard let named = bottles.first(where: { $0.settings.name == bottleName }) else {
+                    throw DomainError("A bottle with that name doesn't exist.")
+                }
+                return named
+            }
+
+            // Each tool is a runtime, so the client picking one means "run this
+            // in the bottle that uses that runtime". Narrowing the candidates is
+            // what makes that true without writing anything: a runtime belongs
+            // to the bottle, and setting it here would reconfigure every other
+            // game installed in the same bottle.
+            guard let runtime else {
                 return try SteamLauncher.resolveBottle(appId: appId, in: bottles)
             }
-            guard let named = bottles.first(where: { $0.settings.name == bottleName }) else {
-                throw DomainError("A bottle with that name doesn't exist.")
+            let candidates = SteamLauncher.bottles(bottles, on: runtime)
+            guard !candidates.isEmpty else {
+                throw DomainError(
+                    "No bottle runs on the runtime \(runtime). Make one in Whisky, set it to that "
+                        + "runtime, and install the game into it."
+                )
             }
-            return named
+            return try SteamLauncher.resolveBottle(appId: appId, in: candidates)
         }
 
         @MainActor
