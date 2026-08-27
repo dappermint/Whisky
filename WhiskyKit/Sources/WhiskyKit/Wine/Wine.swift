@@ -321,6 +321,7 @@ public class Wine {
         at url: URL, args: [String] = [], bottle: Bottle, environment: [String: String] = [:],
         programOverrides: ProgramOverrides? = nil, programSettings: ProgramSettings? = nil,
         gameProfileEnvironment: [String: String] = [:],
+        displayName: String? = nil,
         overridesApplyToDescendants: Bool = false,
         keepAttached: Bool = false,
         workingDirectory: URL? = nil,
@@ -382,6 +383,30 @@ public class Wine {
         )
 
         let programName = url.lastPathComponent
+
+        // LaunchServices names a process after the file that was exec'd, which
+        // for every Wine launch is the loader. Wine renames the processes it
+        // spawns itself; the first one it never re-execs, so it is exec'd here
+        // through a link named for the program instead. Set before the Steam
+        // helper composes its command, since that captures the environment.
+        var launchExecutable = wineBinary(for: bottle)
+        if let dockName = DockIdentity.displayName(for: url, title: displayName) {
+            let iconFile = await NativeAppIcon.iconFile(for: url)
+            let identity = DockIdentity.environment(
+                displayName: dockName, iconFile: iconFile, runtime: bottle.settings.runtime
+            )
+            // A variable the user set for this bottle or program is their
+            // answer, not ours, so it is never replaced.
+            for (key, value) in identity where wineEnvironment[key] == nil {
+                wineEnvironment[key] = value
+            }
+            if let alias = DockIdentity.loaderAlias(
+                displayName: dockName, runtime: bottle.settings.runtime
+            ) {
+                launchExecutable = alias
+            }
+        }
+
         let hasWineDebug = wineEnvironment.keys.contains("WINEDEBUG")
         let runLogEntry = openRunLog(
             programName: programName, logFileURL: logFileURL, at: url, bottle: bottle,
@@ -414,7 +439,7 @@ public class Wine {
         let started = try startProcess(
             name: programName,
             args: launchArgs,
-            environment: wineEnvironment, executableURL: wineBinary(for: bottle),
+            environment: wineEnvironment, executableURL: launchExecutable,
             // `start` sets the Windows working directory to the program's own
             // folder. Running the exe directly has to say so, or a game that
             // opens its assets by relative path finds nothing. The caller can

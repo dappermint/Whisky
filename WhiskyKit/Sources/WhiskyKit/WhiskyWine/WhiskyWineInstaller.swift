@@ -137,6 +137,14 @@ public class WhiskyWineInstaller {
         libraryFolder(for: runtime).appending(path: "Wine").appending(path: "bin")
     }
 
+    /// The unix library directory for `runtime`, which is what `WINEDLLPATH`
+    /// names. Wine needs it to find its `.so` builtins whenever the loader is
+    /// exec'd from anywhere but its own directory.
+    public static func dllFolder(for runtime: String?) -> URL {
+        libraryFolder(for: runtime)
+            .appending(path: "Wine").appending(path: "lib").appending(path: "wine")
+    }
+
     /// Whether `identifier` names a runtime folder rather than a path.
     ///
     /// Bottle metadata is a user-editable plist, so an identifier reaches this

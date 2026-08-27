@@ -94,6 +94,7 @@ public extension Program {
                 at: self.url, args: arguments, bottle: self.bottle, environment: environment,
                 programOverrides: plan.overrides, programSettings: settings,
                 gameProfileEnvironment: plan.gameProfileEnvironment,
+                displayName: plan.title,
                 onLogFile: onLogFile
             )
             settings.lastLogFileURL = result.logFileURL
@@ -128,6 +129,7 @@ public extension Program {
                     at: self.url, args: arguments, bottle: self.bottle, environment: environment,
                     programOverrides: plan.overrides, programSettings: settings,
                     gameProfileEnvironment: plan.gameProfileEnvironment,
+                    displayName: plan.title,
                     keepAttached: true,
                     onLogFile: { [weak self] logURL in
                         self?.settings.lastLogFileURL = logURL

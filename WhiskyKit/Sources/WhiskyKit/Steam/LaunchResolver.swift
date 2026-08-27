@@ -32,6 +32,9 @@ public struct LaunchPlan {
     /// Human-readable notes on where the configuration came from, for
     /// logging and provenance UI.
     public let provenance: [String]
+    /// The matched game's real title, which is the name worth showing in the
+    /// Dock. `nil` without a GameDB match, leaving the executable's own name.
+    public let title: String?
 }
 
 /// Turns a Steam App ID into a ``LaunchPlan`` by matching the GameDB and
@@ -100,7 +103,8 @@ public enum LaunchResolver {
             return LaunchPlan(
                 overrides: userOverrides ?? ProgramOverrides(),
                 gameProfileEnvironment: [:],
-                provenance: []
+                provenance: [],
+                title: nil
             )
         }
 
@@ -111,7 +115,8 @@ public enum LaunchResolver {
             gameProfileEnvironment: variant.environmentVariables ?? [:],
             provenance: [
                 "gamedb: \(match.entry.title) — \(variant.label) (\(match.explanation))"
-            ]
+            ],
+            title: match.entry.title
         )
     }
 
