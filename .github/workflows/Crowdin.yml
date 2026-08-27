@@ -119,10 +119,16 @@ jobs:
               sys.exit(1)
           # en-GB is generated locally by scripts/british-english.py and is
           # restored by the next step, so its absence from the export is fine.
+          # A row whose translation is identical to the English source is also
+          # fine to lose: Crowdin drops those on import by design, and a
+          # missing row falls back to the identical source text at build.
+          def value(entry, lang):
+              return entry.get("localizations", {}).get(lang, {}).get("stringUnit", {}).get("value")
           lost_rows = {}
           for key, entry in old.items():
               lost = set(entry.get("localizations", {})) \
                   - set(new[key].get("localizations", {})) - {"en-GB"}
+              lost = {lang for lang in lost if value(entry, lang) != value(entry, "en")}
               if lost:
                   lost_rows[key] = sorted(lost)
           if lost_rows:
