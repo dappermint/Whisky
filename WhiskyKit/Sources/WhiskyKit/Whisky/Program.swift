@@ -162,9 +162,9 @@ public final class Program: ObservableObject, Equatable, Hashable, Identifiable 
         )
 
         if !fileManager.fileExists(atPath: locations.identity.path(percentEncoded: false)),
-           fileManager.fileExists(atPath: locations.legacy.path(percentEncoded: false)) {
+           let source = richestSettings(among: locations.superseded + [locations.legacy]) {
             do {
-                try fileManager.copyItem(at: locations.legacy, to: locations.identity)
+                try fileManager.copyItem(at: source, to: locations.identity)
             } catch {
                 Logger.wineKit.error(
                     "Failed to migrate settings for `\(legacyName)`: \(error.localizedDescription)"
@@ -174,18 +174,51 @@ public final class Program: ObservableObject, Equatable, Hashable, Identifiable 
         return locations.identity
     }
 
+    /// The first of `candidates` that carries settings somebody actually set,
+    /// falling back to the first that exists at all.
+    ///
+    /// Order alone is not enough: launching a game after its library moved
+    /// wrote a default plist under the new name, and taking that one would
+    /// discard the evening of tuning still sitting under the old one.
+    nonisolated static func richestSettings(among candidates: [URL]) -> URL? {
+        let present = candidates.filter {
+            FileManager.default.fileExists(atPath: $0.path(percentEncoded: false))
+        }
+        let configured = present.first {
+            guard let settings = try? ProgramSettings.decodeIfPresent(from: $0),
+                  let overrides = settings.overrides
+            else { return false }
+            return overrides != ProgramOverrides()
+        }
+        return configured ?? present.first
+    }
+
     /// Where a program's settings live: the identity-keyed plist and the
     /// legacy filename-keyed one it may have to be migrated from. Pure path
     /// computation; nothing is created or copied.
+    /// Every place a program's settings could be, current name first.
+    struct SettingsLocations {
+        /// The name this program's settings are written under now.
+        let identity: URL
+        /// The filename-keyed plist from before identities existed.
+        let legacy: URL
+        /// Names an earlier way of deriving the identity produced, newest
+        /// first. Read from and migrated onto ``identity``.
+        let superseded: [URL]
+    }
+
     nonisolated static func settingsLocations(
         for url: URL, bottleURL: URL, legacyName: String
-    ) -> (identity: URL, legacy: URL) {
+    ) -> SettingsLocations {
         let settingsFolder = bottleURL.appending(path: "Program Settings")
         let identityURL = settingsFolder
             .appending(path: settingsIdentity(for: url, bottleURL: bottleURL))
             .appendingPathExtension("plist")
         let legacyURL = settingsFolder.appending(path: legacyName).appendingPathExtension("plist")
-        return (identityURL, legacyURL)
+        let superseded = supersededIdentities(for: url, bottleURL: bottleURL).map {
+            settingsFolder.appending(path: $0).appendingPathExtension("plist")
+        }
+        return SettingsLocations(identity: identityURL, legacy: legacyURL, superseded: superseded)
     }
 
     /// The overrides an executable's persisted settings carry, read without
@@ -197,9 +230,11 @@ public final class Program: ObservableObject, Equatable, Hashable, Identifiable 
     /// an unreadable plist (an unreadable plist reads as no overrides here).
     nonisolated static func persistedOverrides(for url: URL, bottleURL: URL) -> ProgramOverrides? {
         let locations = settingsLocations(for: url, bottleURL: bottleURL, legacyName: url.lastPathComponent)
-        let settingsURL = FileManager.default.fileExists(atPath: locations.identity.path(percentEncoded: false))
+        let settingsURL = FileManager.default.fileExists(
+            atPath: locations.identity.path(percentEncoded: false)
+        )
             ? locations.identity
-            : locations.legacy
+            : richestSettings(among: locations.superseded + [locations.legacy]) ?? locations.identity
 
         do {
             return try ProgramSettings.decodeIfPresent(from: settingsURL)?.overrides
@@ -219,13 +254,61 @@ public final class Program: ObservableObject, Equatable, Hashable, Identifiable 
     /// relative path doesn't change) and across game updates (file contents
     /// don't participate).
     nonisolated static func settingsIdentity(for url: URL, bottleURL: URL) -> String {
-        let bottlePath = bottleURL.standardizedFileURL.path
+        identity(for: url, keyedOn: keyPath(for: url, bottleURL: bottleURL))
+    }
+
+    /// Identities this program used to have, newest first.
+    ///
+    /// Settings are read through these when the current one has no file yet,
+    /// and migrated onto it, so changing how the key is derived never orphans
+    /// what somebody spent an evening tuning.
+    nonisolated static func supersededIdentities(for url: URL, bottleURL: URL) -> [String] {
         let fullPath = url.standardizedFileURL.path
-        let relativePath = fullPath.hasPrefix(bottlePath)
+        let bottlePath = bottleURL.standardizedFileURL.path
+        // What the key used to be: the bottle-relative path inside a bottle,
+        // the absolute path outside one.
+        let previous = fullPath.hasPrefix(bottlePath)
             ? String(fullPath.dropFirst(bottlePath.count))
             : fullPath
 
-        let digest = SHA256.hash(data: Data(relativePath.utf8))
+        var keys = [previous]
+
+        // A Steam game that moved out of the bottle's own library was keyed on
+        // the bottle-relative path it had there, which the path it has now
+        // cannot produce. These are the two places that library is installed.
+        if let range = fullPath.range(of: "steamapps/common/", options: .caseInsensitive) {
+            let withinLibrary = String(fullPath[range.lowerBound...])
+            keys += ["/drive_c/Program Files (x86)/Steam/", "/drive_c/Program Files/Steam/"]
+                .map { $0 + withinLibrary }
+        }
+
+        let current = settingsIdentity(for: url, bottleURL: bottleURL)
+        var seen: Set<String> = [current]
+        return keys.map { identity(for: url, keyedOn: $0) }.filter { seen.insert($0).inserted }
+    }
+
+    /// The path a program's settings are keyed on.
+    ///
+    /// A Steam game is keyed from `steamapps/common` down, because a library is
+    /// a place a game moves between and it is the same game in each: Ready or
+    /// Not moved from the bottle's own library to one on another drive and left
+    /// an evening of tuning behind. Anything else is keyed on its bottle
+    /// relative path, so moving the bottle keeps its settings, or on its
+    /// absolute path when it lives outside one.
+    nonisolated static func keyPath(for url: URL, bottleURL: URL) -> String {
+        let fullPath = url.standardizedFileURL.path
+        if let range = fullPath.range(of: "steamapps/common/", options: .caseInsensitive) {
+            return String(fullPath[range.lowerBound...])
+        }
+
+        let bottlePath = bottleURL.standardizedFileURL.path
+        return fullPath.hasPrefix(bottlePath)
+            ? String(fullPath.dropFirst(bottlePath.count))
+            : fullPath
+    }
+
+    private nonisolated static func identity(for url: URL, keyedOn path: String) -> String {
+        let digest = SHA256.hash(data: Data(path.utf8))
         let shortHash = digest.prefix(4).map { String(format: "%02x", $0) }.joined()
         let stem = url.deletingPathExtension().lastPathComponent
         return "\(stem)-\(shortHash)"

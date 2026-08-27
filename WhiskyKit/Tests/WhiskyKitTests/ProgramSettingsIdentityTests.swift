@@ -123,3 +123,103 @@ struct ProgramSettingsIdentityTests {
         #expect(program.settings.arguments == "-identity")
     }
 }
+
+extension ProgramSettingsIdentityTests {
+    /// A Steam library is a place a game moves between. Keying on the absolute
+    /// path left everything tuned for Ready or Not behind when the library
+    /// moved to another drive.
+    @Test func aGameKeepsItsIdentityAcrossASteamLibraryMove() {
+        let bottle = URL(fileURLWithPath: "/Bottles/One")
+        let before = URL(fileURLWithPath: "/Volumes/A/steamapps/common/Ready Or Not/ReadyOrNot.exe")
+        let after = URL(fileURLWithPath: "/Users/me/Games/Win/steamapps/common/Ready Or Not/ReadyOrNot.exe")
+
+        #expect(
+            Program.settingsIdentity(for: before, bottleURL: bottle)
+                == Program.settingsIdentity(for: after, bottleURL: bottle)
+        )
+    }
+
+    @Test func twoGamesInOneLibraryStillDiffer() {
+        let bottle = URL(fileURLWithPath: "/Bottles/One")
+        let ron = URL(fileURLWithPath: "/L/steamapps/common/Ready Or Not/ReadyOrNot.exe")
+        let hd2 = URL(fileURLWithPath: "/L/steamapps/common/Helldivers 2/bin/helldivers2.exe")
+
+        #expect(
+            Program.settingsIdentity(for: ron, bottleURL: bottle)
+                != Program.settingsIdentity(for: hd2, bottleURL: bottle)
+        )
+    }
+
+    /// The old spelling has to stay reachable, or the change orphans everything
+    /// it was meant to stop orphaning.
+    @Test func theOlderSpellingsAreStillReachable() {
+        let bottle = URL(fileURLWithPath: "/Bottles/One")
+        let exe = URL(fileURLWithPath: "/Volumes/A/steamapps/common/Ready Or Not/ReadyOrNot.exe")
+
+        let superseded = Program.supersededIdentities(for: exe, bottleURL: bottle)
+        let current = Program.settingsIdentity(for: exe, bottleURL: bottle)
+        #expect(!superseded.isEmpty)
+        #expect(!superseded.contains(current))
+        #expect(Set(superseded).count == superseded.count)
+    }
+
+    /// The case that lost an evening: the game moved out of the bottle's own
+    /// Steam library, so the settings it had there are keyed on a path the new
+    /// location cannot produce.
+    @Test func aGameThatLeftTheBottlesOwnLibraryFindsItsOldSettings() {
+        let bottle = URL(fileURLWithPath: "/Bottles/One")
+        let inBottle = bottle.appending(
+            path: "drive_c/Program Files (x86)/Steam/steamapps/common/Ready Or Not/ReadyOrNot.exe"
+        )
+        let moved = URL(fileURLWithPath: "/Volumes/A/steamapps/common/Ready Or Not/ReadyOrNot.exe")
+
+        // Both spell the same identity now, and the one the in-bottle copy used
+        // to have is still looked for.
+        #expect(
+            Program.settingsIdentity(for: inBottle, bottleURL: bottle)
+                == Program.settingsIdentity(for: moved, bottleURL: bottle)
+        )
+        let previouslyInBottle = Program.supersededIdentities(for: inBottle, bottleURL: bottle)
+        #expect(Program.supersededIdentities(for: moved, bottleURL: bottle).contains {
+            previouslyInBottle.contains($0)
+        })
+    }
+
+    @Test func aProgramInsideTheBottleHasNoSupersededName() {
+        let bottle = URL(fileURLWithPath: "/Bottles/One")
+        let exe = bottle.appending(path: "drive_c/windows/notepad.exe")
+
+        #expect(Program.supersededIdentities(for: exe, bottleURL: bottle).isEmpty)
+    }
+
+    @Test func theKeyPathStartsAtTheLibrary() {
+        let bottle = URL(fileURLWithPath: "/Bottles/One")
+        let exe = URL(fileURLWithPath: "/Volumes/A/steamapps/common/Ready Or Not/ReadyOrNot.exe")
+
+        #expect(
+            Program.keyPath(for: exe, bottleURL: bottle)
+                == "steamapps/common/Ready Or Not/ReadyOrNot.exe"
+        )
+    }
+
+    /// Launching a game after its library moved wrote a default plist under the
+    /// new name. Taking that one would discard the tuning under the old one.
+    @Test func anEmptyPlistDoesNotShadowAConfiguredOne() throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+
+        let empty = folder.appending(path: "empty.plist")
+        let configured = folder.appending(path: "configured.plist")
+        var settings = ProgramSettings()
+        try settings.encode(to: empty)
+        var overrides = settings.overrides ?? ProgramOverrides()
+        overrides.graphicsBackend = .d3dMetal
+        settings.overrides = overrides
+        try settings.encode(to: configured)
+
+        #expect(Program.richestSettings(among: [empty, configured]) == configured)
+        #expect(Program.richestSettings(among: [empty]) == empty)
+        #expect(Program.richestSettings(among: []) == nil)
+    }
+}
