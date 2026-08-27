@@ -80,6 +80,12 @@ jobs:
           CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}
           CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
 
+      # The crowdin action runs in a container as root, so the exported file
+      # comes back root-owned and later steps cannot rewrite it.
+      - name: Fix export file ownership
+        if: steps.check.outputs.configured == 'true' && github.event_name != 'push'
+        run: sudo chown "$(id -u):$(id -g)" Whisky/Localizable.xcstrings
+
       - name: Refuse exports that delete keys
         if: steps.check.outputs.configured == 'true' && github.event_name != 'push'
         run: |
