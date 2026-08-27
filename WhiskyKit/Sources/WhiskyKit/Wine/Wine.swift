@@ -299,7 +299,17 @@ public class Wine {
         for url: URL, bottle: Bottle, programOverrides: ProgramOverrides?
     ) -> (backend: GraphicsBackend, overrides: ProgramOverrides?) {
         let choice = programOverrides?.graphicsBackend ?? bottle.settings.graphicsBackend
-        guard choice == .recommended else { return (choice, programOverrides) }
+        // A backend the runtime does not carry is not a choice, whoever made
+        // it: the GameDB pins D3DMetal for Ready or Not, and on the arm64
+        // runtime there is no D3DMetal, so honouring it left the prefix with
+        // no D3D at all rather than the DXMT that lane runs on.
+        let servable = WhiskyWineInstaller.backendAvailability(
+            choice,
+            runtimeInfo: WhiskyWineInstaller.whiskyWineInfo(for: bottle.settings.runtime),
+            d3dMetalInstalled: WhiskyWineInstaller.isD3DMetalInstalled(for: bottle.settings.runtime),
+            dxmtRuntimeNative: isDXMTRuntimeNative(for: bottle.settings.runtime)
+        )
+        if choice != .recommended, servable { return (choice, programOverrides) }
 
         let resolved = GraphicsBackendResolver.resolve(
             for: bottle.settings.runtime,
@@ -1042,13 +1052,21 @@ public class Wine {
         guard !remove.isEmpty else { return }
 
         let windows = bottle.url.appending(path: "drive_c").appending(path: "windows")
+        // The 64-bit PE directory is named for the runtime's architecture:
+        // x86_64-windows on one lane, aarch64-windows on the other. Looking
+        // only for the first leaves an arm64 prefix with nothing to restore.
         let builtins = WhiskyWineInstaller.dllFolder(for: runtime)
+        let sixtyFour = ["x86_64-windows", "aarch64-windows", "arm64ec-windows"]
+            .map { builtins.appending(path: $0) }
+            .first { FileManager.default.fileExists(atPath: $0.path(percentEncoded: false)) }
         let lanes = [
-            (windows.appending(path: "system32"), builtins.appending(path: "x86_64-windows")),
+            (windows.appending(path: "system32"), sixtyFour),
             (windows.appending(path: "syswow64"), builtins.appending(path: "i386-windows"))
         ]
 
-        for (directory, builtinDirectory) in lanes {
+        for (directory, builtinDirectory) in lanes.compactMap({ directory, builtin in
+            builtin.map { (directory, $0) }
+        }) {
             for name in remove {
                 let file = directory.appending(path: name)
                 guard FileManager.default.fileExists(atPath: file.path(percentEncoded: false)),
