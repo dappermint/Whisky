@@ -65,9 +65,33 @@ struct SteamCompatToolRuntimeTests {
     }
 
     @Test func theLabelIsWhatThePickerShows() {
-        #expect(SteamCompatTool.displayName(for: "whisky-arm64-5.0.0", label: "arm64 5.0.0")
-            == "Whisky (arm64 5.0.0)")
-        #expect(SteamCompatTool.displayName(for: "whisky-arm64-5.0.0") == "Whisky (whisky-arm64-5.0.0)")
+        #expect(SteamCompatTool.displayName(for: "whisky-arm64-5.0.0", label: "whisky-arm64")
+            == "Whisky arm64")
+        #expect(SteamCompatTool.displayName(for: "whisky-arm64-5.0.0") == "Whisky arm64-5.0.0")
+    }
+
+    /// Two runtimes of one lane share a label, so the picker would show the
+    /// same name twice with no way to tell which is which.
+    @Test func twoRuntimesOfOneLaneFallBackToTheirIdentifiers() throws {
+        let fixture = try makeRuntimeFixture()
+        defer { fixture.cleanUp() }
+
+        try SteamCompatTool.installAll(
+            whiskyCmd: fixture.whiskyCmd,
+            runtimes: [
+                (runtime: nil, label: nil),
+                (runtime: "whisky-arm64-5.0.0", label: "whisky-arm64"),
+                (runtime: "whisky-arm64-5.1.0", label: "whisky-arm64")
+            ],
+            at: fixture.toolsRoot
+        )
+
+        let names = ["whisky-proton-arm64-5.0.0", "whisky-proton-arm64-5.1.0"].map { tool -> String in
+            let vdf = fixture.toolsRoot.appending(path: tool).appending(path: "compatibilitytool.vdf")
+            return (try? String(contentsOf: vdf, encoding: .utf8)) ?? ""
+        }
+        #expect(names[0].contains("Whisky arm64-5.0.0"))
+        #expect(names[1].contains("Whisky arm64-5.1.0"))
     }
 
     /// A runner has to name its own runtime, or every tool launches the same one

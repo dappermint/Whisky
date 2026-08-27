@@ -601,7 +601,10 @@ extension WhiskyApp {
                 try SteamCompatTool.installAll(
                     whiskyCmd: whiskyCmd,
                     runtimes: WhiskyWineInstaller.installedRuntimes().map {
-                        ($0.runtime, $0.isDefault ? nil : "\($0.displayName) \($0.versionDescription)")
+                        // The lane, not the version: the picker is a short list
+                        // of names, and the identifier carries the version for
+                        // the case where two of one lane are installed.
+                        ($0.runtime, $0.isDefault ? nil : $0.displayName)
                     }
                 )
                 try SteamCompatTool.migrateMappings()

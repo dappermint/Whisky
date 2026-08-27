@@ -41,9 +41,14 @@ public extension SteamCompatTool {
     }
 
     /// What the client lists the tool for `runtime` as.
+    ///
+    /// A leading `whisky-` is dropped so the picker reads "Whisky arm64"
+    /// rather than saying Whisky twice.
     static func displayName(for runtime: String?, label: String? = nil) -> String {
         guard let runtime, !runtime.isEmpty else { return displayName }
-        return "\(displayName) (\(label ?? runtime))"
+        var suffix = label ?? runtime
+        if suffix.hasPrefix("whisky-") { suffix.removeFirst("whisky-".count) }
+        return "\(displayName) \(suffix)"
     }
 
     /// Where the tool for `runtime` keeps its files.
@@ -69,8 +74,21 @@ public extension SteamCompatTool {
         at root: URL = sharedToolsDirectory
     ) throws {
         let wanted = Set(runtimes.map { name(for: $0.runtime) })
+
+        // Two runtimes of one lane would list under a single name, and the
+        // picker is then a coin toss. The identifier already carries the
+        // version, so it is what tells them apart.
+        var counts: [String: Int] = [:]
         for entry in runtimes {
-            try install(whiskyCmd: whiskyCmd, runtime: entry.runtime, label: entry.label, at: root)
+            counts[displayName(for: entry.runtime, label: entry.label), default: 0] += 1
+        }
+
+        for entry in runtimes {
+            let ambiguous = counts[displayName(for: entry.runtime, label: entry.label), default: 0] > 1
+            try install(
+                whiskyCmd: whiskyCmd, runtime: entry.runtime,
+                label: ambiguous ? entry.runtime : entry.label, at: root
+            )
         }
         try pruneTools(keeping: wanted, at: root)
     }
