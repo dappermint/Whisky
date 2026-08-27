@@ -36,25 +36,59 @@ import Foundation
 /// try ShortcutCreator.createShortcutBundle(at: appURL, launchScript: script, name: "MyGame")
 /// ```
 public enum ShortcutCreator {
-    /// The Info.plist template for shortcut app bundles.
-    public static let infoPlist = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-        <key>CFBundleExecutable</key>
-        <string>launch</string>
-        <key>CFBundleSupportedPlatforms</key>
-        <array>
-            <string>MacOSX</string>
-        </array>
-        <key>LSMinimumSystemVersion</key>
-        <string>14.0</string>
-        <key>LSApplicationCategoryType</key>
-        <string>public.app-category.games</string>
-    </dict>
-    </plist>
-    """
+    /// The Info.plist for a shortcut app bundle named `name`.
+    ///
+    /// The name and identifier are what stop the Dock, the app switcher and
+    /// Spotlight from falling back to the bundle's file name, and what let
+    /// LaunchServices tell two shortcuts apart.
+    public static func infoPlist(name: String) -> String {
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>CFBundleExecutable</key>
+            <string>launch</string>
+            <key>CFBundleName</key>
+            <string>\(xmlEscaped(name))</string>
+            <key>CFBundleDisplayName</key>
+            <string>\(xmlEscaped(name))</string>
+            <key>CFBundleIdentifier</key>
+            <string>\(bundleIdentifier(for: name))</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>CFBundleSupportedPlatforms</key>
+            <array>
+                <string>MacOSX</string>
+            </array>
+            <key>LSMinimumSystemVersion</key>
+            <string>14.0</string>
+            <key>LSApplicationCategoryType</key>
+            <string>public.app-category.games</string>
+        </dict>
+        </plist>
+        """
+    }
+
+    /// A stable identifier for the shortcut, scoped to whichever build of
+    /// Whisky created it so a fork's shortcuts never collide with the main
+    /// app's.
+    static func bundleIdentifier(for name: String) -> String {
+        let host = Bundle.main.bundleIdentifier ?? "com.isaacmarovitz.Whisky"
+        let slug = name.lowercased().map { character -> String in
+            character.isLetter || character.isNumber ? String(character) : "-"
+        }.joined()
+        let trimmed = slug.split(separator: "-").joined(separator: "-")
+        return "\(host).shortcut.\(trimmed.isEmpty ? "program" : trimmed)"
+    }
+
+    /// Escapes the three characters that would otherwise end the plist string.
+    static func xmlEscaped(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+    }
 
     /// Creates a macOS `.app` bundle that launches a Windows program via Wine.
     ///
@@ -70,7 +104,8 @@ public enum ShortcutCreator {
     /// - Parameters:
     ///   - appURL: The destination URL for the `.app` bundle.
     ///   - launchScript: The shell command to execute when the app is launched.
-    ///   - name: The display name for the shortcut (used for logging).
+    ///   - name: The display name for the shortcut, which becomes the
+    ///     bundle's `CFBundleName` and seeds its identifier.
     /// - Throws: An error if the bundle directories or files cannot be created.
     public static func createShortcutBundle(at appURL: URL, launchScript: String, name: String) throws {
         let contents = appURL.appending(path: "Contents")
@@ -89,7 +124,7 @@ public enum ShortcutCreator {
             ofItemAtPath: scriptUrl.path(percentEncoded: false)
         )
 
-        try infoPlist.write(
+        try infoPlist(name: name).write(
             to: contents.appending(path: "Info").appendingPathExtension("plist"),
             atomically: false,
             encoding: .utf8

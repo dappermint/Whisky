@@ -50,9 +50,15 @@ class ProgramShortcut {
             let launchScript = ShortcutCreator.liveLaunchScript(for: target)
             try ShortcutCreator.createShortcutBundle(at: app, launchScript: launchScript, name: name)
 
-            // App-specific: extract icon from PE file and set on the .app bundle
+            // App-specific: extract icon from PE file and set on the .app bundle.
+            // The composed plate first, so the Finder shortcut and the running
+            // app's Dock tile are the same icon rather than two.
             let programUrl = program.url
-            if let image = await generateThumbnail(for: programUrl) {
+            var image = await NativeAppIcon.iconFile(for: programUrl).flatMap { NSImage(contentsOf: $0) }
+            if image == nil {
+                image = await generateThumbnail(for: programUrl)
+            }
+            if let image {
                 NSWorkspace.shared.setIcon(
                     image,
                     forFile: app.path(percentEncoded: false),
