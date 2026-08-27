@@ -60,8 +60,39 @@ struct SteamCompatToolRuntimeTests {
     }
 
     @Test func aRuntimeIdentifierDoesNotSayWhiskyTwice() {
-        #expect(SteamCompatTool.name(for: "whisky-arm64-5.0.0") == "whisky-proton-arm64-5.0.0")
         #expect(SteamCompatTool.name(for: "winecx-4.6.1") == "whisky-proton-winecx-4.6.1")
+    }
+
+    /// The client reads an architecture out of the identifier and drops the
+    /// tool before it reaches the picker, logging only "Ignoring tool <id> as
+    /// it's for a different target platform macos arm64".
+    @Test func anIdentifierNeverNamesAnArchitecture() {
+        #expect(SteamCompatTool.name(for: "whisky-arm64-5.0.0") == "whisky-proton-5.0.0")
+        #expect(SteamCompatTool.name(for: "whisky-aarch64-5.0.0") == "whisky-proton-5.0.0")
+        #expect(SteamCompatTool.name(for: "whisky-x86_64-4.6.4") == "whisky-proton-4.6.4")
+
+        for runtime in ["whisky-arm64-5.0.0", "whisky-aarch64-1.0", "arm", "x64", "ARM64-2.0"] {
+            let identifier = SteamCompatTool.name(for: runtime).lowercased()
+            for token in ["arm", "x64", "x86_64", "aarch64", "amd64", "i386"] {
+                #expect(!identifier.contains(token), "\(identifier) would never reach the picker")
+            }
+        }
+    }
+
+    /// A runtime named after nothing but its architecture still needs an
+    /// identifier, and the same one every launch or its mappings are orphaned.
+    @Test func aRuntimeNamedOnlyForItsArchitectureKeepsAStableIdentifier() {
+        let first = SteamCompatTool.name(for: "arm64")
+        #expect(first == SteamCompatTool.name(for: "arm64"))
+        #expect(first != SteamCompatTool.name(for: "x86_64"))
+        #expect(first.hasPrefix("whisky-proton-"))
+    }
+
+    /// The picker is the only place the runtime is named, so it keeps the
+    /// architecture the identifier had to drop.
+    @Test func thePickerStillSaysWhichRuntimeItIs() {
+        #expect(SteamCompatTool.displayName(for: "whisky-arm64-5.0.0", label: "whisky-arm64")
+            == "Whisky arm64")
     }
 
     @Test func theLabelIsWhatThePickerShows() {
@@ -86,7 +117,7 @@ struct SteamCompatToolRuntimeTests {
             at: fixture.toolsRoot
         )
 
-        let names = ["whisky-proton-arm64-5.0.0", "whisky-proton-arm64-5.1.0"].map { tool -> String in
+        let names = ["whisky-proton-5.0.0", "whisky-proton-5.1.0"].map { tool -> String in
             let vdf = fixture.toolsRoot.appending(path: tool).appending(path: "compatibilitytool.vdf")
             return (try? String(contentsOf: vdf, encoding: .utf8)) ?? ""
         }
@@ -112,7 +143,7 @@ struct SteamCompatToolRuntimeTests {
         #expect(!base.contains("--runtime"))
 
         let arm = try String(
-            contentsOf: fixture.toolsRoot.appending(path: "whisky-proton-arm64-5.0.0/whisky-run"),
+            contentsOf: fixture.toolsRoot.appending(path: "whisky-proton-5.0.0/whisky-run"),
             encoding: .utf8
         )
         #expect(arm.contains("--runtime 'whisky-arm64-5.0.0'"))
@@ -130,7 +161,7 @@ struct SteamCompatToolRuntimeTests {
 
         for (folder, identifier) in [
             ("whisky-proton", "whisky-proton"),
-            ("whisky-proton-arm64-5.0.0", "whisky-proton-arm64-5.0.0")
+            ("whisky-proton-5.0.0", "whisky-proton-5.0.0")
         ] {
             let directory = fixture.toolsRoot.appending(path: folder)
             for file in ["compatibilitytool.vdf", "toolmanifest.vdf", "whisky-run"] {
@@ -164,7 +195,7 @@ struct SteamCompatToolRuntimeTests {
             atPath: fixture.toolsRoot.appending(path: "whisky-proton").path(percentEncoded: false)
         ))
         #expect(!FileManager.default.fileExists(
-            atPath: fixture.toolsRoot.appending(path: "whisky-proton-arm64-5.0.0")
+            atPath: fixture.toolsRoot.appending(path: "whisky-proton-5.0.0")
                 .path(percentEncoded: false)
         ))
     }

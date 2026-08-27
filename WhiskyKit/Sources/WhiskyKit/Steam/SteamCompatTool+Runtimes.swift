@@ -16,12 +16,20 @@
 //  If not, see https://www.gnu.org/licenses/.
 //
 
+import CryptoKit
 import Foundation
 
 /// One compatibility tool per installed runtime, so the client's own
 /// Compatibility picker is the switch between them, the way it switches
 /// between Proton builds.
 public extension SteamCompatTool {
+    /// Architecture names the client reads out of a tool's identifier.
+    ///
+    /// Longest first, so `arm64` is gone before `arm` can take a bite out of it.
+    private static let architectureTokens = [
+        "aarch64", "x86_64", "arm64", "amd64", "i386", "x64", "arm"
+    ]
+
     /// The identifier for the tool that runs on `runtime`.
     ///
     /// The default runtime keeps ``name`` exactly, because that string is what
@@ -30,14 +38,41 @@ public extension SteamCompatTool {
     /// `whisky-` is dropped from it so the result reads as one name rather than
     /// saying Whisky twice.
     ///
-    /// Still contains `proton`, which is not cosmetic: the client only installs
-    /// the Windows save-path overrides when a case insensitive search for it
-    /// hits this string.
+    /// An architecture name is dropped from that suffix too. The client reads
+    /// one out of the identifier and drops the tool before it reaches the
+    /// picker, logging "Ignoring tool <id> as it's for a different target
+    /// platform macos arm64" and nothing else. ``displayName(for:label:)`` is
+    /// not searched, so the picker still says which runtime it is.
+    ///
+    /// The result still contains `proton`, which is not cosmetic: the client
+    /// only installs the Windows save-path overrides when a case insensitive
+    /// search for it hits this string.
     static func name(for runtime: String?) -> String {
         guard let runtime, !runtime.isEmpty else { return name }
         var suffix = runtime
         if suffix.hasPrefix("whisky-") { suffix.removeFirst("whisky-".count) }
+
+        for token in architectureTokens {
+            suffix = suffix.replacingOccurrences(of: token, with: "", options: [.caseInsensitive])
+        }
+        // Stripping a token leaves the separators that surrounded it.
+        while suffix.contains("--") {
+            suffix = suffix.replacingOccurrences(of: "--", with: "-")
+        }
+        suffix = suffix.trimmingCharacters(in: CharacterSet(charactersIn: "-_"))
+
+        // A runtime named after nothing but its architecture still needs an
+        // identifier, and it has to be the same one on every launch or every
+        // mapping to it is orphaned.
+        guard !suffix.isEmpty else { return "\(name)-\(digest(of: runtime))" }
         return "\(name)-\(suffix)"
+    }
+
+    /// A short stable digest, for the identifier of a runtime whose name says
+    /// nothing but its architecture.
+    private static func digest(of runtime: String) -> String {
+        SHA256.hash(data: Data(runtime.utf8)).prefix(4)
+            .map { String(format: "%02x", $0) }.joined()
     }
 
     /// What the client lists the tool for `runtime` as.
