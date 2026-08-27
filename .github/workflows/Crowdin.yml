@@ -68,14 +68,59 @@ jobs:
           # this to the CLI explicitly, which overrides the project-level
           # skipUntranslatedStrings setting, so it has to be set here.
           skip_untranslated_strings: true
-          localization_branch_name: l10n/crowdin
-          create_pull_request: true
-          pull_request_title: 'New translations from Crowdin'
-          pull_request_body: >-
-            Automated translation sync. Crowdin is the source of truth for
-            translations; do not hand-edit non-English strings here.
-          pull_request_base_branch_name: main
+          # Leave the export uncommitted in the workspace: the guard steps
+          # below decide whether a PR opens at all. The export REPLACES the
+          # catalog wholesale, so keys with no translations anywhere and the
+          # locally generated en-GB rows vanish from it (see PR #232 for the
+          # failure this prevents).
+          push_translations: false
+          create_pull_request: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}
           CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
+
+      - name: Refuse exports that delete keys
+        if: steps.check.outputs.configured == 'true' && github.event_name != 'push'
+        run: |
+          python3 - <<'EOF'
+          import json, subprocess, sys
+          new = json.load(open("Whisky/Localizable.xcstrings"))["strings"]
+          old = json.loads(subprocess.run(
+              ["git", "show", "HEAD:Whisky/Localizable.xcstrings"],
+              capture_output=True, text=True, check=True).stdout)["strings"]
+          missing = sorted(k for k in old if k not in new)
+          if missing:
+              print("Export dropped %d keys that exist on main; refusing to open a PR." % len(missing))
+              print("These keys likely have no translations yet, so the export omits them.")
+              for key in missing[:20]:
+                  print(" -", key)
+              sys.exit(1)
+          EOF
+
+      - name: Restore en-GB rows
+        if: steps.check.outputs.configured == 'true' && github.event_name != 'push'
+        run: |
+          ./scripts/british-english.py
+          ./scripts/british-english.py --check
+
+      - name: Open or update the sync PR
+        if: steps.check.outputs.configured == 'true' && github.event_name != 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet -- Whisky/Localizable.xcstrings; then
+            echo "No translation changes; nothing to sync."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B l10n/crowdin
+          git add Whisky/Localizable.xcstrings
+          git commit -m "l10n: new translations from Crowdin"
+          git push --force origin l10n/crowdin
+          if [ -z "$(gh pr list --head l10n/crowdin --state open --json number -q '.[0].number')" ]; then
+            gh pr create --base main --head l10n/crowdin \
+              --title 'New translations from Crowdin' \
+              --body 'Automated translation sync. Crowdin is the source of truth for translations; do not hand-edit non-English strings here. This export passed the key-deletion guard and had its en-GB rows regenerated.'
+          fi
