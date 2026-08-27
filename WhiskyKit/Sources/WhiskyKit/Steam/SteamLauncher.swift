@@ -79,6 +79,9 @@ public enum SteamLauncher {
                 programOverrides: plan.overrides,
                 gameProfileEnvironment: plan.gameProfileEnvironment,
                 // the plan is the game's; steam.exe is only the vehicle
+                // The plan is the game's, but the name and icon are not: the
+                // client is only the vehicle and it starts other games too.
+                identityScope: .program,
                 overridesApplyToDescendants: true,
                 // The client hands the game its own handles, so an attached
                 // client is what puts the game's output in the run's log. This

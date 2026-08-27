@@ -323,6 +323,7 @@ public class Wine {
         gameProfileEnvironment: [String: String] = [:],
         displayName: String? = nil,
         steamAppId: Int? = nil,
+        identityScope: DockIdentity.Scope = .processTree,
         overridesApplyToDescendants: Bool = false,
         keepAttached: Bool = false,
         workingDirectory: URL? = nil,
@@ -339,8 +340,6 @@ public class Wine {
         // set a backend and would see the pinned one as user intent.
         let programOverrides = resolution.overrides
 
-        try prepareBackendPrefix(effectiveBackend, bottle: bottle)
-
         // Enable DXVK if needed: effective backend, the legacy program-level
         // flag (honored only without a backend override, mirroring
         // applyProgramOverrides), or launcher auto-enable.
@@ -348,6 +347,13 @@ public class Wine {
         let shouldEnableDXVK = effectiveBackend == .dxvk || legacyProgramDXVK ||
             (bottle.settings.autoEnableDXVK &&
                 bottle.settings.detectedLauncher?.requiresDXVK == true)
+
+        // Decided before the prefix is prepared, so the cleanup below knows
+        // which translation layer is actually about to run.
+        clearForeignBackendDLLs(
+            keeping: shouldEnableDXVK ? .dxvk : effectiveBackend, bottle: bottle
+        )
+        try prepareBackendPrefix(effectiveBackend, bottle: bottle)
 
         if shouldEnableDXVK {
             try enableDXVK(bottle: bottle)
@@ -390,12 +396,18 @@ public class Wine {
         // spawns itself; the first one it never re-execs, so it is exec'd here
         // through a link named for the program instead. Set before the Steam
         // helper composes its command, since that captures the environment.
+        // A game reached through Steam knows its own App ID, and one run
+        // straight from its folder often still says so in `steam_appid.txt`.
+        // That is what turns an internal executable name into the game's.
+        let appId = steamAppId ?? SteamAppManifest.findAppIdForProgram(at: url)
+        let steamName = appId.flatMap { SteamAppManifest.manifest(forAppId: $0)?.name }
+
         var launchExecutable = wineBinary(for: bottle)
-        if let dockName = DockIdentity.displayName(for: url, title: displayName) {
-            let iconFile = await NativeAppIcon.iconFile(for: url, steamAppId: steamAppId)
+        if let dockName = DockIdentity.displayName(for: url, title: displayName ?? steamName) {
+            let iconFile = await NativeAppIcon.iconFile(for: url, steamAppId: appId)
             let identity = DockIdentity.environment(
                 displayName: dockName, exeName: programName, iconFile: iconFile,
-                runtime: bottle.settings.runtime
+                runtime: bottle.settings.runtime, scope: identityScope
             )
             // A variable the user set for this bottle or program is their
             // answer, not ours, so it is never replaced.
@@ -968,6 +980,60 @@ public class Wine {
     /// DXMT goes first: if launcher auto-DXVK also fires in `runProgram`, DXVK's
     /// file copy deterministically wins, matching the override-layer order where
     /// launcher-managed entries land after bottle-managed ones.
+    /// The DLLs a backend leaves in a prefix, so choosing another one can take
+    /// them out again. D3DMetal leaves none: it wants the runtime's builtins,
+    /// and anything in `system32` shadows those.
+    @MainActor
+    static func prefixDLLNames(for backend: GraphicsBackend, runtime: String?) -> Set<String> {
+        switch backend {
+        case .dxvk:
+            let folder = dxvkFolder(for: runtime).appending(path: "x64")
+            let contents = (try? FileManager.default.contentsOfDirectory(
+                atPath: folder.path(percentEncoded: false)
+            )) ?? []
+            return Set(contents.filter { $0.hasSuffix(".dll") })
+        case .dxmt:
+            return Set(dxmtPrefixDLLs)
+        case .d3dMetal, .wined3d, .recommended:
+            return []
+        }
+    }
+
+    /// Takes the previous backend's DLLs back out of the prefix.
+    ///
+    /// A translation layer is a file in `system32` shadowing the runtime's
+    /// builtin, so one left behind wins over whatever is chosen next: a bottle
+    /// that had ever run DXVK kept DXVK's `d3d11.dll`, and every later D3DMetal
+    /// launch went through it while reporting D3DMetal. Only names a backend
+    /// payload actually carries are removed, so a native DLL somebody installed
+    /// on purpose is never touched.
+    @MainActor
+    static func clearForeignBackendDLLs(keeping backend: GraphicsBackend, bottle: Bottle) {
+        let runtime = bottle.settings.runtime
+        let keep = prefixDLLNames(for: backend, runtime: runtime)
+        let remove = prefixDLLNames(for: .dxvk, runtime: runtime)
+            .union(prefixDLLNames(for: .dxmt, runtime: runtime))
+            .subtracting(keep)
+        guard !remove.isEmpty else { return }
+
+        let windows = bottle.url.appending(path: "drive_c").appending(path: "windows")
+        for directory in [windows.appending(path: "system32"), windows.appending(path: "syswow64")] {
+            for name in remove {
+                let file = directory.appending(path: name)
+                guard FileManager.default.fileExists(atPath: file.path(percentEncoded: false)) else {
+                    continue
+                }
+                do {
+                    try FileManager.default.removeItem(at: file)
+                } catch {
+                    Logger.wineKit.warning(
+                        "Could not remove \(name, privacy: .public) from the prefix"
+                    )
+                }
+            }
+        }
+    }
+
     @MainActor
     private static func prepareBackendPrefix(_ backend: GraphicsBackend, bottle: Bottle) throws {
         switch backend {

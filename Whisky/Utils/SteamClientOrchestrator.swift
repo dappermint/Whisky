@@ -205,7 +205,11 @@ final class SteamClientOrchestrator: ObservableObject {
         let bottle = self.bottle
         // steam.exe -silent runs for the whole session -- never await it.
         Task {
-            _ = try? await Wine.runProgram(at: steamExe, args: ["-silent"], bottle: bottle)
+            _ = try? await Wine.runProgram(
+                at: steamExe, args: ["-silent"], bottle: bottle,
+                // The client starts other people's games; they are not it.
+                identityScope: .program
+            )
         }
 
         if await watch.waitForAny(of: ["steam.exe"], timeout: clientReadyTimeout) {

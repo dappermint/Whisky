@@ -34,6 +34,16 @@ import os.log
 /// two paths the loader needs once it is running from somewhere that is not
 /// its own directory.
 public enum DockIdentity {
+    /// How far the name and icon reach.
+    public enum Scope: Sendable {
+        /// Everything this launch starts. A game that comes up through a
+        /// bootstrapper is still that game, and so is its crash handler.
+        case processTree
+        /// Only the program named. What a client that launches other people's
+        /// applications needs, so it does not brand them all as itself.
+        case program
+    }
+
     /// Characters that would change the meaning of the link path, or that read
     /// badly in a Dock tile.
     private static let unsafe = CharacterSet(charactersIn: "/:\\")
@@ -139,15 +149,18 @@ public enum DockIdentity {
     /// process Wine starts inherits this environment, so without it the bottle's
     /// own Steam client would hand its name and icon to every game it launches.
     public static func environment(
-        displayName: String, exeName: String, iconFile: URL?, runtime: String?
+        displayName: String, exeName: String, iconFile: URL?, runtime: String?,
+        scope: Scope = .processTree
     ) -> [String: String] {
         var environment = [
             "WINEDLLPATH": WhiskyWineInstaller.dllFolder(for: runtime).path(percentEncoded: false),
             "WINESERVER": WhiskyWineInstaller.binFolder(for: runtime)
                 .appending(path: "wineserver").path(percentEncoded: false),
-            "WINE_APP_DISPLAY_NAME": displayName,
-            "WINE_APP_IDENTITY_EXE": exeName
+            "WINE_APP_DISPLAY_NAME": displayName
         ]
+        if scope == .program {
+            environment["WINE_APP_IDENTITY_EXE"] = exeName
+        }
         if let iconFile {
             environment["WINE_APP_ICON_PATH"] = iconFile.path(percentEncoded: false)
         }

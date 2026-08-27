@@ -71,9 +71,9 @@ final class DockIdentityTests: XCTestCase {
             WhiskyWineInstaller.dllFolder(for: nil).path(percentEncoded: false)
         )
         XCTAssertTrue(environment["WINESERVER"]?.hasSuffix("/bin/wineserver") == true)
-        // Without this the bottle's own Steam client would hand its name and
-        // icon to every game it starts, since children inherit the environment.
-        XCTAssertEqual(environment["WINE_APP_IDENTITY_EXE"], "Celeste.exe")
+        // A game that comes up through a bootstrapper is still that game, so by
+        // default the identity reaches everything the launch starts.
+        XCTAssertNil(environment["WINE_APP_IDENTITY_EXE"])
         // No composed icon means Wine keeps using the exe's own resource.
         XCTAssertNil(environment["WINE_APP_ICON_PATH"])
     }
@@ -85,6 +85,18 @@ final class DockIdentityTests: XCTestCase {
         )
 
         XCTAssertEqual(environment["WINE_APP_ICON_PATH"], "/tmp/whisky-test-icon.png")
+    }
+
+    /// A client launches other people's applications, and every process
+    /// inherits the environment, so without this it brands them all as itself.
+    func testAProgramScopedIdentityNamesTheExecutableItBelongsTo() {
+        let environment = DockIdentity.environment(
+            displayName: "Steam", exeName: "steam.exe", iconFile: nil, runtime: nil,
+            scope: .program
+        )
+
+        XCTAssertEqual(environment["WINE_APP_IDENTITY_EXE"], "steam.exe")
+        XCTAssertEqual(environment["WINE_APP_DISPLAY_NAME"], "Steam")
     }
 
     func testLoaderAliasIsNilWhenTheRuntimeIsNotInstalled() {

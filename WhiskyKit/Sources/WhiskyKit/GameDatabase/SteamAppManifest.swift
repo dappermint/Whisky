@@ -136,6 +136,21 @@ public struct SteamAppManifest: Equatable, Sendable {
         SteamLibrary.enumerate(bottleURL: bottleURL).first?.appId
     }
 
+    /// The manifest for `appId`, from whichever library folder holds the game.
+    ///
+    /// This is where a game's real name lives. An executable's name is an
+    /// internal one and often not the game's at all: Ready or Not ships as
+    /// `ReadyOrNotSteam-Win64-Shipping.exe`.
+    public static func manifest(forAppId appId: Int, in folders: [URL]? = nil) -> SteamAppManifest? {
+        for folder in folders ?? HostSteam.libraryFolders() {
+            let manifest = folder
+                .appending(path: "steamapps")
+                .appending(path: "appmanifest_\(appId).acf")
+            if let parsed = SteamAppManifest(contentsOf: manifest) { return parsed }
+        }
+        return nil
+    }
+
     /// Searches for a Steam App ID near a specific executable.
     ///
     /// Checks for `steam_appid.txt` in the executable's directory and
