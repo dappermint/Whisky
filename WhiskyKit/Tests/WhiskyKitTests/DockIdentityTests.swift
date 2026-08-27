@@ -86,6 +86,35 @@ final class DockIdentityTests: XCTestCase {
         )
     }
 
+    func testNtdllIsFoundBesideAnUnwrappedLoader() throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        let unix = root.appending(path: "x86_64-unix")
+        try FileManager.default.createDirectory(at: unix, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try Data().write(to: unix.appending(path: "ntdll.so"))
+
+        let found = DockIdentity.ntdllNear(unix.appending(path: "wine"))
+        XCTAssertEqual(found?.lastPathComponent, "ntdll.so")
+    }
+
+    func testNtdllIsFoundAboveALoaderInsideAnAppBundle() throws {
+        // The arm64 loader is in wine.app/Contents/MacOS so it can carry the
+        // pagezero entitlement; ntdll.so stays three levels up.
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        let unix = root.appending(path: "aarch64-unix")
+        let macos = unix.appending(path: "wine.app/Contents/MacOS")
+        try FileManager.default.createDirectory(at: macos, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try Data().write(to: unix.appending(path: "ntdll.so"))
+
+        let found = DockIdentity.ntdllNear(macos.appending(path: "wine"))
+        XCTAssertEqual(found?.path(percentEncoded: false), unix.appending(path: "ntdll.so").path(percentEncoded: false))
+    }
+
+    func testNtdllIsNilWhenThereIsNone() {
+        XCTAssertNil(DockIdentity.ntdllNear(URL(fileURLWithPath: "/nowhere/whisky/bin/wine64")))
+    }
+
     func testDllFolderSitsUnderTheRuntimeItNames() {
         let path = WhiskyWineInstaller.dllFolder(for: "whisky-arm64-5.0.0").path(percentEncoded: false)
         XCTAssertTrue(path.hasSuffix("/Runtimes/whisky-arm64-5.0.0/Wine/lib/wine"), path)

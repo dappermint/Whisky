@@ -85,6 +85,8 @@ public enum DockIdentity {
         let inode = (attributes[.systemFileNumber] as? NSNumber)?.uint64Value ?? 0
         let size = (attributes[.size] as? NSNumber)?.uint64Value ?? 0
 
+        guard let source = ntdllNear(loader) else { return nil }
+
         let directory = URL(fileURLWithPath: NSTemporaryDirectory())
             .appending(path: "whisky-loader-\(inode)-\(size)")
         let alias = directory.appending(path: displayName)
@@ -92,11 +94,10 @@ public enum DockIdentity {
 
         do {
             try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
-            if !fileManager.fileExists(atPath: ntdll.path(percentEncoded: false)) {
-                try fileManager.createSymbolicLink(
-                    at: ntdll, withDestinationURL: loader.deletingLastPathComponent().appending(path: "ntdll.so")
-                )
-            }
+            // Recreated rather than reused: a link left pointing at a runtime
+            // that has since moved reads as absent and cannot be replaced.
+            try? fileManager.removeItem(at: ntdll)
+            try fileManager.createSymbolicLink(at: ntdll, withDestinationURL: source)
             if !fileManager.fileExists(atPath: alias.path(percentEncoded: false)) {
                 try fileManager.linkItem(at: loader, to: alias)
             }
@@ -108,6 +109,23 @@ public enum DockIdentity {
             )
             return nil
         }
+    }
+
+    /// Finds the `ntdll.so` the loader would have loaded.
+    ///
+    /// The loader looks for it beside itself, which is where it sits on x86_64.
+    /// On arm64 the loader is inside a signed `wine.app`, three levels down
+    /// from its own architecture directory, so walk up until it turns up.
+    static func ntdllNear(_ loader: URL) -> URL? {
+        var directory = loader.deletingLastPathComponent()
+        for _ in 0 ... 3 {
+            let candidate = directory.appending(path: "ntdll.so")
+            if FileManager.default.fileExists(atPath: candidate.path(percentEncoded: false)) {
+                return candidate
+            }
+            directory = directory.deletingLastPathComponent()
+        }
+        return nil
     }
 
     /// The environment a renamed launch needs.
