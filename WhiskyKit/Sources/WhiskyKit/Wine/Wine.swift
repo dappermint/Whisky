@@ -349,10 +349,13 @@ public class Wine {
                 bottle.settings.detectedLauncher?.requiresDXVK == true)
 
         // Decided before the prefix is prepared, so the cleanup below knows
-        // which translation layer is actually about to run.
-        clearForeignBackendDLLs(
-            keeping: shouldEnableDXVK ? .dxvk : effectiveBackend, bottle: bottle
-        )
+        // everything that is about to be installed. Both, when a launcher
+        // bottle auto-enables DXVK on top of the chosen backend.
+        var keep = prefixDLLNames(for: effectiveBackend, runtime: bottle.settings.runtime)
+        if shouldEnableDXVK {
+            keep.formUnion(prefixDLLNames(for: .dxvk, runtime: bottle.settings.runtime))
+        }
+        clearForeignBackendDLLs(keeping: keep, bottle: bottle)
         try prepareBackendPrefix(effectiveBackend, bottle: bottle)
 
         if shouldEnableDXVK {
@@ -999,6 +1002,29 @@ public class Wine {
         }
     }
 
+    /// Whether the file in the prefix is one a backend payload put there.
+    ///
+    /// The names overlap with Wine's own: `dxgi.dll` in `system32` is usually
+    /// the builtin every prefix has, and removing that one is how a game stops
+    /// starting at all. Only a byte-for-byte match with a payload we ship is
+    /// ours to take away.
+    static func isBackendPayload(_ file: URL, named name: String, runtime: String?) -> Bool {
+        let payloads = [
+            dxvkFolder(for: runtime).appending(path: "x64"),
+            dxvkFolder(for: runtime).appending(path: "x32"),
+            dxmtFolder(for: runtime).appending(path: "x64"),
+            dxmtFolder(for: runtime).appending(path: "x32")
+        ]
+        guard let installed = try? Data(contentsOf: file) else { return false }
+
+        return payloads.contains { folder in
+            guard let payload = try? Data(contentsOf: folder.appending(path: name)) else {
+                return false
+            }
+            return payload == installed
+        }
+    }
+
     /// Takes the previous backend's DLLs back out of the prefix.
     ///
     /// A translation layer is a file in `system32` shadowing the runtime's
@@ -1008,26 +1034,42 @@ public class Wine {
     /// payload actually carries are removed, so a native DLL somebody installed
     /// on purpose is never touched.
     @MainActor
-    static func clearForeignBackendDLLs(keeping backend: GraphicsBackend, bottle: Bottle) {
+    static func clearForeignBackendDLLs(keeping keep: Set<String>, bottle: Bottle) {
         let runtime = bottle.settings.runtime
-        let keep = prefixDLLNames(for: backend, runtime: runtime)
         let remove = prefixDLLNames(for: .dxvk, runtime: runtime)
             .union(prefixDLLNames(for: .dxmt, runtime: runtime))
             .subtracting(keep)
         guard !remove.isEmpty else { return }
 
         let windows = bottle.url.appending(path: "drive_c").appending(path: "windows")
-        for directory in [windows.appending(path: "system32"), windows.appending(path: "syswow64")] {
+        let builtins = WhiskyWineInstaller.dllFolder(for: runtime)
+        let lanes = [
+            (windows.appending(path: "system32"), builtins.appending(path: "x86_64-windows")),
+            (windows.appending(path: "syswow64"), builtins.appending(path: "i386-windows"))
+        ]
+
+        for (directory, builtinDirectory) in lanes {
             for name in remove {
                 let file = directory.appending(path: name)
-                guard FileManager.default.fileExists(atPath: file.path(percentEncoded: false)) else {
-                    continue
-                }
+                guard FileManager.default.fileExists(atPath: file.path(percentEncoded: false)),
+                      isBackendPayload(file, named: name, runtime: runtime)
+                else { continue }
+
+                // Put the runtime's own copy back rather than leaving a hole.
+                // Installing a translation layer overwrote what was there with
+                // no backup, and wine reaches a builtin through the prefix, so
+                // a name simply removed reads as "not found" and the game never
+                // starts.
+                let builtin = builtinDirectory.appending(path: name)
                 do {
-                    try FileManager.default.removeItem(at: file)
+                    if FileManager.default.fileExists(atPath: builtin.path(percentEncoded: false)) {
+                        try FileManager.default.installFile(at: file, from: builtin)
+                    } else {
+                        try FileManager.default.removeItem(at: file)
+                    }
                 } catch {
                     Logger.wineKit.warning(
-                        "Could not remove \(name, privacy: .public) from the prefix"
+                        "Could not restore \(name, privacy: .public) in the prefix"
                     )
                 }
             }

@@ -48,22 +48,25 @@ final class BackendPrefixCleanupTests: XCTestCase {
         FileManager.default.fileExists(atPath: system32.appending(path: name).path(percentEncoded: false))
     }
 
-    func testDXMTFilesGoWhenD3DMetalIsChosen() throws {
+    /// The names overlap with Wine's own. `dxgi.dll` in `system32` is usually
+    /// the builtin every prefix has, and removing that one is how a game stops
+    /// starting at all.
+    func testAFileThatIsNotOursIsNeverTouched() throws {
         try place(SteamCompatToolTestSupport.dxmtNames + ["d3dcompiler_47.dll"])
 
-        Wine.clearForeignBackendDLLs(keeping: .d3dMetal, bottle: Bottle(bottleUrl: bottleURL))
+        Wine.clearForeignBackendDLLs(keeping: [], bottle: Bottle(bottleUrl: bottleURL))
 
-        for name in SteamCompatToolTestSupport.dxmtNames {
-            XCTAssertFalse(exists(name), "\(name) would shadow the runtime's builtin")
+        for name in SteamCompatToolTestSupport.dxmtNames + ["d3dcompiler_47.dll"] {
+            XCTAssertTrue(exists(name), "\(name) does not match any payload we ship")
         }
-        // Not a backend payload, so somebody installed it on purpose.
-        XCTAssertTrue(exists("d3dcompiler_47.dll"))
     }
 
-    func testDXMTFilesStayWhenDXMTIsChosen() throws {
+    func testKeptNamesAreNeverConsidered() throws {
         try place(SteamCompatToolTestSupport.dxmtNames)
 
-        Wine.clearForeignBackendDLLs(keeping: .dxmt, bottle: Bottle(bottleUrl: bottleURL))
+        Wine.clearForeignBackendDLLs(
+            keeping: Set(SteamCompatToolTestSupport.dxmtNames), bottle: Bottle(bottleUrl: bottleURL)
+        )
 
         for name in SteamCompatToolTestSupport.dxmtNames {
             XCTAssertTrue(exists(name))
@@ -80,7 +83,7 @@ final class BackendPrefixCleanupTests: XCTestCase {
     func testAPrefixWithNothingToCleanIsLeftAlone() throws {
         try place(["d3dcompiler_47.dll"])
 
-        Wine.clearForeignBackendDLLs(keeping: .d3dMetal, bottle: Bottle(bottleUrl: bottleURL))
+        Wine.clearForeignBackendDLLs(keeping: [], bottle: Bottle(bottleUrl: bottleURL))
 
         XCTAssertTrue(exists("d3dcompiler_47.dll"))
     }
