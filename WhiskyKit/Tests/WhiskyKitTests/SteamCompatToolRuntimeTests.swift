@@ -196,7 +196,13 @@ struct DXMTNoThirtyTwoBitLaneTests {
         try Data(bytes).write(to: url)
     }
 
-    private static func makePayload(x32: Bool) throws -> (payload: URL, prefix: URL, root: URL) {
+    private struct Fixture {
+        let payload: URL
+        let prefix: URL
+        let root: URL
+    }
+
+    private static func makePayload(x32: Bool) throws -> Fixture {
         let fileManager = FileManager.default
         let root = fileManager.temporaryDirectory.appending(path: "dxmt_\(UUID().uuidString)")
         let payload = root.appending(path: "DXMT")
@@ -222,37 +228,37 @@ struct DXMTNoThirtyTwoBitLaneTests {
         try fileManager.createDirectory(
             at: windows.appending(path: "syswow64"), withIntermediateDirectories: true
         )
-        return (payload, prefix, root)
+        return Fixture(payload: payload, prefix: prefix, root: root)
     }
 
     /// An arm64 runtime ships no 32-bit payload, and the prefix still has an
     /// empty syswow64. Failing there would refuse a bottle whose 64-bit half is
     /// complete, which is the only half DXMT has.
     @Test func anEmptySyswow64DoesNotRequireA32BitPayload() throws {
-        let (payload, prefix, root) = try Self.makePayload(x32: false)
-        defer { try? FileManager.default.removeItem(at: root) }
+        let fixture = try Self.makePayload(x32: false)
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
 
-        try Wine.enableDXMT(payloadRoot: payload, prefixRoot: prefix)
+        try Wine.enableDXMT(payloadRoot: fixture.payload, prefixRoot: fixture.prefix)
 
-        let system32 = prefix.appending(path: "drive_c/windows/system32")
+        let system32 = fixture.prefix.appending(path: "drive_c/windows/system32")
         for name in Self.all {
             #expect(FileManager.default.fileExists(
                 atPath: system32.appending(path: name).path(percentEncoded: false)
             ), "\(name) should have been deployed")
         }
         #expect(try FileManager.default.contentsOfDirectory(
-            atPath: prefix.appending(path: "drive_c/windows/syswow64").path(percentEncoded: false)
+            atPath: fixture.prefix.appending(path: "drive_c/windows/syswow64").path(percentEncoded: false)
         ).isEmpty, "nothing to deploy there, so nothing should have been")
     }
 
     /// A runtime that does ship one still deploys it.
     @Test func a32BitPayloadIsStillDeployedWhenPresent() throws {
-        let (payload, prefix, root) = try Self.makePayload(x32: true)
-        defer { try? FileManager.default.removeItem(at: root) }
+        let fixture = try Self.makePayload(x32: true)
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
 
-        try Wine.enableDXMT(payloadRoot: payload, prefixRoot: prefix)
+        try Wine.enableDXMT(payloadRoot: fixture.payload, prefixRoot: fixture.prefix)
 
-        let syswow64 = prefix.appending(path: "drive_c/windows/syswow64")
+        let syswow64 = fixture.prefix.appending(path: "drive_c/windows/syswow64")
         for name in Self.all {
             #expect(FileManager.default.fileExists(
                 atPath: syswow64.appending(path: name).path(percentEncoded: false)
