@@ -55,6 +55,21 @@ jobs:
           CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}
           CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
 
+      # Translations that land in the repo (restored strings, translations
+      # merged with a feature) never reach Crowdin through the source upload,
+      # and the next export then deletes them. Push them up explicitly. The
+      # multilingual catalog imports one language per CLI call, so loop over
+      # every Crowdin language id.
+      - name: Upload translations
+        if: steps.check.outputs.configured == 'true' && github.event_name == 'push'
+        run: |
+          for lang in ar cs da de es-ES fi fr it ja ko nl pl pt-BR pt-PT ro ru sv-SE tr uk vi zh-CN zh-TW; do
+            npx -y @crowdin/cli@4 upload translations -l "$lang" --no-progress
+          done
+        env:
+          CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}
+          CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
+
       # Schedule / manual → refresh sources, pull translations, open a PR.
       - name: Download translations
         if: steps.check.outputs.configured == 'true' && github.event_name != 'push'
@@ -101,6 +116,21 @@ jobs:
               print("These keys likely have no translations yet, so the export omits them.")
               for key in missing[:20]:
                   print(" -", key)
+              sys.exit(1)
+          # en-GB is generated locally by scripts/british-english.py and is
+          # restored by the next step, so its absence from the export is fine.
+          lost_rows = {}
+          for key, entry in old.items():
+              lost = set(entry.get("localizations", {})) \
+                  - set(new[key].get("localizations", {})) - {"en-GB"}
+              if lost:
+                  lost_rows[key] = sorted(lost)
+          if lost_rows:
+              print("Export dropped language rows for %d keys; refusing to open a PR." % len(lost_rows))
+              print("These translations exist in the repo but not on Crowdin;")
+              print("the push-triggered translation upload should send them up first.")
+              for key in sorted(lost_rows)[:10]:
+                  print(" -", key, lost_rows[key][:5])
               sys.exit(1)
           EOF
 
