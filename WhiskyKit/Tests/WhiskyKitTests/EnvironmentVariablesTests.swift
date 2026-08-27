@@ -54,6 +54,34 @@ final class EnvironmentVariablesTests: XCTestCase {
         XCTAssertNil(env["WINED3DMETAL"])
     }
 
+    /// Metal only accepts a shader cache path before the process has an
+    /// MTLDevice, so the Mac driver sets it and this names the directory. The
+    /// value has to match what DXMT asks for itself or DXMT's own call
+    /// disagrees and warns on every launch.
+    func testDXMTNamesItsMetalShaderCacheDirectory() {
+        var settings = BottleSettings()
+        settings.graphicsBackend = .dxmt
+
+        var env: [String: String] = [:]
+        settings.environmentVariables(wineEnv: &env)
+
+        XCTAssertEqual(env["WINE_METAL_SHADER_CACHE_DIR"], "dxmt")
+    }
+
+    /// Only DXMT asks for it. A D3DMetal bottle has a large warm cache in the
+    /// shared location already, and moving it would throw that away.
+    func testOtherBackendsDoNotNameAMetalShaderCacheDirectory() {
+        for backend in [GraphicsBackend.dxvk, .d3dMetal, .wined3d] {
+            var settings = BottleSettings()
+            settings.graphicsBackend = backend
+
+            var env: [String: String] = [:]
+            settings.environmentVariables(wineEnv: &env)
+
+            XCTAssertNil(env["WINE_METAL_SHADER_CACHE_DIR"], "\(backend) should not set it")
+        }
+    }
+
     func testDXVKSettingsDoNotApplyUnderDXMT() {
         // dxvkHud/dxvkAsync persist in dxvkConfig but only take effect when the
         // backend is DXVK.

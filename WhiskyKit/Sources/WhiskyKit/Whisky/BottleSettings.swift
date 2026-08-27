@@ -925,11 +925,22 @@ public struct BottleSettings: Codable, Equatable {
 
         case .dxmt:
             // DXMT: native overrides for the D3D11 trio plus the builtin
-            // winemetal bridge. No env vars in v1; the file placement happens
-            // in `Wine.enableDXMT` at launch.
+            // winemetal bridge. The file placement happens in
+            // `Wine.enableDXMT` at launch.
             for entry in DLLOverrideResolver.dxmtPreset {
                 managedDLLOverrides.append((entry: entry, source: .dxmt))
             }
+
+            // Metal only accepts a shader cache path while the process has
+            // never had an MTLDevice, which is earlier than DXMT's own DLL can
+            // manage: by the time it loads, the engine has already made one and
+            // its call to set the path does nothing. The Mac driver sets it
+            // instead, and this names the directory it uses.
+            //
+            // The value has to be the one DXMT asks for itself, or DXMT's own
+            // call disagrees with what is already set and it logs that it could
+            // not set the cache path on every launch.
+            builder.set("WINE_METAL_SHADER_CACHE_DIR", "dxmt", layer: .bottleManaged)
 
         case .wined3d:
             // Disable D3DMetal, forcing Wine's OpenGL-based wined3d path
