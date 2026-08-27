@@ -821,6 +821,9 @@ extension Whisky {
                 programOverrides: plan.overrides,
                 programSettings: program.settings,
                 gameProfileEnvironment: plan.gameProfileEnvironment,
+                // The App ID matched the GameDB by a hard identifier, so this is
+                // the best name any launch path has for the Dock tile.
+                displayName: plan.title,
                 keepAttached: true,
                 // Steam runs a game from its install root, not from wherever
                 // the executable happens to sit inside it.

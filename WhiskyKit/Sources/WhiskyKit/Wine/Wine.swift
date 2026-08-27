@@ -393,7 +393,8 @@ public class Wine {
         if let dockName = DockIdentity.displayName(for: url, title: displayName) {
             let iconFile = await NativeAppIcon.iconFile(for: url)
             let identity = DockIdentity.environment(
-                displayName: dockName, iconFile: iconFile, runtime: bottle.settings.runtime
+                displayName: dockName, exeName: programName, iconFile: iconFile,
+                runtime: bottle.settings.runtime
             )
             // A variable the user set for this bottle or program is their
             // answer, not ours, so it is never replaced.

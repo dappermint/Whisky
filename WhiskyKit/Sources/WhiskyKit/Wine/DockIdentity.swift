@@ -134,14 +134,19 @@ public enum DockIdentity {
     /// loader running outside its directory finds the unix `.so` builtins;
     /// `WINESERVER` covers the same gap for the server, which the first
     /// process of a cold prefix has to exec itself.
+    ///
+    /// `WINE_APP_IDENTITY_EXE` is what stops the identity spreading. Every
+    /// process Wine starts inherits this environment, so without it the bottle's
+    /// own Steam client would hand its name and icon to every game it launches.
     public static func environment(
-        displayName: String, iconFile: URL?, runtime: String?
+        displayName: String, exeName: String, iconFile: URL?, runtime: String?
     ) -> [String: String] {
         var environment = [
             "WINEDLLPATH": WhiskyWineInstaller.dllFolder(for: runtime).path(percentEncoded: false),
             "WINESERVER": WhiskyWineInstaller.binFolder(for: runtime)
                 .appending(path: "wineserver").path(percentEncoded: false),
-            "WINE_APP_DISPLAY_NAME": displayName
+            "WINE_APP_DISPLAY_NAME": displayName,
+            "WINE_APP_IDENTITY_EXE": exeName
         ]
         if let iconFile {
             environment["WINE_APP_ICON_PATH"] = iconFile.path(percentEncoded: false)
