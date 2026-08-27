@@ -322,6 +322,7 @@ public class Wine {
         programOverrides: ProgramOverrides? = nil, programSettings: ProgramSettings? = nil,
         gameProfileEnvironment: [String: String] = [:],
         displayName: String? = nil,
+        steamAppId: Int? = nil,
         overridesApplyToDescendants: Bool = false,
         keepAttached: Bool = false,
         workingDirectory: URL? = nil,
@@ -391,7 +392,7 @@ public class Wine {
         // helper composes its command, since that captures the environment.
         var launchExecutable = wineBinary(for: bottle)
         if let dockName = DockIdentity.displayName(for: url, title: displayName) {
-            let iconFile = await NativeAppIcon.iconFile(for: url)
+            let iconFile = await NativeAppIcon.iconFile(for: url, steamAppId: steamAppId)
             let identity = DockIdentity.environment(
                 displayName: dockName, exeName: programName, iconFile: iconFile,
                 runtime: bottle.settings.runtime

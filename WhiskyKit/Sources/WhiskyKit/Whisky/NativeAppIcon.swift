@@ -52,16 +52,21 @@ public enum NativeAppIcon {
     ///
     /// - Returns: The file to hand to Wine, or `nil` when the program has no
     ///   icon worth composing or the file could not be written.
-    public static func iconFile(for programURL: URL) async -> URL? {
-        guard let key = cacheKey(for: programURL) else { return nil }
+    public static func iconFile(for programURL: URL, steamAppId: Int? = nil) async -> URL? {
+        guard let artwork = await artwork(for: programURL, steamAppId: steamAppId),
+              let key = cacheKey(for: programURL, steamAppId: steamAppId)
+        else { return nil }
         let file = cacheDirectory.appending(path: key).appendingPathExtension("png")
 
         if FileManager.default.fileExists(atPath: file.path(percentEncoded: false)) {
             return file
         }
 
-        let sampled = await IconCache.shared.sampledIcon(for: programURL)
-        guard let png = compose(artwork: sampled.image, palette: sampled.palette) else { return nil }
+        guard let png = compose(
+            artwork: artwork.image, palette: IconPalette.palette(for: artwork.image),
+            fills: artwork.isFill
+        )
+        else { return nil }
 
         do {
             try FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
@@ -83,10 +88,31 @@ public enum NativeAppIcon {
         try FileManager.default.removeItem(at: cacheDirectory)
     }
 
+    /// The best artwork for the program, and how it wants to be drawn.
+    ///
+    /// Steam's own art comes first when the launch came from Steam, because an
+    /// executable is a poor witness to which game it is: Ready or Not's is the
+    /// Epic Online Services bootstrapper and carries Epic's logo.
+    ///
+    /// - Returns: `nil` when there is nothing worth composing. The executable's
+    ///   own resource is deliberately not replaced by the generic system icon
+    ///   for a Windows binary, which on a plate looks like a deliberate choice
+    ///   rather than the absence of one.
+    static func artwork(for programURL: URL, steamAppId: Int?) async -> SteamLibraryArt.Artwork? {
+        if let steamAppId, let art = SteamLibraryArt.artwork(forAppId: steamAppId) {
+            return art
+        }
+        guard let icon = await IconCache.shared.icon(for: programURL) else { return nil }
+        return .inset(icon)
+    }
+
     // MARK: - Composition
 
     /// Draws `artwork` onto a plate tinted from `palette` and encodes a PNG.
-    static func compose(artwork: NSImage, palette: IconPalette) -> Data? {
+    ///
+    /// Key art `fills` the tile edge to edge, the way a game's icon does on a
+    /// console. A mark with its own transparency sits inset on the plate.
+    static func compose(artwork: NSImage, palette: IconPalette, fills: Bool = false) -> Data? {
         guard let rep = NSBitmapImageRep(
             bitmapDataPlanes: nil, pixelsWide: Int(canvas), pixelsHigh: Int(canvas),
             bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
@@ -106,7 +132,15 @@ public enum NativeAppIcon {
         let plate = squircle(in: plateRect)
 
         drawPlate(plate, rect: plateRect, palette: palette, in: context)
-        drawArtwork(artwork, on: plateRect)
+        if fills {
+            context.saveGraphicsState()
+            plate.addClip()
+            drawFilling(artwork, in: plateRect)
+            context.restoreGraphicsState()
+            strokeHairline(around: plateRect)
+        } else {
+            drawArtwork(artwork, on: plateRect)
+        }
 
         context.flushGraphics()
         return rep.representation(using: .png, properties: [:])
@@ -140,13 +174,34 @@ public enum NativeAppIcon {
         plate.addClip()
         NSGradient(starting: top, ending: bottom)?.draw(in: rect, angle: -90)
 
-        // The hairline is the difference between a flat rectangle of colour and
-        // something that reads as a surface with an edge.
+        context.restoreGraphicsState()
+        strokeHairline(around: rect)
+    }
+
+    /// The difference between a flat rectangle of colour and something that
+    /// reads as a surface with an edge.
+    private static func strokeHairline(around rect: NSRect) {
         let hairline = squircle(in: rect.insetBy(dx: 1.5, dy: 1.5))
         hairline.lineWidth = 3
         NSColor(deviceWhite: 1, alpha: 0.14).setStroke()
         hairline.stroke()
-        context.restoreGraphicsState()
+    }
+
+    /// Scales key art to cover the whole plate, cropping whichever axis is
+    /// long rather than letterboxing it.
+    private static func drawFilling(_ artwork: NSImage, in rect: NSRect) {
+        let size = artwork.size
+        guard size.width > 0, size.height > 0 else { return }
+
+        let scale = max(rect.width / size.width, rect.height / size.height)
+        let drawn = NSSize(width: size.width * scale, height: size.height * scale)
+        artwork.draw(
+            in: NSRect(
+                x: rect.midX - drawn.width / 2, y: rect.midY - drawn.height / 2,
+                width: drawn.width, height: drawn.height
+            ),
+            from: .zero, operation: .sourceOver, fraction: 1
+        )
     }
 
     private static func drawArtwork(_ artwork: NSImage, on plateRect: NSRect) {
@@ -199,13 +254,15 @@ public enum NativeAppIcon {
 
     // MARK: - Cache key
 
-    /// Identifies one build of one executable: path, size and modification date.
-    static func cacheKey(for programURL: URL) -> String? {
+    /// Identifies one build of one executable: path, size and modification
+    /// date, and the App ID when that is where the artwork came from, so a game
+    /// that gains library art stops using the icon it was composed from.
+    static func cacheKey(for programURL: URL, steamAppId: Int? = nil) -> String? {
         let path = programURL.path(percentEncoded: false)
         guard let attributes = try? FileManager.default.attributesOfItem(atPath: path) else { return nil }
         let size = (attributes[.size] as? NSNumber)?.int64Value ?? 0
         let modified = (attributes[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
-        let seed = "\(path)|\(size)|\(Int(modified))"
+        let seed = "\(path)|\(size)|\(Int(modified))|\(steamAppId.map(String.init) ?? "")"
         let digest = SHA256.hash(data: Data(seed.utf8))
         return digest.prefix(8).map { String(format: "%02x", $0) }.joined()
     }
