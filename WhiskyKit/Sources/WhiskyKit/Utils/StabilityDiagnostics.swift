@@ -128,6 +128,10 @@ public enum StabilityDiagnostics {
         summary += "Metal Validation: \(bottle.settings.metalValidation ? "✅ Yes" : "❌ No")\n"
         summary += "Sequoia Compat Mode: \(bottle.settings.sequoiaCompatMode ? "✅ Yes" : "❌ No")\n\n"
 
+        summary += "--- Networking ---\n"
+        summary += "Runtime: \(bottle.settings.runtime ?? "Default")\n"
+        summary += "Runtime TLS: \(RuntimeTLS.status(forRuntime: bottle.settings.runtime).summary)\n\n"
+
         summary += "--- Sync/Performance ---\n"
         summary += "Enhanced Sync: \(bottle.settings.enhancedSync)\n"
         summary += "Performance Preset: \(bottle.settings.performancePreset)\n"

@@ -43,6 +43,7 @@ enum MachOImage {
     private static let fatMagics: Set<UInt32> = [0xCAFE_BABE, 0xCAFE_BABF]
     private static let arm64CPU: UInt32 = 0x0100_000C
     private static let segment64: UInt32 = 0x19
+    private static let symtabCommand: UInt32 = 0x2
 
     /// The arm64 image inside a universal file.
     ///
@@ -107,6 +108,103 @@ enum MachOImage {
         return withUnsafeBytes(of: &insn) { Data($0) }
     }
 
+    /// Whether the slice defines and exports `symbol`.
+    ///
+    /// Read from the symbol table rather than the export trie: both list a
+    /// dylib's exports, the table is a flat array where the trie is a walk, and
+    /// a stripped dylib keeps its external symbols either way.
+    static func exportsSymbol(_ symbol: String, in data: Data, slice: Slice) -> Bool {
+        guard let table = symbolTable(in: data, slice: slice) else { return false }
+        let needle = Data((symbol + "\0").utf8)
+
+        for index in 0 ..< table.count {
+            let entry = table.symbolOffset + index * 16
+            guard entry + 16 <= data.count else { return false }
+            // An export is defined in a section (N_SECT) and visible outside
+            // the image (N_EXT). Undefined imports carry the same names.
+            let kind = data[entry + 4]
+            guard kind & 0x0E == 0x0E, kind & 0x01 == 1 else { continue }
+
+            let start = table.stringOffset + Int(read32(data, at: entry, bigEndian: false))
+            guard start + needle.count <= data.count else { continue }
+            if data[start ..< start + needle.count] == needle { return true }
+        }
+        return false
+    }
+
+    /// Every architecture the file holds. A thin image answers as one slice at
+    /// offset zero, so callers do not have to care which they were handed.
+    static func slices(of data: Data) -> [Slice] {
+        guard data.count > 8 else { return [] }
+        let magic = read32(data, at: 0, bigEndian: true)
+
+        guard fatMagics.contains(magic) else {
+            guard read32(data, at: 0, bigEndian: false) == 0xFEED_FACF else { return [] }
+            return [Slice(offset: 0, size: data.count)]
+        }
+
+        // fat_arch_64 doubles the offset and size fields, and only the wider
+        // header magic uses it.
+        let stride = magic == 0xCAFE_BABF ? 32 : 20
+        let count = Int(read32(data, at: 4, bigEndian: true))
+        var slices: [Slice] = []
+        for index in 0 ..< count {
+            let entry = 8 + index * stride
+            guard entry + stride <= data.count else { break }
+            if stride == 20 {
+                slices.append(Slice(
+                    offset: Int(read32(data, at: entry + 8, bigEndian: true)),
+                    size: Int(read32(data, at: entry + 12, bigEndian: true))
+                ))
+            } else {
+                slices.append(Slice(
+                    offset: Int(read64BigEndian(data, at: entry + 8)),
+                    size: Int(read64BigEndian(data, at: entry + 16))
+                ))
+            }
+        }
+        return slices
+    }
+
+    /// Where a slice keeps its symbols and the strings that name them.
+    private struct SymbolTable {
+        let symbolOffset: Int
+        let count: Int
+        let stringOffset: Int
+    }
+
+    private static func symbolTable(in data: Data, slice: Slice) -> SymbolTable? {
+        forEachLoadCommand(in: data, slice: slice) { command, cursor in
+            guard command == symtabCommand, cursor + 24 <= data.count else { return nil }
+            return SymbolTable(
+                symbolOffset: slice.offset + Int(read32(data, at: cursor + 8, bigEndian: false)),
+                count: Int(read32(data, at: cursor + 12, bigEndian: false)),
+                stringOffset: slice.offset + Int(read32(data, at: cursor + 16, bigEndian: false))
+            )
+        }
+    }
+
+    /// Walks a slice's load commands, returning the first non-nil the body
+    /// produces.
+    private static func forEachLoadCommand<T>(
+        in data: Data, slice: Slice, _ body: (UInt32, Int) -> T?
+    ) -> T? {
+        let base = slice.offset
+        guard base + 32 <= data.count else { return nil }
+        let commandCount = Int(read32(data, at: base + 16, bigEndian: false))
+
+        var cursor = base + 32
+        for _ in 0 ..< commandCount {
+            guard cursor + 8 <= data.count else { return nil }
+            let command = read32(data, at: cursor, bigEndian: false)
+            let commandSize = Int(read32(data, at: cursor + 4, bigEndian: false))
+            guard commandSize > 0 else { return nil }
+            if let value = body(command, cursor) { return value }
+            cursor += commandSize
+        }
+        return nil
+    }
+
     /// Walks the section table, returning the first non-nil the body produces.
     private static func forEachSection<T>(
         in data: Data, slice: Slice, _ body: (String, String, Section) -> T?
@@ -153,6 +251,11 @@ enum MachOImage {
         guard offset + 4 <= data.count else { return 0 }
         let value = data[offset ..< offset + 4].reduce(UInt32(0)) { ($0 << 8) | UInt32($1) }
         return bigEndian ? value : value.byteSwapped
+    }
+
+    private static func read64BigEndian(_ data: Data, at offset: Int) -> UInt64 {
+        guard offset + 8 <= data.count else { return 0 }
+        return data[offset ..< offset + 8].reduce(UInt64(0)) { ($0 << 8) | UInt64($1) }
     }
 
     private static func read64(_ data: Data, at offset: Int) -> UInt64 {
