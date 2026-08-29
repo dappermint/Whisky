@@ -229,6 +229,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nobody owned. Helldivers 2 hit it the moment its intro finished, having
   converted thirteen hundred frames without a complaint. Pairs now go away with
   the texture they belong to.
+- A bottle opened on a runtime from the other Wine lineage no longer starts
+  with an empty profile. Every Wine build names the profile after your Unix
+  user, but CrossOver-lineage builds (the GPTK-capable v4 engines) hardcode
+  `users/crossover` for the shell folders, so the same bottle had two profile
+  directories depending on the engine and apps in it saw whichever was empty:
+  Steam asked for a login again, saves were gone, nothing errored. Whisky now
+  makes the profile reachable under both names before every launch, and only
+  ever displaces a directory that is an untouched skeleton (moved aside inside
+  the bottle, never deleted). Two populated profiles are left alone.
 - The launch failure alert from the menu bar extra showed its raw localization
   key as a title instead of "Couldn't launch <name>". The key was looked up
   with the program name baked in, so it never matched the catalog entry; the

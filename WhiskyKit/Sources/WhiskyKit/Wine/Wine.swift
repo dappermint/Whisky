@@ -204,6 +204,7 @@ public class Wine {
         fileHandle.writeApplicationInfo()
         fileHandle.writeInfo(for: bottle)
 
+        WineUserProfile.reconcile(bottleURL: bottle.url)
         let wineEnvironment = constructWineEnvironment(for: bottle, environment: environment)
 
         return try runProcess(
@@ -349,6 +350,10 @@ public class Wine {
         // Must precede `legacyProgramDXVK` below, which reads whether an override
         // set a backend and would see the pinned one as user intent.
         let programOverrides = resolution.overrides
+
+        // The profile has to resolve under whichever name this runtime uses
+        // before anything in the bottle starts, or the app boots into an empty one.
+        WineUserProfile.reconcile(bottleURL: bottle.url)
 
         // Enable DXVK if needed: effective backend, the legacy program-level
         // flag (honored only without a backend override, mirroring
@@ -626,6 +631,7 @@ public class Wine {
         // Escape args and environment values to prevent shell injection from user-editable settings
         let escapedArgs = preEscaped ? args : args.esc
         var wineCmd = "\(wineBinary(for: bottle).esc) start /unix \(url.esc) \(escapedArgs)"
+        WineUserProfile.reconcile(bottleURL: bottle.url)
         let wineEnv = constructWineEnvironment(for: bottle, environment: environment)
         for envVar in wineEnv {
             if isValidEnvKey(envVar.key) {
@@ -743,6 +749,7 @@ public class Wine {
         let fileHandle = try makeFileHandle()
         fileHandle.writeApplicationInfo()
         fileHandle.writeInfo(for: bottle)
+        WineUserProfile.reconcile(bottleURL: bottle.url)
         let wineEnvironment = constructWineEnvironment(for: bottle, environment: environment)
 
         for await output in try runWineProcess(
