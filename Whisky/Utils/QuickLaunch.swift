@@ -65,7 +65,7 @@ enum QuickLaunch {
 
     private static func presentLaunchFailure(programName: String, error: String) {
         let alert = NSAlert()
-        alert.messageText = String(localized: "menubar.launchFailed \(programName)")
+        alert.messageText = String(format: String(localized: "menubar.launchFailed"), programName)
         alert.informativeText = error
         alert.alertStyle = .warning
         alert.addButton(withTitle: String(localized: "button.ok"))
