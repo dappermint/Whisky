@@ -98,6 +98,11 @@ extension Winetricks {
     // MARK: - Private Helpers
 
     /// Configures and returns a Process for running a winetricks verb.
+    ///
+    /// The vcrun verbs are passed `--force`: Microsoft rotates the vc_redist
+    /// binaries in place, so the checksums pinned in the bundled winetricks go
+    /// stale between releases and the unattended install aborts with exit 1 on
+    /// the SHA256 mismatch (winetricks#2195).
     private static func configureInstallProcess(
         verb: String,
         environment: [String: String],
@@ -110,7 +115,14 @@ extension Winetricks {
         // raises reads EOF and it quits with "Operation cancelled". Microsoft
         // reissuing vc_redist.x86.exe made vcrun2019 prompt on a checksum
         // mismatch, and that is exactly how it failed.
-        process.arguments = ["bash", winetricksPath, "-q", verb]
+        var arguments = ["bash", winetricksPath, "-q"]
+        // The same reissue rotates the checksum winetricks has on file, which
+        // it treats as a failed download rather than a prompt.
+        if verb.hasPrefix("vcrun") {
+            arguments.append("--force")
+        }
+        arguments.append(verb)
+        process.arguments = arguments
         process.environment = environment
         return process
     }
