@@ -147,6 +147,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Steam's own data folder is refused: it holds the macOS builds of native
   games, and a Windows client scanning those decides they are the wrong build
   and queues a redownload over them.
+- Failed dependency installs now record the last few KB of winetricks output
+  in dependency-history.plist alongside the exit code, so the reason for a
+  failure (such as a vc_redist checksum mismatch) is on disk next to the
+  attempt instead of lost with the process (#233).
+- Ways into a game from outside the window. A whisky:// URL scheme launches a
+  Steam game (whisky://launch?steam=<appid>) or a pinned program
+  (whisky://launch?pin=<name>), optionally scoped to a bottle. Only games
+  installed in one of your bottles and pins that exist resolve; anything
+  else is refused before Steam is involved. A URL arrival names what it is
+  about to launch and asks first, with a per-target "always allow" so the
+  dialog does not nag on repeat. The Dock menu lists your pins and launches
+  them without confirming, since you are already in the app, and dropping an
+  executable anywhere on the window opens the same run-this-file sheet as
+  opening it from Finder (#226, part of #172).
+- Discord integration, off by default and per bottle: Whisky can publish the
+  running program as your Discord presence, and games that speak Discord's
+  IPC themselves are bridged from inside the bottle to the host client, so
+  their own rich presence works (#203, fixes #201).
+- Metal 4 command encoding can be turned off for a single program. The
+  bottle-wide default stays on; a toggle in the program's settings masks it
+  for D3D12 titles whose renderer wedges on the Metal 4 submission
+  path (#230).
+- Whisky now opens onto a library of your games and pinned programs instead
+  of a sidebar of bottles. Steam games show their own store artwork from the
+  client's cache, other programs get a backdrop derived from their icon, and
+  cards show running state and last-played times. Bottles are one click away
+  under their own heading (#206).
+- D3DMetal now uses its Metal 4 command encoding backend by default, with a
+  toggle beside MetalFX for titles it does not suit. The engine ignores the
+  setting on macOS versions without Metal 4 and on Direct3D 11 titles, so it
+  is inert where it cannot help (#205).
+- MetalFX upscaling via the DLSS bridge, on by default for D3DMetal bottles.
+  The bridge DLL Apple ships was never deployed, so the MetalFX switch had
+  nothing to act on (#204). Apple's NVAPI is deployed alongside it so games
+  using NVIDIA Streamline actually offer the DLSS option, with launcher
+  helper processes exempted per executable so their embedded browsers stay
+  up (#222, fixes #198).
+- British English localization, generated from the English strings and kept
+  complete by a CI check, so systems set to English (UK) see proper spellings
+  instead of raw localization keys (#208).
 
 ### Changed
 - DLSS frame generation is now its own bottle setting, separate from the MetalFX
