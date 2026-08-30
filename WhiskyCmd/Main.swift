@@ -826,6 +826,11 @@ extension Whisky {
                 // client's own library art is the best picture of the game.
                 displayName: plan.title,
                 steamAppId: appId,
+                // The game's own name and art, but not for the processes it
+                // starts beside itself. Helldivers 2 runs its crash handler as
+                // a sibling, and handing it the game's identity makes the
+                // engine name both after the same preloader link.
+                identityScope: .program,
                 keepAttached: true,
                 // Steam runs a game from its install root, not from wherever
                 // the executable happens to sit inside it.
