@@ -922,6 +922,42 @@ public class Wine {
             in: bottle.url.appending(path: "drive_c").appending(path: "windows").appending(path: "syswow64"),
             withContentsIn: dxvk.appending(path: "x32")
         )
+        // DXVK-macOS ships no dxgi.dll, but when D3DMetal is deployed, the builtin dxgi is Apple's.
+        // Deploy Wine's clean dxgi.dll from the store backup with the 0x40 builtin marker stripped
+        // so it loads as a true native PE when overridden.
+        deployCleanDXGIForDXVK(bottle: bottle)
+    }
+
+    /// Strips the "Wine builtin DLL" marker at offset 0x40 from a PE file.
+    private static func stripBuiltinMarker(at fileURL: URL) throws {
+        guard FileManager.default.fileExists(atPath: fileURL.path(percentEncoded: false)) else { return }
+        let handle = try FileHandle(forUpdating: fileURL)
+        defer { try? handle.close() }
+        let dosCode: [UInt8] = [
+            0x0E, 0x1F, 0xBA, 0x0E, 0x00, 0xB4, 0x09, 0xCD,
+            0x21, 0xB8, 0x01, 0x4C, 0xCD, 0x21, 0x90, 0x90
+        ]
+        try handle.seek(toOffset: 0x40)
+        try handle.write(contentsOf: Data(dosCode))
+    }
+
+    /// Deploys Wine's backed-up native dxgi.dll into the prefix for DXVK bottles.
+    @MainActor
+    static func deployCleanDXGIForDXVK(bottle: Bottle) {
+        let store = GPTKImporter.storeFolder
+        let key = GPTKImporter.originalsKey(for: bottle.settings.runtime)
+        let originals = GPTKImporter.originalsFolder(inStore: store, key: key)
+        let origDXGI = originals.appending(path: "dxgi.dll")
+        guard FileManager.default.fileExists(atPath: origDXGI.path(percentEncoded: false)) else { return }
+
+        let sys32DXGI = bottle.url.appending(path: "drive_c").appending(path: "windows")
+            .appending(path: "system32").appending(path: "dxgi.dll")
+        do {
+            try FileManager.default.installFile(at: sys32DXGI, from: origDXGI)
+            try stripBuiltinMarker(at: sys32DXGI)
+        } catch {
+            Logger.wineKit.warning("Could not deploy clean dxgi.dll into prefix: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     /// Errors thrown by ``enableDXMT(bottle:)``.
@@ -1026,13 +1062,23 @@ public class Wine {
     /// starting at all. Only a byte-for-byte match with a payload we ship is
     /// ours to take away.
     static func isBackendPayload(_ file: URL, named name: String, runtime: String?) -> Bool {
+        let store = GPTKImporter.storeFolder
+        let key = GPTKImporter.originalsKey(for: runtime)
+        let origFolder = GPTKImporter.originalsFolder(inStore: store, key: key)
         let payloads = [
             dxvkFolder(for: runtime).appending(path: "x64"),
             dxvkFolder(for: runtime).appending(path: "x32"),
             dxmtFolder(for: runtime).appending(path: "x64"),
-            dxmtFolder(for: runtime).appending(path: "x32")
+            dxmtFolder(for: runtime).appending(path: "x32"),
+            origFolder
         ]
         guard let installed = try? Data(contentsOf: file) else { return false }
+
+        // Also match if this is Wine's dxgi.dll whose builtin marker was stripped at 0x40
+        if name == "dxgi.dll", let origData = try? Data(contentsOf: origFolder.appending(path: "dxgi.dll")),
+           installed.count == origData.count {
+            return true
+        }
 
         return payloads.contains { folder in
             guard let payload = try? Data(contentsOf: folder.appending(path: name)) else {
