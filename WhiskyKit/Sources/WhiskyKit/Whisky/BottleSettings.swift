@@ -885,6 +885,14 @@ public struct BottleSettings: Codable, Equatable {
             // that actually gates it happens in `Wine.applyMetalFX` at launch.
             if metalFX {
                 builder.set("D3DM_ENABLE_METALFX", "1", layer: .bottleManaged)
+                // MetalFX makes D3DMetal report an NVIDIA vendor id so DLSS
+                // titles offer the option, and leaves its AMD device id and
+                // "AMD Compatibility Mode" name beside it. Write the whole
+                // identity so the adapter tells one story. The spoof layer
+                // still wins when the user picked a vendor.
+                for (key, value) in GPUVendor.nvidia.d3dMetalIdentity {
+                    builder.set(key, value, layer: .bottleManaged)
+                }
             }
 
             // Wine answers KMTQAITYPE_WDDM_2_7_CAPS, the query behind "hardware

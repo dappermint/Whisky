@@ -65,6 +65,20 @@ public enum GPUVendor: String, Codable, CaseIterable, Sendable {
             "Intel UHD Graphics 730"
         }
     }
+
+    /// The adapter identity D3DMetal reports through DXGI for this vendor.
+    ///
+    /// D3DMetal reads these three and nothing else for the adapter it
+    /// describes. With MetalFX on it flips the vendor id to NVIDIA by itself
+    /// and keeps its own AMD device id and name, so they are only ever
+    /// written as a set.
+    public var d3dMetalIdentity: [String: String] {
+        [
+            "D3DM_VENDOR_ID": vendorID,
+            "D3DM_DEVICE_ID": deviceID,
+            "D3DM_DEVICE_DESCRIPTION": modelName
+        ]
+    }
 }
 
 /// Utilities for GPU capability detection and spoofing.
@@ -131,6 +145,13 @@ public enum GPUDetection {
 
         // GPU model name for launcher display
         env["GPU_DESCRIPTION"] = model ?? vendor.modelName
+
+        // The same identity where D3DMetal reads it; the GPU_ keys above are
+        // for launchers and never reach the DXGI adapter.
+        for (key, value) in vendor.d3dMetalIdentity {
+            env[key] = value
+        }
+        env["D3DM_DEVICE_DESCRIPTION"] = model ?? vendor.modelName
 
         // VRAM reporting (8GB minimum for modern launchers)
         env["GPU_MEMORY_SIZE"] = "8192" // 8GB in MB

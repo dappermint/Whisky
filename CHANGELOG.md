@@ -206,6 +206,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   generation after the bottle turned it off.
 
 ### Fixed
+- The GPU Vendor picker now reaches the adapter a game sees. Its `GPU_*`
+  variables were read by nothing in the runtime, and with MetalFX on D3DMetal
+  flipped only the vendor id to NVIDIA, so a Unity log read `Vendor: NVIDIA,
+  Renderer: AMD Compatibility Mode (ID=0x66af)`. The picker now writes
+  `D3DM_VENDOR_ID`, `D3DM_DEVICE_ID` and `D3DM_DEVICE_DESCRIPTION`, the three
+  knobs D3DMetal answers DXGI from, and MetalFX writes the full NVIDIA identity
+  at the bottle layer so a bottle with spoofing off tells one story as well.
 - Turning Metal 4 off now turns it off. `D3DMDevice::MTL4OptionEnabled` seeds
   itself from `IsAtLeastOSVersions(macOS 27)` and only reads `D3DM_MTL4` when the
   variable is present, so omitting it left Metal 4 on for every bottle on macOS
