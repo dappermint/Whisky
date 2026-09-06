@@ -259,6 +259,23 @@ struct MetalFXSettingTests {
         _ = settings.populateBottleManagedLayer(builder: &dxvkBuilder, resolvedBackend: .dxvk)
         #expect(dxvkBuilder.resolve().environment["D3DM_ENABLE_METALFX"] == nil)
     }
+
+    @Test("MetalFX writes the whole NVIDIA identity, not only the vendor id D3DMetal flips")
+    func metalFXWritesTheAdapterIdentity() throws {
+        var settings = BottleSettings()
+        settings.graphicsBackend = .d3dMetal
+        var builder = EnvironmentBuilder()
+        _ = settings.populateBottleManagedLayer(builder: &builder, resolvedBackend: .d3dMetal)
+        let env = builder.resolve().environment
+        #expect(env["D3DM_VENDOR_ID"] == GPUVendor.nvidia.vendorID)
+        #expect(env["D3DM_DEVICE_ID"] == GPUVendor.nvidia.deviceID)
+        #expect(env["D3DM_DEVICE_DESCRIPTION"] == GPUVendor.nvidia.modelName)
+
+        settings.metalFX = false
+        var offBuilder = EnvironmentBuilder()
+        _ = settings.populateBottleManagedLayer(builder: &offBuilder, resolvedBackend: .d3dMetal)
+        #expect(offBuilder.resolve().environment["D3DM_VENDOR_ID"] == nil)
+    }
 }
 
 @Suite("Metal 4 Setting Tests")

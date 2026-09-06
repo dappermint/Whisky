@@ -107,6 +107,19 @@ final class GPUDetectionTests: XCTestCase {
         XCTAssertFalse(GPUDetection.validateSpoofingEnvironment(validEnv))
     }
 
+    func testGPUSpoofingIncludesD3DMetalIdentity() {
+        for vendor in GPUVendor.allCases {
+            let env = GPUDetection.spoofWithVendor(vendor)
+            XCTAssertEqual(env["D3DM_VENDOR_ID"], vendor.vendorID)
+            XCTAssertEqual(env["D3DM_DEVICE_ID"], vendor.deviceID)
+            XCTAssertEqual(env["D3DM_DEVICE_DESCRIPTION"], vendor.modelName)
+        }
+
+        let custom = GPUDetection.spoofGPU(vendor: .nvidia, model: "Custom Model")
+        XCTAssertEqual(custom["D3DM_DEVICE_DESCRIPTION"], "Custom Model")
+        XCTAssertEqual(custom["GPU_DESCRIPTION"], "Custom Model")
+    }
+
     func testAllVendorsHaveDeviceIDs() {
         for vendor in GPUVendor.allCases {
             XCTAssertFalse(vendor.vendorID.isEmpty)
