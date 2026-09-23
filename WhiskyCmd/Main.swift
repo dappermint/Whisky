@@ -741,21 +741,62 @@ extension Whisky {
             // what makes that true without writing anything: a runtime belongs
             // to the bottle, and setting it here would reconfigure every other
             // game installed in the same bottle.
-            guard let runtime else {
-                return try SteamLauncher.resolveBottle(appId: appId, in: bottles)
+            //
+            // Steam already resolved the executable, so any bottle can run it.
+            // Refusing because the picked runtime or the bottle's own library
+            // does not line up leaves Play doing nothing, so the narrowing
+            // widens instead of failing.
+            let candidates = runtime.map { SteamLauncher.bottles(bottles, on: $0) } ?? bottles
+            if let found = try? SteamLauncher.resolveBottle(appId: appId, in: candidates) { return found }
+            if let found = try? SteamLauncher.resolveBottle(appId: appId, in: bottles) {
+                note("No bottle on \(runtime ?? "the default runtime") has app \(appId), using \(found.settings.name).")
+                return found
             }
-            let candidates = SteamLauncher.bottles(bottles, on: runtime)
-            guard !candidates.isEmpty else {
-                throw DomainError(
-                    "No bottle runs on the runtime \(runtime). Make one in Whisky, set it to that "
-                        + "runtime, and install the game into it."
-                )
+            let fallback = candidates.first
+                ?? SteamLauncher.bottles(bottles, on: nil).first
+                ?? bottles.first
+            guard let fallback else {
+                throw DomainError("There is no bottle to run this game in. Make one in Whisky and press Play again.")
             }
-            return try SteamLauncher.resolveBottle(appId: appId, in: candidates)
+            note("No bottle lists app \(appId) in its Steam library, running it in \(fallback.settings.name).")
+            return fallback
+        }
+
+        private func note(_ message: String) {
+            FileHandle.standardError.write(Data("\(message)\n".utf8))
+        }
+
+        /// Says why a launch never started, where the person who pressed Play
+        /// can see it. Steam shows nothing for a tool that exits early, so
+        /// without this every failure here is a button that does nothing.
+        private func alert(_ message: String) {
+            let script = "display alert \"Whisky could not start this game\" message \(appleScriptQuoted(message))"
+            let process = Process()
+            process.executableURL = URL(filePath: "/usr/bin/osascript")
+            process.arguments = ["-e", script]
+            try? process.run()
+            process.waitUntilExit()
+        }
+
+        private func appleScriptQuoted(_ value: String) -> String {
+            "\"" + value.replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "\"", with: "\\\"") + "\""
         }
 
         @MainActor
         mutating func run() async throws {
+            do {
+                try await launch()
+            } catch let exit as ExitCode {
+                throw exit
+            } catch {
+                alert(error.localizedDescription)
+                throw error
+            }
+        }
+
+        @MainActor
+        private func launch() async throws {
             guard let executable = command.first else {
                 throw DomainError("No executable was passed after --.")
             }

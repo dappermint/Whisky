@@ -54,6 +54,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             await TempFileTracker.shared.cleanupOldFiles(olderThan: 24 * 60 * 60)
         }
 
+        WhiskyApp.refreshSteamCompatToolsIfInstalled()
+
         // Startup orphan process detection
         // Probe each known bottle's wineserver to detect processes from previous sessions
         Task {

@@ -168,8 +168,25 @@ public enum SteamLauncher {
     /// candidates is what makes that true without writing anything: a runtime
     /// belongs to the bottle, and setting it at launch would reconfigure every
     /// other game installed in the same one.
+    ///
+    /// A runtime update renames the tool, and a game mapped to the old one
+    /// still arrives naming the old version. When no bottle is on that exact
+    /// runtime, the bottles on the same lane stand in for it, so an update
+    /// never strands a game that was launching the day before.
     @MainActor
     public static func bottles(_ bottles: [Bottle], on runtime: String?) -> [Bottle] {
-        bottles.filter { Self.runtime($0.settings.runtime, matches: runtime) }
+        let exact = bottles.filter { Self.runtime($0.settings.runtime, matches: runtime) }
+        guard exact.isEmpty else { return exact }
+        let wanted = lane(of: runtime)
+        return bottles.filter { lane(of: $0.settings.runtime) == wanted }
+    }
+
+    /// A runtime identifier without its trailing version, so
+    /// `whisky-arm64-5.0.0` and `whisky-arm64-5.0.1` read as one lane.
+    nonisolated static func lane(of runtime: String?) -> String {
+        guard let runtime else { return "" }
+        return runtime.replacingOccurrences(
+            of: #"-\d+(\.\d+)*$"#, with: "", options: .regularExpression
+        )
     }
 }

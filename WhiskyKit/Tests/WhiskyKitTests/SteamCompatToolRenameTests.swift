@@ -125,6 +125,37 @@ struct SteamCompatToolRenameTests {
         #expect(text.contains("\"whisky-proton\""))
     }
 
+    /// What stranded Casualties: Unknown. The tool had been renamed out from
+    /// under the mapping, the client ran nothing, and said nothing.
+    @Test("A mapping to a tool of ours that no longer exists moves to the default")
+    func movesAMappingToAToolThatIsGone() throws {
+        let url = FileManager.default.temporaryDirectory.appending(path: "config_\(UUID().uuidString).vdf")
+        try makeConfig(tool: "whisky-proton-lane-5.0.0").write(to: url, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let count = try SteamCompatTool.migrateMappings(
+            in: url, keeping: ["whisky-proton", "whisky-proton-5.0.1"]
+        )
+
+        #expect(count == 2)
+        let text = try String(contentsOf: url, encoding: .utf8)
+        #expect(!text.contains("lane"))
+        let other = try #require(text.range(of: "\"Other\""))
+        #expect(text[other.upperBound...].contains("\"name\"\t\t\"whisky\""))
+    }
+
+    @Test("A mapping to a tool that still exists, or to someone else's, is kept")
+    func keepsLiveAndForeignMappings() {
+        for tool in ["whisky-proton-5.0.1", "proton_9"] {
+            let source = makeConfig(tool: tool)
+            let (text, count) = SteamCompatTool.migratingMappings(in: source, to: SteamCompatTool.name) {
+                SteamCompatTool.isOurs($0) && !["whisky-proton", "whisky-proton-5.0.1"].contains($0)
+            }
+            #expect(count == 0)
+            #expect(text == source)
+        }
+    }
+
     // MARK: - Renaming
 
     private func makeRunner() throws -> URL {

@@ -578,15 +578,15 @@ extension WhiskyApp {
     /// It goes in the one directory the macOS client scans unprompted, which
     /// lives under `/usr/local` and belongs to root until somebody says
     /// otherwise. That is the common first failure rather than an edge case, so
-    /// it is answered with the command that fixes it rather than with a
-    /// permission error.
+    /// it is answered with the system's own password prompt rather than with a
+    /// command to paste into Terminal.
     static func installSteamCompatTool() {
         Task { @MainActor in
             guard let whiskyCmd = Bundle.main.url(forResource: "WhiskyCmd", withExtension: nil) else {
                 reportSteamPatch(String(localized: "steam.compattool.error.runnerMissing WhiskyCmd"))
                 return
             }
-            guard SteamCompatTool.isWritable() else {
+            if !SteamCompatTool.isWritable(), !prepareSteamToolsDirectory() {
                 reportSteamPatch(String(
                     format: String(localized: "steam.compattool.needsPermission %@"),
                     SteamCompatTool.prepareCommand()
@@ -596,23 +596,66 @@ extension WhiskyApp {
 
             do {
                 // Steam rewrites its configuration from memory on exit, so the
-                // mappings have to be carried over with the client down.
+                // mappings have to be carried over with the client down, and
+                // it only scans for tools at startup, so it comes back after.
+                let wasRunning = HostSteamProcess.isRunning()
                 try await HostSteamProcess.quit()
-                try SteamCompatTool.installAll(
-                    whiskyCmd: whiskyCmd,
-                    runtimes: WhiskyWineInstaller.installedRuntimes().map {
-                        // The lane, not the version: the picker is a short list
-                        // of names, and the identifier carries the version for
-                        // the case where two of one lane are installed.
-                        ($0.runtime, $0.isDefault ? nil : $0.displayName)
-                    }
-                )
-                try SteamCompatTool.migrateMappings()
+                try refreshSteamCompatTools(whiskyCmd: whiskyCmd)
+                if wasRunning { try? await HostSteamProcess.launch(debugging: false) }
                 reportSteamPatch(String(localized: "steam.compattool.done"))
             } catch {
                 reportSteamPatch(error.localizedDescription)
             }
         }
+    }
+
+    /// Keeps the installed tools in step with the installed runtimes, without
+    /// asking anything.
+    ///
+    /// A runtime update renames its tool, and a game still mapped to the old
+    /// name gets nothing when Play is pressed. Run at launch, this is what
+    /// stops an update from being the thing that breaks Steam. Only once the
+    /// tools have been installed by hand, and the mappings only while Steam
+    /// is down, because it would write its own copy back over them.
+    static func refreshSteamCompatToolsIfInstalled() {
+        guard SteamCompatTool.isInstalled(), SteamCompatTool.isWritable(),
+              let whiskyCmd = Bundle.main.url(forResource: "WhiskyCmd", withExtension: nil)
+        else { return }
+        try? refreshSteamCompatTools(whiskyCmd: whiskyCmd, migrating: !HostSteamProcess.isRunning())
+    }
+
+    private static func refreshSteamCompatTools(whiskyCmd: URL, migrating: Bool = true) throws {
+        let runtimes = WhiskyWineInstaller.installedRuntimes()
+        try SteamCompatTool.installAll(
+            whiskyCmd: whiskyCmd,
+            runtimes: runtimes.map {
+                // The lane, not the version: the picker is a short list
+                // of names, and the identifier carries the version for
+                // the case where two of one lane are installed.
+                ($0.runtime, $0.isDefault ? nil : $0.displayName)
+            }
+        )
+        if migrating {
+            try SteamCompatTool.migrateMappings(
+                keeping: Set(runtimes.map { SteamCompatTool.name(for: $0.runtime) })
+            )
+        }
+    }
+
+    /// Makes the directory Steam scans writable, behind the system's own
+    /// password prompt.
+    @MainActor
+    private static func prepareSteamToolsDirectory() -> Bool {
+        let script = "do shell script \(appleScriptQuoted(SteamCompatTool.prepareCommand(sudo: false))) "
+            + "with administrator privileges"
+        var error: NSDictionary?
+        NSAppleScript(source: script)?.executeAndReturnError(&error)
+        return error == nil && SteamCompatTool.isWritable()
+    }
+
+    private static func appleScriptQuoted(_ value: String) -> String {
+        "\"" + value.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"") + "\""
     }
 
     /// Steam has to be down for either direction: the files being replaced are

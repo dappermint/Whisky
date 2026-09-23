@@ -217,6 +217,15 @@ struct SteamCompatToolRuntimeTests {
         #expect(!SteamLauncher.runtime("winecx-4.6.1", matches: "whisky-arm64-5.0.0"))
     }
 
+    /// A runtime update renames the tool a game is mapped to, so a launch can
+    /// arrive naming a version no bottle is on any more.
+    @Test func aLaneIsTheRuntimeWithoutItsVersion() {
+        #expect(SteamLauncher.lane(of: "whisky-arm64-5.0.0") == SteamLauncher.lane(of: "whisky-arm64-5.0.1"))
+        #expect(SteamLauncher.lane(of: "whisky-arm64-5.0.0") == "whisky-arm64")
+        #expect(SteamLauncher.lane(of: "winecx-4.6.1") != SteamLauncher.lane(of: "whisky-arm64-5.0.0"))
+        #expect(SteamLauncher.lane(of: nil) == "")
+    }
+
     /// Pruning is allowed to remove what we wrote and nothing else.
     @Test func pruningLeavesSomebodyElsesToolAlone() throws {
         let fixture = try makeRuntimeFixture()
