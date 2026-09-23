@@ -102,6 +102,7 @@ struct RuntimesSettingsSection: View {
 
     private func refresh() {
         runtimes = WhiskyWineInstaller.installedRuntimes()
+        WhiskyApp.refreshSteamCompatToolsIfInstalled()
     }
 
     private func install(from url: URL) {

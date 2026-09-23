@@ -206,6 +206,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   generation after the bottle turned it off.
 
 ### Fixed
+- Play in the macOS Steam client no longer does nothing when the game is mapped
+  to a compatibility tool that has since been renamed. A runtime update renames
+  its tool, the old mapping stayed in `config.vdf`, and Steam ran a runner that
+  looked for a bottle on a runtime nobody used and exited. Whisky now moves any
+  mapping to a tool of its own that no longer exists onto the default one,
+  refreshes its tools on launch and when a runtime is added or removed, and a
+  launch that names a stale version falls back to a bottle on the same lane,
+  then to any bottle, instead of refusing.
+- A launch from Steam that still cannot start says why in an alert. Steam shows
+  nothing for a tool that exits early, so every failure there read as a Play
+  button that did nothing.
+- Installing the compatibility tool asks for an administrator password when the
+  folder Steam reads is not writable, instead of handing over a command to paste
+  into Terminal, and restarts Steam afterwards when it was running, since it
+  only looks for tools at startup.
 - The GPU Vendor picker now reaches the adapter a game sees. Its `GPU_*`
   variables were read by nothing in the runtime, and with MetalFX on D3DMetal
   flipped only the vendor id to NVIDIA, so a Unity log read `Vendor: NVIDIA,

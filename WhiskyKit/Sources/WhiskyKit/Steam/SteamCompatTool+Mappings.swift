@@ -27,40 +27,59 @@ public extension SteamCompatTool {
         .appending(path: "config")
         .appending(path: "config.vdf")
 
-    /// Carries the games already set to run through us onto a new identifier.
+    /// Carries every game mapped to a tool of ours that no longer exists onto
+    /// the default tool.
+    ///
+    /// Tool identifiers are derived from runtime names, so a runtime update or
+    /// a change to how the identifier is spelled strands the games mapped to
+    /// the old one. The client then runs nothing and says nothing. Pointing
+    /// them at the default tool keeps them launching; the picker is still
+    /// there to choose another runtime.
     ///
     /// Steam has to be down first. It holds the file open and rewrites it from
     /// memory on exit, so an edit made underneath a running client is undone
     /// the moment it quits.
     ///
+    /// - Parameter installed: The identifiers of the tools that exist now.
     /// - Returns: How many mappings moved, which is zero when there is nothing
     ///   to carry and the file is left untouched.
     @discardableResult
-    static func migrateMappings(
-        in url: URL = configURL, from previous: String = previousName, to current: String = name
-    ) throws -> Int {
+    static func migrateMappings(in url: URL = configURL, keeping installed: Set<String>) throws -> Int {
         guard let source = try? String(contentsOf: url, encoding: .utf8) else { return 0 }
 
-        let (migrated, count) = migratingMappings(in: source, from: previous, to: current)
+        let (migrated, count) = migratingMappings(in: source, to: name) { tool in
+            isOurs(tool) && !installed.contains(tool)
+        }
         guard count > 0 else { return 0 }
 
         try migrated.write(to: url, atomically: true, encoding: .utf8)
         return count
     }
 
+    /// Whether `tool` is an identifier we have ever written.
+    static func isOurs(_ tool: String) -> Bool {
+        tool == previousName || tool == name || tool.hasPrefix("\(name)-")
+    }
+
     /// Renames the tool inside `CompatToolMapping` and nowhere else in the file.
+    static func migratingMappings(
+        in source: String, from previous: String, to current: String
+    ) -> (text: String, count: Int) {
+        migratingMappings(in: source, to: current) { $0 == previous }
+    }
+
+    /// Renames every tool `stale` picks inside `CompatToolMapping` and nowhere
+    /// else in the file.
     ///
     /// This edits the text rather than parsing and writing the file back,
     /// because the client's writer keeps its own key order and ours would not.
     /// A reordered `config.vdf` is a whole file diff over a one word change,
     /// and the file holds more of the client's state than we know how to keep.
     static func migratingMappings(
-        in source: String, from previous: String, to current: String
+        in source: String, to current: String, where stale: (String) -> Bool
     ) -> (text: String, count: Int) {
-        guard previous != current, let block = mappingBlockRange(in: source) else { return (source, 0) }
+        guard let block = mappingBlockRange(in: source) else { return (source, 0) }
 
-        let old = "\"\(previous)\""
-        let new = "\"\(current)\""
         var rest = source[block]
         var result = ""
         var count = 0
@@ -74,10 +93,14 @@ public extension SteamCompatTool {
             }
             result += rest[key.upperBound ..< cursor]
 
-            if rest[cursor...].hasPrefix(old) {
-                result += new
-                cursor = rest.index(cursor, offsetBy: old.count)
-                count += 1
+            if cursor < rest.endIndex, rest[cursor] == "\"",
+               let close = rest[rest.index(after: cursor)...].firstIndex(of: "\"") {
+                let tool = String(rest[rest.index(after: cursor) ..< close])
+                if tool != current, stale(tool) {
+                    result += "\"\(current)\""
+                    cursor = rest.index(after: close)
+                    count += 1
+                }
             }
             rest = rest[cursor...]
         }

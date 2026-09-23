@@ -316,6 +316,11 @@ struct SteamCompatToolInstallTests {
             try SteamCompatTool.install(whiskyCmd: fixture.whiskyCmd, at: fixture.toolsRoot)
         }
         #expect(SteamCompatTool.prepareCommand(for: fixture.toolsRoot).contains("sudo"))
+        // Run as root behind the password prompt, `whoami` would name root.
+        let elevated = SteamCompatTool.prepareCommand(for: fixture.toolsRoot, owner: "lia", sudo: false)
+        #expect(!elevated.contains("sudo"))
+        #expect(!elevated.contains("whoami"))
+        #expect(elevated.contains("chown -R 'lia'"))
     }
 
     /// Not `<steam>/compatibilitytools.d`, which is the obvious place and is
