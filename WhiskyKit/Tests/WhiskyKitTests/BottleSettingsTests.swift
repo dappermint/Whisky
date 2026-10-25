@@ -43,9 +43,7 @@ final class BottleSettingsTests: XCTestCase {
         XCTAssertFalse(settings.dxrEnabled)
         XCTAssertFalse(settings.metalValidation)
         XCTAssertTrue(settings.sequoiaCompatMode)
-        XCTAssertEqual(settings.performancePreset, .balanced)
         XCTAssertTrue(settings.shaderCacheEnabled)
-        XCTAssertFalse(settings.forceD3D11)
         XCTAssertFalse(settings.vcRedistInstalled)
         XCTAssertTrue(settings.pins.isEmpty)
         XCTAssertTrue(settings.blocklist.isEmpty)
@@ -62,7 +60,6 @@ final class BottleSettingsTests: XCTestCase {
         settings.metalHud = true
         settings.enhancedSync = .esync
         settings.avxEnabled = true
-        settings.performancePreset = .performance
 
         // Encode to PropertyList
         let encoder = PropertyListEncoder()
@@ -81,7 +78,6 @@ final class BottleSettingsTests: XCTestCase {
         XCTAssertTrue(decoded.metalHud)
         XCTAssertEqual(decoded.enhancedSync, .esync)
         XCTAssertTrue(decoded.avxEnabled)
-        XCTAssertEqual(decoded.performancePreset, .performance)
     }
 
     func testBottleSettingsJSONEncodingDecoding() throws {
@@ -160,19 +156,6 @@ final class BottleSettingsTests: XCTestCase {
         }
     }
 
-    // MARK: - PerformancePreset Tests
-
-    func testPerformancePresetDescriptions() {
-        XCTAssertEqual(PerformancePreset.balanced.description(), "Balanced (Default)")
-        XCTAssertEqual(PerformancePreset.performance.description(), "Performance Mode")
-        XCTAssertEqual(PerformancePreset.quality.description(), "Quality Mode")
-        XCTAssertEqual(PerformancePreset.unity.description(), "Unity Games Optimized")
-    }
-
-    func testPerformancePresetCaseIterable() {
-        XCTAssertEqual(PerformancePreset.allCases.count, 4)
-    }
-
     // MARK: - PinnedProgram Tests
 
     func testPinnedProgramEncodingDecoding() throws {
@@ -246,10 +229,8 @@ final class BottleSettingsTests: XCTestCase {
     func testBottlePerformanceConfigDefaultValues() {
         let config = BottlePerformanceConfig()
 
-        XCTAssertEqual(config.performancePreset, .balanced)
         XCTAssertTrue(config.shaderCacheEnabled)
         XCTAssertNil(config.gpuMemoryLimit)
-        XCTAssertFalse(config.forceD3D11)
         XCTAssertFalse(config.disableShaderOptimizations)
         XCTAssertFalse(config.vcRedistInstalled)
     }
@@ -467,20 +448,57 @@ final class BottleSettingsTests: XCTestCase {
         return try PropertyListDecoder().decode(BottleSettings.self, from: Data(mutated.utf8))
     }
 
-    func testUnknownPerformancePresetDecodesToDefaultInWholeSettings() throws {
+    func testLegacyPerformancePresetDecodesCleanlyInWholeSettings() throws {
         var settings = BottleSettings()
-        settings.name = "Perf Forward Compat"
-        settings.performancePreset = .performance
+        settings.name = "Legacy Perf Settings"
+        settings.metalHud = true
+        settings.shaderCacheEnabled = false
+        settings.vcRedistInstalled = true
 
+        // Builds with the preset picker wrote the preset inside the performanceConfig
+        // dict, so that is where BottlePerformanceConfig's decoder has to meet it.
         let decoded = try decodeSettingsSubstituting(
             settings,
-            original: "<string>performance</string>",
-            replacement: "<string>someFuturePreset</string>"
+            original: "<key>performanceConfig</key>\n\t<dict>",
+            replacement: "<key>performanceConfig</key>\n\t<dict><key>performancePreset</key><string>unity</string>"
         )
 
-        // The unknown preset must degrade to the default without taking the rest of settings down.
-        XCTAssertEqual(decoded.name, "Perf Forward Compat")
-        XCTAssertEqual(decoded.performancePreset, .balanced)
+        // The legacy key is dropped without resetting its siblings or the rest of the bottle.
+        XCTAssertEqual(decoded.name, "Legacy Perf Settings")
+        XCTAssertTrue(decoded.metalHud)
+        XCTAssertFalse(decoded.shaderCacheEnabled)
+        XCTAssertTrue(decoded.vcRedistInstalled)
+    }
+
+    func testLegacyForceD3D11DecodesCleanlyInWholeSettings() throws {
+        var settings = BottleSettings()
+        settings.name = "Legacy D3D11 Settings"
+        settings.metalHud = true
+        settings.shaderCacheEnabled = false
+        settings.vcRedistInstalled = true
+        settings.disableAppNap = true
+
+        // Builds with the Force DirectX 11 toggle wrote it inside the performanceConfig
+        // dict, so that is where BottlePerformanceConfig's decoder has to meet it.
+        let decoded = try decodeSettingsSubstituting(
+            settings,
+            original: "<key>performanceConfig</key>\n\t<dict>",
+            replacement: "<key>performanceConfig</key>\n\t<dict><key>forceD3D11</key><true/>"
+        )
+
+        // The legacy key is dropped without resetting its siblings or the rest of the bottle.
+        XCTAssertEqual(decoded.name, "Legacy D3D11 Settings")
+        XCTAssertTrue(decoded.metalHud)
+        XCTAssertFalse(decoded.shaderCacheEnabled)
+        XCTAssertTrue(decoded.vcRedistInstalled)
+        XCTAssertTrue(decoded.disableAppNap)
+        XCTAssertEqual(decoded, settings)
+
+        // The next save no longer writes it.
+        let encoder = PropertyListEncoder()
+        encoder.outputFormat = .xml
+        let resaved = try XCTUnwrap(String(data: encoder.encode(decoded), encoding: .utf8))
+        XCTAssertFalse(resaved.contains("forceD3D11"))
     }
 
     func testUnknownResolutionPresetDecodesToDefaultInWholeSettings() throws {

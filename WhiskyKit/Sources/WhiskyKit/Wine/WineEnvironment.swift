@@ -39,6 +39,13 @@ extension Wine {
     ///   - bottle: The bottle whose settings configure the environment.
     ///   - environment: Caller-provided environment variables (typically from `Program.generateEnvironment()`).
     ///   - programOverrides: Optional per-program setting overrides. `nil` fields inherit from bottle.
+    ///   - recommendedBackend: What `.recommended` resolves to, for the bottle and
+    ///     for a program set to it. Defaults to `nil`, which asks
+    ///     ``GraphicsBackendResolver`` about the installed runtime.
+    ///   - builtinD3D12IsD3DMetal: Whether the runtime's builtin `d3d12` is
+    ///     D3DMetal's, which decides whether the DXVK and DXMT presets turn it
+    ///     off. Defaults to whether the GPTK payload is deployed, read once so
+    ///     every layer of this launch agrees.
     /// - Returns: The fully resolved environment dictionary for passing to a Wine process.
     @MainActor
     public static func constructWineEnvironment(
@@ -46,14 +53,18 @@ extension Wine {
         environment: [String: String] = [:],
         programOverrides: ProgramOverrides? = nil,
         programSettings: ProgramSettings? = nil,
-        gameProfileEnvironment: [String: String] = [:]
+        gameProfileEnvironment: [String: String] = [:],
+        recommendedBackend: GraphicsBackend? = nil,
+        builtinD3D12IsD3DMetal: Bool = GPTKImporter.isDeployed()
     ) -> [String: String] {
         constructWineEnvironmentWithProvenance(
             for: bottle,
             environment: environment,
             programOverrides: programOverrides,
             programSettings: programSettings,
-            gameProfileEnvironment: gameProfileEnvironment
+            gameProfileEnvironment: gameProfileEnvironment,
+            recommendedBackend: recommendedBackend,
+            builtinD3D12IsD3DMetal: builtinD3D12IsD3DMetal
         ).environment
     }
 
@@ -67,6 +78,8 @@ extension Wine {
         programOverrides: ProgramOverrides? = nil,
         programSettings: ProgramSettings? = nil,
         gameProfileEnvironment: [String: String] = [:],
+        recommendedBackend: GraphicsBackend? = nil,
+        builtinD3D12IsD3DMetal: Bool = GPTKImporter.isDeployed(),
         logSummary: Bool = true
     ) -> (environment: [String: String], provenance: EnvironmentProvenance) {
         var builder = EnvironmentBuilder()
@@ -102,7 +115,10 @@ extension Wine {
         }
 
         // Layer 3: Bottle managed -- settings-derived env vars (DXVK, sync, Metal, perf)
-        let managedOverrides = bottle.settings.populateBottleManagedLayer(builder: &builder)
+        let managedOverrides = bottle.settings.populateBottleManagedLayer(
+            builder: &builder, resolvedBackend: recommendedBackend,
+            builtinD3D12IsD3DMetal: builtinD3D12IsD3DMetal
+        )
         dllResolver.managed.append(contentsOf: managedOverrides)
 
         // DXVK reads its config from DXVK_CONFIG_FILE or the process working
@@ -119,7 +135,9 @@ extension Wine {
         }
 
         // Layer 4: Launcher managed -- launcher compatibility overrides
-        let launcherOverrides = bottle.settings.populateLauncherManagedLayer(builder: &builder)
+        let launcherOverrides = bottle.settings.populateLauncherManagedLayer(
+            builder: &builder, builtinD3D12IsD3DMetal: builtinD3D12IsD3DMetal
+        )
         dllResolver.managed.append(contentsOf: launcherOverrides)
 
         // Input compatibility (bottleManaged layer -- input settings are bottle-managed toggles)
@@ -155,6 +173,8 @@ extension Wine {
                 runtime: bottle.settings.runtime,
                 frameGeneration: bottle.settings.frameGeneration,
                 metal4Enabled: bottle.settings.metal4Enabled,
+                recommendedBackend: recommendedBackend,
+                builtinD3D12IsD3DMetal: builtinD3D12IsD3DMetal,
                 builder: &builder,
                 dllResolver: &dllResolver
             )
@@ -178,6 +198,7 @@ extension Wine {
             result["WINEDLLOVERRIDES"] = overrideString
         }
 
+        // Launch logging: safe summary of bottle, active layers, and whitelisted keys
         // Launch logging: safe summary of bottle, active layers, and whitelisted keys
         if logSummary {
             logLaunchSummary(bottleName: bottle.settings.name, provenance: provenance, environment: result)

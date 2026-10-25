@@ -114,6 +114,10 @@ extension TroubleshootingWizardView {
                     .disabled(engine.session.stepHistory.count <= 1)
                 Button("troubleshooting.wizard.skip") { engine.skipStep() }
                     .disabled(engine.currentNode == nil)
+                if engine.canContinue {
+                    Button("troubleshooting.wizard.continue") { engine.continueStep() }
+                        .keyboardShortcut(.defaultAction)
+                }
             }
         }
         .padding(.horizontal, 16)
@@ -161,8 +165,12 @@ extension TroubleshootingWizardView {
                     checkResult: engine.session.checkResults[node.id],
                     isRunning: engine.isRunningCheck
                 )
-            } else {
+            } else if engine.isRunningCheck {
                 checksPlaceholder
+            } else {
+                // No step and no check running: a spinner here would never
+                // finish, so let the user pick a symptom instead.
+                SymptomPickerView(engine: engine)
             }
         case .fix:
             if let node = engine.currentNode {
@@ -275,16 +283,10 @@ extension TroubleshootingWizardView {
             // Collect preflight and populate session
             let preflight = collectPreflight()
             engine.session.preflightSnapshot = preflight
-            engine.session.phase = entryContext.initialPhase
-
-            // If entry context provides evidence, start at checks phase
-            if case let .launchFailure(_, _, evidence) = entryContext {
-                engine.session.phase = .checks
-                // Pre-populate with launch crash category
-                engine.selectCategory(.launchCrash)
-                _ = evidence
-            } else if let preselectedCategory {
+            if let preselectedCategory {
                 engine.selectCategory(preselectedCategory)
+            } else {
+                engine.start(from: entryContext)
             }
         }
     }

@@ -80,6 +80,11 @@ extension GPTKImporter {
     /// Every slot we interpose, in the order they are installed.
     static let interposers = [videoProcessorInterposer, dxgiVersionInterposer]
 
+    static func shim(for interposer: GPTKInterposer, inLibraryFolder folder: URL) -> URL {
+        folder.appending(path: "Wine").appending(path: "lib")
+            .appending(path: "gptk-video").appending(path: interposer.shimFileName)
+    }
+
     /// Where the runtime ships the interposer, if it is new enough to carry one.
     static let videoProcessorShimPath = ["lib", "gptk-video", "d3d12shim.dll"]
     /// Apple's D3D12 under its second name. Nine characters, and that is not a
@@ -88,13 +93,8 @@ extension GPTKImporter {
     static let videoDeviceUnixName = "d3dmt.so"
     static let videoProcessorSlotName = "d3d12.dll"
 
-    static func shim(for interposer: GPTKInterposer, inLibraryFolder folder: URL) -> URL {
-        folder.appending(path: "Wine").appending(path: "lib")
-            .appending(path: "gptk-video").appending(path: interposer.shimFileName)
-    }
-
     static func videoProcessorShim(inLibraryFolder folder: URL) -> URL {
-        shim(for: videoProcessorInterposer, inLibraryFolder: folder)
+        videoProcessorShimPath.reduce(folder.appending(path: "Wine")) { $0.appending(path: $1) }
     }
 
     /// Whether `folder`'s runtime carries an interposer to install at all.
@@ -125,13 +125,20 @@ extension GPTKImporter {
 
     /// Puts the interposer in the `d3d12.dll` slot with Apple's DLL renamed
     /// beside it. Expects `d3d12.dll` to be Apple's, which is what deploy leaves
-    /// behind, and does nothing if the runtime ships no interposer or the swap
-    /// is already in place.
+    /// behind, and does nothing if the runtime ships no interposer, the swap
+    /// is already in place, or the payload is not a build the interposers
+    /// were validated on (``interposersSupport(payloadVersion:)``).
     static func install(_ interposer: GPTKInterposer, intoLibraryFolder folder: URL) throws {
         let fileManager = FileManager.default
         let shim = shim(for: interposer, inLibraryFolder: folder)
         guard has(interposer, inLibraryFolder: folder) else { return }
         guard !isInstalled(interposer, inLibraryFolder: folder) else { return }
+        let version = deployedPayloadVersion(inLibraryFolder: folder)
+        guard interposersSupport(payloadVersion: version) else {
+            let skipped = "\(interposer.label) interposer for GPTK \(version ?? "an unreadable version")"
+            logger.info("Left out the \(skipped, privacy: .public)")
+            return
+        }
 
         let wineLib = folder.appending(path: "Wine").appending(path: "lib")
         let peDir = wineLib.appending(path: "wine").appending(path: "x86_64-windows")
@@ -156,9 +163,8 @@ extension GPTKImporter {
         )
 
         // Stage the shim beside the slot and swap by rename. Removing the slot
-        // before copying leaves a window where a crash strands the tree with no
-        // DLL in that slot at all, a state the guard above then refuses to
-        // repair because there is nothing left to rename aside.
+        // before copying left a window where a crash strands the tree with no
+        // d3d12.dll at all, a state the guard above then refuses to repair.
         let staged = peDir.appending(path: interposer.slotName + ".staging")
         try? fileManager.removeItem(at: staged)
         try fileManager.copyItem(at: shim, to: staged)
@@ -172,13 +178,18 @@ extension GPTKImporter {
     }
 
     /// Takes the interposer back out and restores Apple's DLL into the slot from
-    /// the store, which is the only pristine copy: the renamed one on disk has a
-    /// rewritten export name and cannot go back as `d3d12.dll`.
+    /// the store. Deploy and removal, the two callers, go on to match the slot
+    /// against the store's forwarder, so that is the copy they need there. The
+    /// launch-time path, which also handles payloads the store did not deploy,
+    /// can recover it from the renamed copy instead, see
+    /// ``takeBack(_:fromLibraryFolder:storeLib:)``.
     ///
     /// Removal has to happen before the payload itself is removed, or the slot
     /// still holds the interposer, does not byte-match the store, and the
     /// restore loop skips it and leaves the tree with no working D3D12 at all.
-    static func remove(_ interposer: GPTKInterposer, fromLibraryFolder folder: URL, usingStore store: URL) {
+    static func remove(
+        _ interposer: GPTKInterposer, fromLibraryFolder folder: URL, usingStore store: URL
+    ) {
         let fileManager = FileManager.default
         let wineLib = folder.appending(path: "Wine").appending(path: "lib")
         let peDir = wineLib.appending(path: "wine").appending(path: "x86_64-windows")
@@ -188,13 +199,28 @@ extension GPTKImporter {
         if isInstalled(interposer, inLibraryFolder: folder) {
             let pristine = store.appending(path: "lib").appending(path: "wine")
                 .appending(path: "x86_64-windows").appending(path: interposer.slotName)
-            if fileManager.fileExists(atPath: pristine.path(percentEncoded: false)) {
-                try? fileManager.removeItem(at: slot)
-                try? fileManager.copyItem(at: pristine, to: slot)
+            if let original = try? Data(contentsOf: pristine) {
+                do {
+                    try replaceSlot(slot, with: original)
+                } catch {
+                    let restoring = "Apple's \(interposer.slotName)"
+                    logger.error("Restoring \(restoring, privacy: .public) failed: \(error.localizedDescription)")
+                }
             }
         }
         try? fileManager.removeItem(at: peDir.appending(path: interposer.renamedName))
         try? fileManager.removeItem(at: unixDir.appending(path: interposer.renamedUnixName))
+    }
+
+    /// Writes `data` into `slot` through a staged copy beside it and a rename,
+    /// the way install swaps the interposer in, so an interruption leaves the
+    /// old DLL in the slot rather than no DLL at all. A slot that is missing
+    /// is simply created.
+    static func replaceSlot(_ slot: URL, with data: Data) throws {
+        let staged = slot.deletingLastPathComponent().appending(path: slot.lastPathComponent + ".staging")
+        try? FileManager.default.removeItem(at: staged)
+        try data.write(to: staged)
+        _ = try FileManager.default.replaceItemAt(slot, withItemAt: staged)
     }
 
     static func removeVideoProcessor(fromLibraryFolder folder: URL, usingStore store: URL) {
@@ -233,32 +259,6 @@ extension GPTKImporter {
         seedPlaceholder(for: videoProcessorInterposer, inBottle: bottle, fromLibraryFolder: folder)
     }
 
-    /// Installs the video processor into every runtime that already holds the
-    /// payload, and seeds every bottle's placeholder.
-    ///
-    /// This is the path for installs that were already set up before the
-    /// interposer existed: they have the payload deployed and never run a deploy
-    /// again, so without this they would keep the broken video until they
-    /// happened to reimport. Idempotent and cheap enough to run at launch.
-    public static func ensureVideoProcessorEverywhere(bottles: [URL]) {
-        for runtime in WhiskyWineInstaller.installedRuntimes().map(\.runtime) {
-            let folder = WhiskyWineInstaller.libraryFolder(for: runtime)
-            guard isDeployed(inLibraryFolder: folder) else { continue }
-            for interposer in interposers where has(interposer, inLibraryFolder: folder) {
-                do {
-                    try install(interposer, intoLibraryFolder: folder)
-                } catch {
-                    let why = "\(interposer.label): \(error.localizedDescription)"
-                    logger.error("Installing an interposer failed, \(why, privacy: .public)")
-                    continue
-                }
-                for bottle in bottles {
-                    seedPlaceholder(for: interposer, inBottle: bottle, fromLibraryFolder: folder)
-                }
-            }
-        }
-    }
-
     // MARK: - The rename
 
     /// Rewrites a PE's export directory name in place.
@@ -269,12 +269,19 @@ extension GPTKImporter {
     /// module that is already loaded and the interposer forwards into itself.
     /// Patching in place is what caps the new name at the old one's length.
     static func rewriteExportName(at url: URL, from old: String, to new: String) throws {
+        try renamingExport(in: Data(contentsOf: url), from: old, to: new).write(to: url)
+    }
+
+    /// `data` with its export directory's name changed from `old` to `new` and
+    /// every other byte as it was, which is also what makes the rename
+    /// reversible: renaming back gives the original file exactly.
+    static func renamingExport(in data: Data, from old: String, to new: String) throws -> Data {
         let oldBytes = Array(old.utf8), newBytes = Array(new.utf8)
         guard oldBytes.count == newBytes.count else {
             throw GPTKVideoProcessorError.malformedPE("the replacement name must be the same length")
         }
 
-        var data = try Data(contentsOf: url)
+        var data = data
         let image = try PEImage(data: data)
         let nameOffset = try image.fileOffset(of: image.u32(image.exportDirectoryOffset + 12))
         guard nameOffset + oldBytes.count <= data.count else {
@@ -290,7 +297,7 @@ extension GPTKImporter {
         for (index, value) in newBytes.enumerated() {
             data[data.startIndex + nameOffset + index] = value
         }
-        try data.write(to: url)
+        return data
     }
 }
 

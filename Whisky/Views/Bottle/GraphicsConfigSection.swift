@@ -55,6 +55,12 @@ struct GraphicsConfigSection: View {
                 }
             )
 
+            // Said once, after an update put a bottle the old Steam profile had
+            // switched to DXVK back on Recommended (#276).
+            if bottle.settings.launcherBackendResetNotice {
+                launcherBackendResetNotice
+            }
+
             // A bottle explicitly set to D3DMetal without its payload silently
             // degrades to WineD3D at launch — say so instead (issue #146).
             if bottle.settings.graphicsBackend == .d3dMetal,
@@ -98,11 +104,6 @@ struct GraphicsConfigSection: View {
                     }
                 }
                 .disabled(!bottle.settings.metalFX)
-            }
-
-            // Force DX11 toggle -- always visible (Simple + Advanced)
-            Toggle(isOn: $bottle.settings.forceD3D11) {
-                Text("config.forceD3D11")
             }
 
             // The Sequoia compatibility toggle is gone: everything it set is a
@@ -159,8 +160,34 @@ struct GraphicsConfigSection: View {
             }
         }
         .animation(.default, value: advancedMode)
+        .onChange(of: bottle.settings.graphicsBackend) {
+            // Picking a backend answers the notice.
+            if bottle.settings.launcherBackendResetNotice {
+                bottle.settings.launcherBackendResetNotice = false
+            }
+        }
         .task {
             await checkRunningProcesses()
+        }
+    }
+
+    // MARK: - Launcher Backend Reset Notice
+
+    private var launcherBackendResetNotice: some View {
+        HStack {
+            Image(systemName: "info.circle")
+                .foregroundStyle(.blue)
+            Text("config.graphics.backend.launcherReset")
+                .font(.caption)
+            Spacer()
+            Button {
+                bottle.settings.launcherBackendResetNotice = false
+            } label: {
+                Image(systemName: "xmark")
+            }
+            .buttonStyle(.borderless)
+            .help("config.graphics.backend.launcherReset.dismiss")
+            .accessibilityLabel("config.graphics.backend.launcherReset.dismiss")
         }
     }
 

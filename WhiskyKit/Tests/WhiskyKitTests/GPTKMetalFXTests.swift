@@ -85,10 +85,20 @@ struct GPTKMetalFXTests {
     func installIsIdempotent() throws {
         let (store, runtime) = try makeBridgeableRuntime()
         try GPTKImporter.deploy(fromStore: store, intoLibraryFolder: runtime)
+        let bridge = GPTKImporter.metalFXBridgePE(inLibraryFolder: runtime)
+        let before = try FileManager.default.attributesOfItem(
+            atPath: bridge.path(percentEncoded: false)
+        )[.creationDate] as? Date
 
         try GPTKImporter.installMetalFXBridge(intoLibraryFolder: runtime, usingStore: store)
 
         #expect(GPTKImporter.isMetalFXBridgeInstalled(inLibraryFolder: runtime, usingStore: store))
+        // launch-time install runs every time, and rewriting a file that already
+        // matches the store is work nobody asked for
+        let after = try FileManager.default.attributesOfItem(
+            atPath: bridge.path(percentEncoded: false)
+        )[.creationDate] as? Date
+        #expect(before == after)
     }
 
     // MARK: - Remove
@@ -207,124 +217,5 @@ struct GPTKMetalFXTests {
         GPTKImporter.clearMetalFXBridgePlaceholder(inBottle: bottle)
 
         #expect(FileManager.default.fileExists(atPath: placeholder.path(percentEncoded: false)))
-    }
-}
-
-@Suite("MetalFX Setting Tests")
-struct MetalFXSettingTests {
-    @Test("The setting is on by default and survives a round trip")
-    func settingRoundTrips() throws {
-        var settings = BottleSettings()
-        #expect(settings.metalFX)
-
-        settings.metalFX = false
-        let decoded = try PropertyListDecoder().decode(
-            BottleSettings.self, from: PropertyListEncoder().encode(settings)
-        )
-
-        #expect(!decoded.metalFX)
-    }
-
-    @Test("A bottle written before the key existed picks up the new default")
-    func absentKeyDefaultsOn() throws {
-        // The graphics config is nested, so an older bottle's plist has the
-        // dictionary without the key rather than no dictionary at all.
-        let plist: [String: Any] = ["graphicsConfig": ["backend": "recommended"]]
-        let data = try PropertyListSerialization.data(
-            fromPropertyList: plist, format: .xml, options: 0
-        )
-
-        let decoded = try PropertyListDecoder().decode(BottleSettings.self, from: data)
-
-        #expect(decoded.metalFX)
-    }
-
-    @Test("The env var follows the setting, and is only set under D3DMetal")
-    func environmentFollowsTheSetting() throws {
-        var builder = EnvironmentBuilder()
-        var settings = BottleSettings()
-        settings.graphicsBackend = .d3dMetal
-        _ = settings.populateBottleManagedLayer(builder: &builder, resolvedBackend: .d3dMetal)
-        #expect(builder.resolve().environment["D3DM_ENABLE_METALFX"] == "1")
-
-        settings.metalFX = false
-        var offBuilder = EnvironmentBuilder()
-        _ = settings.populateBottleManagedLayer(builder: &offBuilder, resolvedBackend: .d3dMetal)
-        #expect(offBuilder.resolve().environment["D3DM_ENABLE_METALFX"] == nil)
-
-        // DXVK never reaches D3DMetal's bridge, so the knob would be a lie
-        settings.metalFX = true
-        settings.graphicsBackend = .dxvk
-        var dxvkBuilder = EnvironmentBuilder()
-        _ = settings.populateBottleManagedLayer(builder: &dxvkBuilder, resolvedBackend: .dxvk)
-        #expect(dxvkBuilder.resolve().environment["D3DM_ENABLE_METALFX"] == nil)
-    }
-
-    @Test("MetalFX writes the whole NVIDIA identity, not only the vendor id D3DMetal flips")
-    func metalFXWritesTheAdapterIdentity() throws {
-        var settings = BottleSettings()
-        settings.graphicsBackend = .d3dMetal
-        var builder = EnvironmentBuilder()
-        _ = settings.populateBottleManagedLayer(builder: &builder, resolvedBackend: .d3dMetal)
-        let env = builder.resolve().environment
-        #expect(env["D3DM_VENDOR_ID"] == GPUVendor.nvidia.vendorID)
-        #expect(env["D3DM_DEVICE_ID"] == GPUVendor.nvidia.deviceID)
-        #expect(env["D3DM_DEVICE_DESCRIPTION"] == GPUVendor.nvidia.modelName)
-
-        settings.metalFX = false
-        var offBuilder = EnvironmentBuilder()
-        _ = settings.populateBottleManagedLayer(builder: &offBuilder, resolvedBackend: .d3dMetal)
-        #expect(offBuilder.resolve().environment["D3DM_VENDOR_ID"] == nil)
-    }
-}
-
-@Suite("Metal 4 Setting Tests")
-struct Metal4SettingTests {
-    @Test("The setting is on by default and survives a round trip")
-    func settingRoundTrips() throws {
-        var settings = BottleSettings()
-        #expect(settings.metal4Enabled)
-
-        settings.metal4Enabled = false
-        let decoded = try PropertyListDecoder().decode(
-            BottleSettings.self, from: PropertyListEncoder().encode(settings)
-        )
-
-        #expect(!decoded.metal4Enabled)
-    }
-
-    @Test("A bottle written before the key existed picks up the new default")
-    func absentKeyDefaultsOn() throws {
-        let plist: [String: Any] = ["metalConfig": ["metalHud": false]]
-        let data = try PropertyListSerialization.data(
-            fromPropertyList: plist, format: .xml, options: 0
-        )
-
-        let decoded = try PropertyListDecoder().decode(BottleSettings.self, from: data)
-
-        #expect(decoded.metal4Enabled)
-    }
-
-    @Test("The env var follows the setting, and is only set under D3DMetal")
-    func environmentFollowsTheSetting() throws {
-        var builder = EnvironmentBuilder()
-        var settings = BottleSettings()
-        settings.graphicsBackend = .d3dMetal
-        _ = settings.populateBottleManagedLayer(builder: &builder, resolvedBackend: .d3dMetal)
-        #expect(builder.resolve().environment["D3DM_MTL4"] == "1")
-
-        // Off has to be written, not omitted: D3DMetal defaults the option on
-        // from the OS version and only an explicit value overrides that.
-        settings.metal4Enabled = false
-        var offBuilder = EnvironmentBuilder()
-        _ = settings.populateBottleManagedLayer(builder: &offBuilder, resolvedBackend: .d3dMetal)
-        #expect(offBuilder.resolve().environment["D3DM_MTL4"] == "0")
-
-        // Metal 4 is D3DMetal's own backend, so it means nothing under DXVK
-        settings.metal4Enabled = true
-        settings.graphicsBackend = .dxvk
-        var dxvkBuilder = EnvironmentBuilder()
-        _ = settings.populateBottleManagedLayer(builder: &dxvkBuilder, resolvedBackend: .dxvk)
-        #expect(dxvkBuilder.resolve().environment["D3DM_MTL4"] == nil)
     }
 }

@@ -87,115 +87,13 @@ struct BottleView: View {
                 .scrollDisabled(true)
             }
             .bottomBar {
-                // One container so the four capsules read as a single control
-                // group and blend when they are close, rather than four
-                // separate slabs of glass sitting next to each other.
-                GlassEffectContainer(spacing: 8) {
-                    HStack {
-                        Spacer()
-                        Button("button.cDrive") {
-                            bottle.openCDrive()
-                        }
-                        .buttonStyle(.glass)
-                        .accessibilityIdentifier("bottle.openCDrive")
-                        Button("button.terminal") {
-                            bottle.openTerminal()
-                        }
-                        .buttonStyle(.glass)
-                        .accessibilityIdentifier("bottle.openTerminal")
-                        Button("button.winetricks") {
-                            showWinetricksSheet.toggle()
-                        }
-                        .buttonStyle(.glass)
-                        .accessibilityIdentifier("bottle.openWinetricks")
-                        Button("button.run") {
-                            let panel = NSOpenPanel()
-                            panel.allowsMultipleSelection = false
-                            panel.canChooseDirectories = false
-                            panel.canChooseFiles = true
-                            panel.allowedContentTypes = [
-                                UTType.exe,
-                                UTType(exportedAs: "com.microsoft.msi-installer"),
-                                UTType(exportedAs: "com.microsoft.bat"),
-                                UTType(exportedAs: "com.microsoft.msix-package"),
-                                UTType(exportedAs: "com.microsoft.appx-package"),
-                                UTType(exportedAs: "com.microsoft.windows-internet-shortcut")
-                            ]
-                            panel.directoryURL = bottle.url.appending(path: "drive_c")
-                            panel.begin { result in
-                                programLoading = true
-                                Task(priority: .userInitiated) {
-                                    if result == .OK {
-                                        if let url = panel.urls.first {
-                                            Telemetry.capture(.firstProgramLaunchAttempted)
-                                            do {
-                                                if url.pathExtension == "bat" {
-                                                    try await Wine.runBatchFile(url: url, bottle: bottle)
-                                                } else {
-                                                    // Through the one program door, which
-                                                    // carries overrides, launcher fixes and
-                                                    // the GameDB profile for every entry
-                                                    // point alike.
-                                                    let result = await Program(url: url, bottle: bottle)
-                                                        .launchWithUserMode(useTerminal: false)
-                                                    if case let .launchFailed(_, message) = result {
-                                                        throw LaunchPanelError.failed(message)
-                                                    }
-                                                }
-                                                await MainActor.run {
-                                                    withAnimation {
-                                                        toast = ToastData(
-                                                            message: String(
-                                                                localized: "status.launched \(url.lastPathComponent)"
-                                                            ),
-                                                            style: .success
-                                                        )
-                                                    }
-                                                }
-                                            } catch {
-                                                let errDesc = switch error {
-                                                case let LaunchPanelError.failed(message): message
-                                                default: error.localizedDescription
-                                                }
-                                                await MainActor.run {
-                                                    withAnimation {
-                                                        toast = ToastData(
-                                                            message: String(
-                                                                localized: "status.launchFailed \(errDesc)"
-                                                            ),
-                                                            style: .error,
-                                                            autoDismiss: false
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                            await MainActor.run {
-                                                programLoading = false
-                                            }
-                                        }
-                                    } else {
-                                        await MainActor.run {
-                                            programLoading = false
-                                        }
-                                    }
-                                    await updateStartMenu()
-                                }
-                            }
-                        }
-                        // Running a program is the reason the app exists, so it is
-                        // the only prominent control on this bar.
-                        .buttonStyle(.glassProminent)
-                        .accessibilityIdentifier("bottle.runProgram")
-                        .disabled(programLoading)
-                        if programLoading {
-                            Spacer()
-                                .frame(width: 10)
-                            ProgressView()
-                                .controlSize(.small)
-                        }
-                    }
-                    .padding()
-                }
+                BottleActionBar(
+                    bottle: bottle,
+                    showWinetricksSheet: $showWinetricksSheet,
+                    programLoading: $programLoading,
+                    toast: $toast,
+                    onLaunch: updateStartMenu
+                )
             }
             .task {
                 await updateStartMenu()
@@ -224,7 +122,8 @@ struct BottleView: View {
                     name: BottleOperations.nextDuplicateName(
                         baseName: bottle.settings.name,
                         existingNames: BottleVM.shared.bottles.map(\.settings.name)
-                    )
+                    ),
+                    confirmTitle: "duplicate.bottle.confirm"
                 ) { newName in
                     Task {
                         do {
@@ -298,15 +197,12 @@ extension BottleView {
             for program in bottle.programs where
                 // For some godforsaken reason "foo/bar" != "foo/Bar" so...
                 program.url.path().caseInsensitiveCompare(startMenuProgram.url.path()) == .orderedSame {
-                program.pinned = true
                 // Skip programs that are already pinned, but keep processing the
                 // rest. Using `return` here would stop pinning every remaining
                 // start-menu program after the first already-pinned one.
                 guard !bottle.settings.pins.contains(where: { $0.url == program.url }) else { continue }
-                bottle.settings.pins.append(PinnedProgram(
-                    name: program.url.deletingPathExtension().lastPathComponent,
-                    url: program.url
-                ))
+                // Setting `pinned` appends the pin to the bottle's settings.
+                program.pinned = true
             }
         }
     }

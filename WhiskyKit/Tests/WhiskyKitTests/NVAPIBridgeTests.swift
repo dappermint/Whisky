@@ -129,6 +129,21 @@ final class NVAPIBridgeTests: XCTestCase {
         XCTAssertEqual(contents(of: GPTKImporter.nvapiBridgePE(inLibraryFolder: folder)), "wine placeholder")
     }
 
+    func testNGXManifestIsSeededOnceAndNeverOverwritten() throws {
+        let bottle = root.appending(path: "bottle")
+        let config = Wine.ngxModelConfigPath
+            .reduce(bottle) { $0.appending(path: $1) }
+            .appending(path: "nvngx_config.txt")
+
+        Wine.seedNGXModelConfig(inBottle: bottle)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: config.path(percentEncoded: false)))
+
+        // a driver install's own manifest, or the user's edit, outranks ours
+        try "someone else's manifest".write(to: config, atomically: true, encoding: .utf8)
+        Wine.seedNGXModelConfig(inBottle: bottle)
+        XCTAssertEqual(contents(of: config), "someone else's manifest")
+    }
+
     func testHelpersGetNVAPIDisabledWithoutLosingTheirOtherOverrides() {
         let result = Wine.disablingNVAPI(in: "dxgi=n,b;d3d11=n,b")
         XCTAssertEqual(result, "d3d11=n,b;dxgi=n,b;nvapi=;nvapi64=;nvngx=")

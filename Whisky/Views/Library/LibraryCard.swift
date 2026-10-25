@@ -229,7 +229,7 @@ struct LibraryCard: View {
             }
             .padding(.horizontal, 9)
             .frame(height: 30)
-            .glassEffect(.regular, in: .capsule)
+            .cardGlass(.capsule)
             .help(phase.label)
         case .running:
             Label("library.card.running", systemImage: "circle.fill")
@@ -239,13 +239,13 @@ struct LibraryCard: View {
                 .foregroundStyle(.green)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .glassEffect(.regular, in: .capsule)
+                .cardGlass(.capsule)
         case .idle:
             if isActive {
                 Image(systemName: "play.fill")
                     .font(.system(size: 13))
                     .frame(width: 30, height: 30)
-                    .glassEffect(.regular.interactive(), in: .circle)
+                    .cardGlass(.circle, interactive: true)
                     .transition(.opacity.combined(with: .scale))
             }
         }
@@ -304,5 +304,19 @@ struct LibraryCard: View {
         let sampled = await IconCache.shared.sampledIcon(for: iconURL)
         palette = sampled.palette
         icon = Image(nsImage: sampled.image)
+    }
+}
+
+private extension View {
+    /// Liquid Glass where the system has it, a plain material where it does not.
+    /// The affordance matters more than the material, so the older path is a
+    /// real control rather than nothing.
+    @ViewBuilder
+    func cardGlass(_ shape: some Shape, interactive: Bool = false) -> some View {
+        if #available(macOS 26.0, *) {
+            glassEffect(interactive ? .regular.interactive() : .regular, in: shape)
+        } else {
+            background(.thinMaterial, in: shape)
+        }
     }
 }

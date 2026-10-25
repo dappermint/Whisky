@@ -157,9 +157,8 @@ public struct BottleGraphicsConfig: Codable, Equatable {
     /// the bridge takes its DLSS path instead of whatever it would otherwise
     /// have used, which could regress as easily as help. Measured, it helps, so
     /// the default flipped and the toggle stays for the titles it does not suit.
-    /// A bottle whose runtime has no bridge is unaffected either way: with
-    /// nothing for `DXGIAdapter::nvngxDLLLocation` to find, the variable is
-    /// inert.
+    /// A tree with no bridge in it is unaffected either way: with nothing for
+    /// `DXGIAdapter::nvngxDLLLocation` to find, the variable is inert.
     var metalFX: Bool = true
 
     /// Whether games in this bottle may turn on DLSS frame generation.

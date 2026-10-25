@@ -103,7 +103,7 @@ final class LauncherDiagnosticsTests: XCTestCase {
         // Verify launcher-specific variables are set
         XCTAssertNotNil(env["STEAM_DISABLE_CEF_SANDBOX"])
         XCTAssertNotNil(env["LC_ALL"])
-        XCTAssertNotNil(env["GPU_VENDOR_ID"])
+        XCTAssertNotNil(env["MESA_GL_VERSION_OVERRIDE"])
         XCTAssertNotNil(env["WINHTTP_CONNECT_TIMEOUT"])
     }
 
@@ -183,8 +183,8 @@ final class LauncherDiagnosticsTests: XCTestCase {
             bottle.settings.environmentVariables(wineEnv: &env)
 
             // Verify GPU spoofing is applied for each vendor
-            XCTAssertEqual(env["GPU_VENDOR_ID"], vendor.vendorID, "Vendor ID should match for \(vendor.rawValue)")
-            XCTAssertNotNil(env["D3DM_FEATURE_LEVEL_12_1"])
+            XCTAssertEqual(env["MESA_GL_VERSION_OVERRIDE"], "4.6", "Spoof should apply for \(vendor.rawValue)")
+            XCTAssertNil(env["GPU_VENDOR_ID"], "No shipped runtime reads GPU_VENDOR_ID")
         }
     }
 
@@ -277,7 +277,7 @@ final class LauncherDiagnosticsTests: XCTestCase {
         bottle.settings.environmentVariables(wineEnv: &env)
 
         // GPU spoofing should not be applied
-        XCTAssertNil(env["GPU_VENDOR_ID"], "GPU vendor should not be set when spoofing disabled")
+        XCTAssertNil(env["MESA_GL_VERSION_OVERRIDE"], "GPU spoof should not be set when spoofing disabled")
     }
 
     // MARK: - Locale Configuration Tests
@@ -391,8 +391,9 @@ final class LauncherDiagnosticsTests: XCTestCase {
         bottle.settings.environmentVariables(wineEnv: &env)
 
         // DXVK should be auto-enabled because Rockstar requires it
-        // DLL overrides are now composed per-DLL via DLLOverrideResolver (sorted alphabetically)
-        XCTAssertEqual(env["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d12=;d3d9=n,b;dxgi=n,b")
+        // DLL overrides are now composed per-DLL via DLLOverrideResolver (sorted alphabetically).
+        // No runtime under test means no GPTK payload, so d3d12 is left alone.
+        XCTAssertEqual(env["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d9=n,b;dxgi=n,b")
     }
 
     func testAutoEnableDXVKNotTriggeredForSteam() throws {

@@ -30,8 +30,20 @@ public enum GPTKImportError: LocalizedError, Equatable {
     case forwarderNotBuiltin(String)
     /// The D3DMetal framework's version could not be read.
     case versionUnreadable
+    /// An Apple binary in the payload (payload-relative path) does not carry
+    /// Apple's signature for the identifier Apple gives it, on every
+    /// architecture it contains, so it is not the binary Apple shipped.
+    case notAppleSigned(String)
+    /// The payload's `external/` folder holds an item (payload-relative path)
+    /// that Apple's signatures do not cover: something added beside Apple's
+    /// code or around the framework's sealed version, or a folder or link
+    /// that is not what Apple ships there, such as a link out of the payload.
+    case unsealedItem(String)
     /// No imported payload exists in the store to deploy or remove.
     case storeEmpty
+    /// The stored payload fails the checks an import applies (the reason is
+    /// the failing check's message), so it is not deployed.
+    case storeNotVerified(String)
 
     public var errorDescription: String? {
         switch self {
@@ -43,8 +55,14 @@ public enum GPTKImportError: LocalizedError, Equatable {
             String(localized: "gptk.error.forwarderNotBuiltin") + " " + name
         case .versionUnreadable:
             String(localized: "gptk.error.versionUnreadable")
+        case let .notAppleSigned(name):
+            String(localized: "gptk.error.notAppleSigned") + " " + name
+        case let .unsealedItem(path):
+            String(localized: "gptk.error.unsealedItem") + " " + path
         case .storeEmpty:
             String(localized: "gptk.error.storeEmpty")
+        case let .storeNotVerified(reason):
+            String(localized: "gptk.error.storeNotVerified") + " " + reason
         }
     }
 }
@@ -88,21 +106,11 @@ public enum GPTKImporter {
     /// no d3d9 forwarder.
     static let forwarderDLLNames = ["d3d10.dll", "d3d11.dll", "d3d12.dll", "dxgi.dll"]
 
-    /// Apple's NVIDIA bridges. `nvngx-on-metalfx` is deployed, under its export
-    /// name, because it is the only route to MetalFX — see
-    /// ``installMetalFXBridge(intoLibraryFolder:usingStore:)``.
-    ///
-    /// `nvapi64` is deployed too, and disabled per launcher helper instead of
-    /// withheld from everything. It used to stay in the store because Chromium
-    /// probes for an NVIDIA GPU and answering makes it load D3DMetal, which takes
-    /// Steam's helper process down. That risk is real, but the claim that came
-    /// with it, that NGX reports DLSS available anyway, is not: Streamline asks
-    /// nvapi64 about the GPU first and, finding wine's no-export placeholder,
-    /// concludes there is no NVIDIA driver and never calls NGX at all. Measured
-    /// on Deep Rock Galactic: zero `NVSDK_NGX_*` calls in a relay trace without
-    /// it, and DLSS absent from the menu; with it, NGX initialises and the option
-    /// appears. See `WineDLLOverrideRegistry.disablingNVAPI(in:)` for the half
-    /// that keeps Chromium away from it.
+    /// Apple's NVIDIA bridges, which back the experimental DLSS-to-MetalFX
+    /// path. Kept in the store but never deployed: a stock runtime ships no
+    /// `nvapi64` at all, so placing Apple's makes every process that probes for
+    /// an NVIDIA GPU load D3DMetal — Chromium does exactly that, which takes
+    /// Steam's helper process down with it. Opt-in territory, not a default.
     static let nvidiaBridgeDLLNames = ["nvapi64.dll", "nvngx-on-metalfx.dll"]
 
     /// Apple's NVAPI, deployed under the name it ships as; wine's own `nvapi64`
@@ -122,7 +130,6 @@ public enum GPTKImporter {
     static let nvapiBridgeExportName = "nvapi.dll"
     /// The unix half under the export name, for the same reason.
     static let nvapiBridgeExportUnixName = "nvapi.so"
-
     /// Enough bytes to hold the winebuild marker at offset 0x40.
     static let builtinMarkerMinimumLength = 0x50
 
@@ -188,9 +195,30 @@ public enum GPTKImporter {
     /// Validates completeness and authenticity of the payload at `libRoot` and
     /// reads its version.
     ///
+    /// Only half the payload can carry a signature, so authenticity is checked
+    /// unevenly. The Windows DLLs cannot carry an Apple code signature: the PE
+    /// forwarders are only checked for the winebuild builtin marker Apple's
+    /// build leaves in them, which a hand-made file can carry too, and the
+    /// NVIDIA bridges are not checked. The Mach-O half is held to Apple's
+    /// signature: the shared library and the D3DMetal framework must each pass
+    /// ``isAppleSigned(_:identifier:)`` for the identifier Apple signs it
+    /// with, nothing may sit beside them or around the framework's sealed
+    /// version, and nothing in that version may be a link
+    /// (``unsealedItem(inExternal:)``). Those checks run last so that
+    /// the cheaper, more common mistakes (a wrong folder, a missing file) are
+    /// reported first.
+    ///
+    /// - Parameter isAppleSigned: the signature verifier, given a code object
+    ///   and the identifier it must be signed as; injectable so tests can
+    ///   validate fixtures that are not real code objects.
     /// - Throws: ``GPTKImportError`` when files are missing, a forwarder is not
-    ///   the builtin variant, or the version is unreadable.
-    public static func validatePayload(at libRoot: URL) throws -> GPTKPayload {
+    ///   the builtin variant, the version is unreadable, an Apple binary fails
+    ///   the signature check, or `external/` holds an item the signatures do
+    ///   not cover.
+    public static func validatePayload(
+        at libRoot: URL,
+        isAppleSigned: (_ code: URL, _ identifier: String) -> Bool = GPTKImporter.isAppleSigned(_:identifier:)
+    ) throws -> GPTKPayload {
         let fileManager = FileManager.default
         let peDir = libRoot.appending(path: "wine").appending(path: "x86_64-windows")
         let external = libRoot.appending(path: "external")
@@ -223,6 +251,13 @@ public enum GPTKImporter {
         guard let version = frameworkVersion(inExternal: external) else {
             throw GPTKImportError.versionUnreadable
         }
+
+        for code in appleSignedCode where !isAppleSigned(external.appending(path: code.name), code.identifier) {
+            throw GPTKImportError.notAppleSigned("external/\(code.name)")
+        }
+        if let item = unsealedItem(inExternal: external) {
+            throw GPTKImportError.unsealedItem(item)
+        }
         return GPTKPayload(libRoot: libRoot, version: version)
     }
 
@@ -252,6 +287,12 @@ public enum GPTKImporter {
 
     /// Copies a validated payload into the store and records its version.
     ///
+    /// The copy is staged beside the store's `lib` and validated again there
+    /// before it replaces the previous payload, so the checks cover exactly
+    /// what gets deployed, not a source that could have changed since
+    /// ``validatePayload(at:isAppleSigned:)`` read it. A copy that fails
+    /// leaves the previous payload in place.
+    ///
     /// Reimporting replaces the previous store contents. The six unix bridge
     /// names are recreated as symlinks regardless of what the source held: a
     /// copy pipeline that resolved them into file duplicates would break the
@@ -259,22 +300,65 @@ public enum GPTKImporter {
     /// the framework.
     @discardableResult
     public static func importPayload(_ payload: GPTKPayload) throws -> GPTKStoreRecord {
-        try importPayload(payload, intoStore: storeFolder)
+        try importPayload(payload, intoStore: storeFolder, revalidatingWith: isAppleSigned(_:identifier:))
     }
 
     /// Testable seam for ``importPayload(_:)``.
+    ///
+    /// - Parameter isAppleSigned: the verifier the staged copy is validated
+    ///   with. Tests leave it out to import fixtures that are not real code
+    ///   objects, which skips that second validation.
     @discardableResult
-    static func importPayload(_ payload: GPTKPayload, intoStore store: URL) throws -> GPTKStoreRecord {
+    static func importPayload(
+        _ payload: GPTKPayload,
+        intoStore store: URL,
+        revalidatingWith isAppleSigned: ((_ code: URL, _ identifier: String) -> Bool)? = nil
+    ) throws -> GPTKStoreRecord {
         let fileManager = FileManager.default
         let libDest = store.appending(path: "lib")
+        let staging = store.appending(path: "lib.staging")
 
         try fileManager.createDirectory(at: store, withIntermediateDirectories: true)
-        if fileManager.fileExists(atPath: libDest.path(percentEncoded: false)) {
-            try fileManager.removeItem(at: libDest)
+        try? fileManager.removeItem(at: staging)
+        var version = payload.version
+        do {
+            // The folder a link points to, not the link: a staged link would
+            // leave the store pointing at the source, and every later deploy
+            // would copy whatever the source holds by then.
+            try fileManager.copyItem(at: payload.libRoot.resolvingSymlinksInPath(), to: staging)
+            try linkUnixBridges(inPayload: staging)
+            if let isAppleSigned {
+                version = try validatePayload(at: staging, isAppleSigned: isAppleSigned).version
+            }
+            // attributesOfItem does not follow a link, so a lib left behind as
+            // a dangling link is replaced too; fileExists would not see it.
+            if (try? fileManager.attributesOfItem(atPath: libDest.path(percentEncoded: false))) != nil {
+                try fileManager.removeItem(at: libDest)
+            }
+            try fileManager.moveItem(at: staging, to: libDest)
+        } catch {
+            try? fileManager.removeItem(at: staging)
+            throw error
         }
-        try fileManager.copyItem(at: payload.libRoot, to: libDest)
 
-        let unixDir = libDest.appending(path: "wine").appending(path: "x86_64-unix")
+        let record = GPTKStoreRecord(gptkVersion: version, importedAt: Date())
+        let encoder = PropertyListEncoder()
+        encoder.outputFormat = .xml
+        try encoder.encode(record).write(to: recordURL(inStore: store))
+        // Validated above, as it sits in the store now, so the first deploy
+        // does not check it again.
+        if isAppleSigned != nil {
+            stampStoreVerified(inStore: store)
+        }
+        logger.info("Imported GPTK payload \(record.gptkVersion, privacy: .public) into store")
+        return record
+    }
+
+    /// Recreates the unix bridge names in the payload at `libRoot` as symlinks
+    /// to its shared library.
+    private static func linkUnixBridges(inPayload libRoot: URL) throws {
+        let fileManager = FileManager.default
+        let unixDir = libRoot.appending(path: "wine").appending(path: "x86_64-unix")
         try fileManager.createDirectory(at: unixDir, withIntermediateDirectories: true)
         for name in unixLibraryNames {
             let link = unixDir.appending(path: name)
@@ -284,13 +368,6 @@ public enum GPTKImporter {
                 withDestinationPath: unixLinkDestination
             )
         }
-
-        let record = GPTKStoreRecord(gptkVersion: payload.version, importedAt: Date())
-        let encoder = PropertyListEncoder()
-        encoder.outputFormat = .xml
-        try encoder.encode(record).write(to: recordURL(inStore: store))
-        logger.info("Imported GPTK payload \(record.gptkVersion, privacy: .public) into store")
-        return record
     }
 
     /// The stored payload's record, or `nil` when the store is absent or its
@@ -315,7 +392,7 @@ public enum GPTKImporter {
         try FileManager.default.removeItem(at: store)
     }
 
-    private static func recordURL(inStore store: URL) -> URL {
+    static func recordURL(inStore store: URL) -> URL {
         store.appending(path: "D3DMetalVersion.plist")
     }
 }

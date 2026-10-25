@@ -123,6 +123,11 @@ public enum GPUDetection {
     /// GPU features. Helps launchers pass compatibility checks that would otherwise
     /// fail due to incomplete Metal driver information.
     ///
+    /// The vendor and model no longer change the result. The `GPU_VENDOR_ID`,
+    /// `GPU_DEVICE_ID`, `GPU_DESCRIPTION`, `GPU_MEMORY_SIZE` and
+    /// `D3DM_SHADER_MODEL` keys they used to fill are read by no shipped
+    /// runtime (Wine, DXVK, DXMT or D3DMetal), so they were dropped.
+    ///
     /// - Parameters:
     ///   - vendor: The GPU vendor to spoof (NVIDIA, AMD, or Intel)
     ///   - model: Optional custom model name override
@@ -134,31 +139,10 @@ public enum GPUDetection {
         env["MESA_GL_VERSION_OVERRIDE"] = "4.6"
         env["MESA_GLSL_VERSION_OVERRIDE"] = "460"
 
-        // DirectX feature levels
-        env["D3DM_FEATURE_LEVEL_12_1"] = "1" // DirectX 12.1 support
-        env["D3DM_FEATURE_LEVEL_12_0"] = "1" // DirectX 12.0 support
-        env["D3DM_FEATURE_LEVEL_11_1"] = "1" // DirectX 11.1 support
-
-        // PCI vendor and device IDs
-        env["GPU_VENDOR_ID"] = vendor.vendorID
-        env["GPU_DEVICE_ID"] = vendor.deviceID
-
-        // GPU model name for launcher display
-        env["GPU_DESCRIPTION"] = model ?? vendor.modelName
-
-        // The same identity where D3DMetal reads it; the GPU_ keys above are
-        // for launchers and never reach the DXGI adapter.
         for (key, value) in vendor.d3dMetalIdentity {
             env[key] = value
         }
         env["D3DM_DEVICE_DESCRIPTION"] = model ?? vendor.modelName
-
-        // VRAM reporting (8GB minimum for modern launchers)
-        env["GPU_MEMORY_SIZE"] = "8192" // 8GB in MB
-
-        // Shader model support
-        env["D3DM_SHADER_MODEL"] = "6.5"
-
         // Ray tracing capability (helps with modern launcher checks)
         env["D3DM_SUPPORT_DXR"] = "1"
 
@@ -198,16 +182,16 @@ public enum GPUDetection {
 
     /// Validates that GPU spoofing environment is correctly configured.
     ///
-    /// This method checks that all required environment variables are present
-    /// and have valid values.
+    /// This method checks that the keys the bottle-level spoof always sets are
+    /// present. `D3DM_SUPPORT_DXR` is not among them, since the bottle resolves
+    /// it against its own ray tracing toggle.
     ///
     /// - Parameter environment: The environment dictionary to validate
     /// - Returns: `true` if GPU spoofing is properly configured
     public static func validateSpoofingEnvironment(_ environment: [String: String]) -> Bool {
         let requiredKeys = [
-            "GPU_VENDOR_ID",
-            "GPU_DEVICE_ID",
-            "D3DM_FEATURE_LEVEL_12_1"
+            "MESA_GL_VERSION_OVERRIDE",
+            "MESA_GLSL_VERSION_OVERRIDE"
         ]
 
         return requiredKeys.allSatisfy { environment[$0] != nil }

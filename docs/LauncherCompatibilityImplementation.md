@@ -83,11 +83,11 @@ Steam:
 - WINHTTP_CONNECT_TIMEOUT=90000 (download reliability)
 
 Rockstar:
-- DXVK_REQUIRED=1 (logo rendering)
-- D3DM_FORCE_D3D11=1 (game compatibility)
+- WINE_LARGE_ADDRESS_AWARE=1 (launcher initialization)
+- DXVK DLL overrides via requiresDXVK (logo rendering)
 
 EA App:
-- D3DM_FEATURE_LEVEL_12_1=1 (GPU checks)
+- LC_ALL=en_US.UTF-8 (launcher UI locale)
 - CEF_DISABLE_SANDBOX=1 (launcher UI)
 ```
 
@@ -96,9 +96,7 @@ EA App:
 
 **Key Features:**
 - Three vendor profiles (NVIDIA, AMD, Intel)
-- DirectX 12.1 feature level reporting
 - OpenGL 4.6 capability reporting
-- 8GB VRAM reporting
 - Ray tracing (DXR) support indication
 - MoltenVK Vulkan configuration
 - Validation utilities
@@ -107,6 +105,10 @@ EA App:
 - NVIDIA: 0x10DE (RTX 4090 spoofed)
 - AMD: 0x1002 (RX 6900 XT spoofed)
 - Intel: 0x8086 (UHD Graphics 730 spoofed)
+
+The spoof no longer exports these IDs: the `GPU_VENDOR_ID`, `GPU_DEVICE_ID`,
+`GPU_DESCRIPTION`, `GPU_MEMORY_SIZE` and `D3DM_SHADER_MODEL` keys it used to set
+are read by no shipped runtime.
 
 #### BottleLauncherConfig.swift (105 lines)
 **Purpose:** Configuration structure for launcher settings
@@ -119,7 +121,7 @@ EA App:
 - `gpuSpoofing: Bool` - GPU spoofing enable
 - `gpuVendor: GPUVendor` - Vendor selection
 - `networkTimeout: Int` - Connection timeout
-- `autoEnableDXVK: Bool` - Auto-enable for requirements
+- `autoEnableDXVK: Bool` - Force DXVK in a bottle whose launcher requires it (Rockstar only)
 
 **Serialization:** Fully Codable with PropertyListEncoder
 
@@ -145,8 +147,6 @@ EA App:
 
 **Key Improvements:**
 - CEF sandbox disable moved to universal (all macOS versions)
-- macOS 15.4+ thread management enhancements
-- macOS 15.4.1 mach port fixes
 - Comprehensive logging for debugging
 
 **New Environment Variables:**
@@ -155,16 +155,20 @@ All Versions:
 - STEAM_DISABLE_CEF_SANDBOX=1
 - CEF_DISABLE_SANDBOX=1
 
-macOS 15.4+:
-- WINE_CPU_TOPOLOGY=8:8
-- WINE_THREAD_PRIORITY_PRESERVE=1
-- WINE_ENABLE_POSIX_SIGNALS=1
-- WINE_DISABLE_FAST_PATH=1
+macOS 15.3+:
+- MTL_DEBUG_LAYER=0
 
-macOS 15.4.1+:
-- WINE_MACH_PORT_TIMEOUT=30000
-- WINE_MACH_PORT_RETRY_COUNT=5
+macOS 15.4+:
+- WINEFSYNC=0
+- STEAM_RUNTIME=0
+- WINEESYNC=1 (only when no sync mode is set)
 ```
+
+Earlier versions also set `D3DM_VALIDATION`, `WINE_DISABLE_NTDLL_THREAD_REGS`,
+`WINE_ENABLE_PIPE_SYNC_FOR_APP`, `WINE_CPU_TOPOLOGY`, `WINE_THREAD_PRIORITY_PRESERVE`,
+`WINE_ENABLE_POSIX_SIGNALS`, `WINE_SIGPIPE_IGNORE`, `WINE_PRELOADER_DEBUG`,
+`WINE_DISABLE_FAST_PATH`, `WINE_MACH_PORT_TIMEOUT` and `WINE_MACH_PORT_RETRY_COUNT`.
+No shipped runtime reads any of them, so they were removed.
 
 #### Wine.swift (Modified)
 **Changes:** Auto-enable DXVK for launcher requirements
@@ -286,9 +290,8 @@ Epic Games:
    - Current value display
    - Download fix explanation
 
-8. **Auto-Enable DXVK**
-   - Toggle for automatic DXVK
-   - Rockstar requirement note
+8. **Use DXVK for Rockstar Games Launcher**
+   - Rockstar is the only launcher with `requiresDXVK`; other launchers get DXVK from the Recommended backend
 
 9. **Diagnostics Button**
    - One-click report generation
@@ -366,17 +369,15 @@ if bottle.settings.launcherCompatibilityMode &&
 
 **Coverage:** Environment variable generation, launcher requirements, metadata
 
-#### GPUDetectionTests.swift (13 tests)
+#### GPUDetectionTests.swift (12 tests)
 ✅ `testNVIDIAVendorID`
 ✅ `testAMDVendorID`
 ✅ `testIntelVendorID`
-✅ `testGPUSpoofingIncludesVendorID`
-✅ `testGPUSpoofingIncludesFeatureLevels`
+✅ `testGPUSpoofingOmitsUnreadVendorKeys`
+✅ `testGPUSpoofingOmitsUnreadFeatureLevelKeys`
 ✅ `testGPUSpoofingIncludesOpenGLVersion`
-✅ `testGPUSpoofingIncludesVRAM`
 ✅ `testGPUSpoofingIncludesRayTracing`
 ✅ `testAppleSiliconSpoofing`
-✅ `testCustomModelName`
 ✅ `testSpoofWithVendor`
 ✅ `testValidateSpoofingEnvironment`
 ✅ `testAllVendorsHaveDeviceIDs`

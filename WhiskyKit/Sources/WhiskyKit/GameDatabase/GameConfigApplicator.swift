@@ -227,7 +227,7 @@ public enum GameConfigApplicator {
             ))
         }
 
-        if let dxvk = settings.dxvk, dxvk != bottle.settings.dxvk {
+        if settings.graphicsBackend == nil, let dxvk = settings.dxvk, dxvk != bottle.settings.dxvk {
             changes.append(ConfigChange(
                 category: "Graphics",
                 settingName: "DXVK",
@@ -246,15 +246,6 @@ public enum GameConfigApplicator {
             ))
         }
 
-        if let sequoiaCompat = settings.sequoiaCompatMode, sequoiaCompat != bottle.settings.sequoiaCompatMode {
-            changes.append(ConfigChange(
-                category: "Graphics",
-                settingName: "Sequoia Compatibility Mode",
-                currentValue: bottle.settings.sequoiaCompatMode ? "Enabled" : "Disabled",
-                newValue: sequoiaCompat ? "Enabled" : "Disabled"
-            ))
-        }
-
         // Performance settings
         if let enhancedSync = settings.enhancedSync, enhancedSync != bottle.settings.enhancedSync {
             changes.append(ConfigChange(
@@ -263,27 +254,6 @@ public enum GameConfigApplicator {
                 currentValue: describeEnhancedSync(bottle.settings.enhancedSync),
                 newValue: describeEnhancedSync(enhancedSync)
             ))
-        }
-
-        if let forceD3D11 = settings.forceD3D11, forceD3D11 != bottle.settings.forceD3D11 {
-            changes.append(ConfigChange(
-                category: "Performance",
-                settingName: "Force D3D11",
-                currentValue: bottle.settings.forceD3D11 ? "Enabled" : "Disabled",
-                newValue: forceD3D11 ? "Enabled" : "Disabled"
-            ))
-        }
-
-        if let presetName = settings.performancePreset {
-            let currentPreset = bottle.settings.performancePreset.rawValue
-            if presetName != currentPreset {
-                changes.append(ConfigChange(
-                    category: "Performance",
-                    settingName: "Performance Preset",
-                    currentValue: bottle.settings.performancePreset.description(),
-                    newValue: presetName
-                ))
-            }
         }
 
         if let shaderCache = settings.shaderCacheEnabled, shaderCache != bottle.settings.shaderCacheEnabled {
@@ -370,11 +340,13 @@ public enum GameConfigApplicator {
     /// Applies variant settings to the bottle's settings.
     @MainActor
     private static func applyVariantSettings(_ settings: GameConfigVariantSettings, to bottle: Bottle) {
+        // `dxvk` is the legacy backend switch: its setter maps `false` back to
+        // Recommended, so applying it after an explicit backend undid the
+        // backend. An explicit backend wins; `dxvk` only speaks when there is
+        // none.
         if let graphicsBackend = settings.graphicsBackend {
             bottle.settings.graphicsBackend = graphicsBackend
-        }
-
-        if let dxvk = settings.dxvk {
+        } else if let dxvk = settings.dxvk {
             bottle.settings.dxvk = dxvk
         }
 
@@ -386,25 +358,12 @@ public enum GameConfigApplicator {
             bottle.settings.enhancedSync = enhancedSync
         }
 
-        if let forceD3D11 = settings.forceD3D11 {
-            bottle.settings.forceD3D11 = forceD3D11
-        }
-
-        if let presetName = settings.performancePreset,
-           let preset = PerformancePreset(rawValue: presetName) {
-            bottle.settings.performancePreset = preset
-        }
-
         if let shaderCacheEnabled = settings.shaderCacheEnabled {
             bottle.settings.shaderCacheEnabled = shaderCacheEnabled
         }
 
         if let avxEnabled = settings.avxEnabled {
             bottle.settings.avxEnabled = avxEnabled
-        }
-
-        if let sequoiaCompatMode = settings.sequoiaCompatMode {
-            bottle.settings.sequoiaCompatMode = sequoiaCompatMode
         }
     }
 

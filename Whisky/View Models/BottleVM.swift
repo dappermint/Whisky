@@ -113,6 +113,16 @@ final class BottleVM: ObservableObject {
         // conflicting actions during move/export/duplicate.
         let inFlight = Dictionary(bottles.filter(\.inFlight).map { ($0.url, $0) }) { first, _ in first }
         bottles = bottlesList.loadBottles().map { inFlight[$0.url] ?? $0 }
+        migrateLauncherBackends()
+    }
+
+    /// Runs ``LauncherBackendMigration`` on every bottle, here and not in WhiskyKit's
+    /// loader so WhiskyCmd never rewrites settings. Also run after a GPTK deploy.
+    func migrateLauncherBackends() {
+        let d3dMetalInstalled = WhiskyWineInstaller.isD3DMetalInstalled()
+        for bottle in bottles where bottle.isAvailable && !bottle.inFlight {
+            LauncherBackendMigration.migrateIfNeeded(bottle, d3dMetalInstalled: d3dMetalInstalled)
+        }
     }
 
     /// Bottles found on disk with no registry entry, awaiting a re-import
@@ -203,10 +213,14 @@ final class BottleVM: ObservableObject {
             createdBottle.saveBottleSettings()
 
             try persistBottleCreation(request: request)
-            // Clear before the reload: loadBottles keeps in-flight instances alive by
-            // url, so a bottle still marked in-flight here spins until the app restarts.
-            createdBottle.inFlight = false
+            // Reload while the bottle is still in flight so the reload keeps
+            // this instance. Reloading after clearing the flag replaced it,
+            // and the selected bottle page kept writing to the old one: its
+            // first pin never reached the library, the Dock menu, or the menu
+            // bar extra until the next reload.
             loadBottles()
+            createdBottle.isAvailable = true
+            createdBottle.inFlight = false
             Telemetry.capture(.firstBottleCreated)
         } catch {
             handleBottleCreationFailure(error, request: request, bottle: bottle)

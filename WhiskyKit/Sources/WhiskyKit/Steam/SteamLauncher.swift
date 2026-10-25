@@ -41,10 +41,20 @@ public enum SteamLaunchError: LocalizedError, Equatable {
 public enum SteamLauncher {
     /// Launches a game through the bottle's Steam client.
     ///
-    /// Starts the client too when it isn't running, since `-applaunch` on a
-    /// cold client brings it up first. The returned task is the client
-    /// invocation, which lives as long as the session, so callers should not
-    /// await it.
+    /// The game's DLL overrides go into the `AppDefaults` entries of its
+    /// executables, and the `-applaunch` invocation carries none in its
+    /// environment, which every process it starts would inherit and which
+    /// outranks their own entries. So the game gets its plan whether the
+    /// running client or this invocation starts it, and the client and its
+    /// helpers keep DXVK even when `-applaunch` brings them up (#276).
+    ///
+    /// Starts the client first when it isn't running, the way Play does: with
+    /// `-silent`, as a launch of its own, and only then hands over `-applaunch`,
+    /// so the client never inherits the game's environment variables. The
+    /// returned task is the `-applaunch` invocation. A command-line
+    /// caller has to await it: the launch only happens inside the task, and a
+    /// process that exits first takes the task with it before Wine has started
+    /// anything.
     ///
     /// - Parameters:
     ///   - appId: The Steam App ID to launch.
@@ -52,12 +62,19 @@ public enum SteamLauncher {
     ///   - installURL: The game's install folder, to save a library rescan when
     ///     the caller already knows it.
     ///   - record: Whether to remember this bottle for the App ID.
+    ///   - clientIsRunning: Whether the caller has already made sure the client
+    ///     is up, as Play does, which saves checking again.
+    ///   - onOutput: Receives the `-applaunch` invocation's output events,
+    ///     starting with ``ProcessOutput/started`` once Wine is running it.
+    /// - Returns: The client invocation, which finishes with its run result.
     /// - Throws: ``SteamLaunchError/steamNotInstalled`` if the bottle has no client.
     @MainActor
     @discardableResult
     public static func launch(
-        appId: Int, bottle: Bottle, installURL: URL? = nil, record: Bool = true
-    ) throws -> Task<Void, Never> {
+        appId: Int, bottle: Bottle, installURL: URL? = nil, record: Bool = true,
+        clientIsRunning: Bool = false,
+        onOutput: (@MainActor (ProcessOutput) -> Void)? = nil
+    ) throws -> Task<Wine.ProgramRunResult, any Error> {
         guard let steamRoot = SteamLibrary.detectInstall(bottleURL: bottle.url) else {
             throw SteamLaunchError.steamNotInstalled
         }
@@ -69,34 +86,140 @@ public enum SteamLauncher {
             userOverrides: installURL.flatMap { userOverrides(forInstallURL: $0, bottle: bottle) }
         )
         let steamExe = steamRoot.appending(path: "steam.exe")
+        let gameExecutables = gameExecutables(installURL: installURL, plan: plan)
 
         return Task {
+            try await Wine.prepareBottlePrefix(bottle: bottle)
             await Wine.syncAudioRegistry(bottle: bottle)
             await Wine.syncWindowsVersion(bottle: bottle)
-
-            _ = try? await Wine.runProgram(
+            if !clientIsRunning {
+                let running = await hostSteamPIDs()
+                await startClientIfNeeded(
+                    isRunning: { await isClientRunning(bottle: bottle, hostSteamPIDs: running) },
+                    start: { startClient(steamExe: steamExe, bottle: bottle) },
+                    hasStarted: { await !hostSteamPIDs().subtracting(running).isEmpty }
+                )
+            }
+            return try await Wine.runProgram(
                 at: steamExe, args: ["-applaunch", String(appId)], bottle: bottle,
                 programOverrides: plan.overrides,
                 gameProfileEnvironment: plan.gameProfileEnvironment,
-                // the plan is the game's; steam.exe is only the vehicle
-                // The plan is the game's, but the name and icon are not: the
-                // client is only the vehicle and it starts other games too.
                 identityScope: .program,
                 overridesApplyToDescendants: true,
-                // The client hands the game its own handles, so an attached
-                // client is what puts the game's output in the run's log. This
-                // task holds the call for the whole session, which is what the
-                // caller already expects of it.
+                descendantExecutables: gameExecutables,
+                descendantLaunchers: plan.startsLaunchers,
                 keepAttached: true,
-                // Recorded once the client is up: a launch that never happened
-                // used to leave a routing entry and a last-played behind it.
                 onStarted: {
                     guard record else { return }
                     GameRouting().record(appId: appId, bottleURL: bottle.url)
                     GameRecordStore(bottleURL: bottle.url).recordLaunch(.steam(appID: appId))
-                }
+                },
+                onOutput: onOutput
             )
         }
+    }
+
+    /// Starts `steam.exe -silent` with the user's own overrides for it, the
+    /// way the Programs tab would, so the client's entry matches the one a
+    /// game launch writes for it. Runs for the whole session, so it is never
+    /// awaited.
+    @MainActor
+    static func startClient(steamExe: URL, bottle: Bottle) {
+        let overrides = Program.persistedOverrides(for: steamExe, bottleURL: bottle.url)
+        Task {
+            _ = try? await Wine.runProgram(
+                at: steamExe, args: ["-silent"], bottle: bottle, programOverrides: overrides,
+                identityScope: .program
+            )
+        }
+    }
+
+    /// The executable names a game launch scopes the game's plan to: what the
+    /// install folder holds, then what the GameDB lists, each name once.
+    static func gameExecutables(installURL: URL?, plan: LaunchPlan) -> [String] {
+        let found = installURL.map { SteamLibrary.executableURLs(under: $0).map(\.lastPathComponent) } ?? []
+        var seen = Set<String>()
+        return (found + plan.gameExecutables).filter { seen.insert($0.lowercased()).inserted }
+    }
+
+    /// Starts the client when it isn't running, then waits until it is.
+    ///
+    /// Gives up waiting after `timeout` and lets `-applaunch` go ahead anyway,
+    /// which is what happened before the client was started separately.
+    ///
+    /// - Parameters:
+    ///   - isRunning: Whether `steam.exe` is running in the bottle. Asked once.
+    ///   - start: Starts `steam.exe -silent`. Must return promptly: the client
+    ///     runs for the whole session.
+    ///   - hasStarted: Whether the client this started is up. Polled, so it must
+    ///     not start a Wine process: on a prefix the start is still booting, a
+    ///     poll every few seconds keeps the boot's services alive, and the
+    ///     launch's registry import waits on their output until they exit.
+    ///   - timeout: How long to wait for the client to appear.
+    ///   - pollInterval: How often to look.
+    /// - Returns: Whether the client is running.
+    @MainActor
+    @discardableResult
+    static func startClientIfNeeded(
+        isRunning: @MainActor () async -> Bool,
+        start: @MainActor () -> Void,
+        hasStarted: @MainActor () async -> Bool,
+        timeout: Duration = .seconds(90),
+        pollInterval: Duration = .seconds(2)
+    ) async -> Bool {
+        if await isRunning() {
+            return true
+        }
+        start()
+        let deadline = ContinuousClock.now.advanced(by: timeout)
+        while ContinuousClock.now < deadline {
+            try? await Task.sleep(for: pollInterval)
+            if await hasStarted() {
+                return true
+            }
+        }
+        return false
+    }
+
+    /// Whether `steam.exe` is running in the bottle.
+    ///
+    /// Without a `steam.exe` anywhere on the host the answer is no, and no Wine
+    /// process is started to find that out.
+    @MainActor
+    static func isClientRunning(bottle: Bottle, hostSteamPIDs: Set<Int32>) async -> Bool {
+        guard !hostSteamPIDs.isEmpty else { return false }
+        return await WineSteamClientDriver(bottle: bottle).processList()
+            .contains { $0.imageName.lowercased() == "steam.exe" }
+    }
+
+    /// The host process IDs of every process whose Windows image is `steam.exe`,
+    /// in any bottle. Wine's processes carry their Windows path in the host
+    /// process list, so this costs one `ps` and no Wine process.
+    static func hostSteamPIDs() async -> Set<Int32> {
+        await Task.detached {
+            let process = Process()
+            process.executableURL = URL(filePath: "/bin/ps")
+            process.arguments = ["-Ao", "pid=,comm="]
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            process.standardError = FileHandle.nullDevice
+            guard (try? process.run()) != nil else { return [] }
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            process.waitUntilExit()
+            return steamPIDs(inProcessListing: String(bytes: data, encoding: .utf8) ?? "")
+        }.value
+    }
+
+    /// The IDs in a `ps -Ao pid=,comm=` listing whose command is a Windows
+    /// `steam.exe`.
+    static func steamPIDs(inProcessListing output: String) -> Set<Int32> {
+        Set(output.split(whereSeparator: \.isNewline).compactMap { line -> Int32? in
+            let fields = line.trimmingCharacters(in: .whitespaces)
+                .split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
+            guard fields.count == 2, let pid = Int32(fields[0]) else { return nil }
+            let image = fields[1].split(separator: "\\").last ?? fields[1]
+            return image.lowercased() == "steam.exe" ? pid : nil
+        })
     }
 
     /// The user's persisted overrides for a game's executables, so settings
@@ -122,6 +245,32 @@ public enum SteamLauncher {
             return ProgramOverrideCandidate(url: url, overrides: overrides ?? ProgramOverrides())
         }
         return SteamLibrary.preferredOverrides(among: candidates)
+    }
+
+    /// Finds the installed game an App ID names, and the bottle holding it.
+    ///
+    /// Narrowing `bottles` to a single bottle chooses where to look, never
+    /// whether to look: an App ID that arrives from outside the app may only
+    /// ever reach a game the user actually has. The library entry is also what
+    /// lets a caller name the game rather than echo the App ID back.
+    ///
+    /// - Parameters:
+    ///   - appId: The Steam App ID to locate.
+    ///   - bottles: The bottles to search.
+    ///   - routing: The route store to consult.
+    /// - Returns: The library entry and the bottle it was found in.
+    /// - Throws: ``SteamLaunchError/gameNotFound(appId:)`` when no bottle has it.
+    @MainActor
+    public static func resolveGame(
+        appId: Int, in bottles: [Bottle], routing: GameRouting = GameRouting()
+    ) throws -> (game: SteamGame, bottle: Bottle) {
+        let bottle = try resolveBottle(appId: appId, in: bottles, routing: routing)
+        guard let game = SteamLibrary.enumerate(bottleURL: bottle.url)
+            .first(where: { $0.appId == appId })
+        else {
+            throw SteamLaunchError.gameNotFound(appId: appId)
+        }
+        return (game, bottle)
     }
 
     /// Finds the bottle to launch an App ID from: the remembered route when it

@@ -318,6 +318,146 @@ final class BottleCoreTests: XCTestCase {
     }
 }
 
+// MARK: - Load-Time Metadata Persistence Tests
+
+/// Loading a bottle must leave a healthy Metadata.plist alone. `WhiskyCmd list` and
+/// `shellenv` load every registered bottle, so a save on load rewrote all of them and
+/// could clobber a settings save the app made in the meantime.
+final class BottleLoadPersistenceTests: XCTestCase {
+    /// A fixed past date stamped on the fixture, so any rewrite shows up regardless of
+    /// timestamp resolution.
+    private let sentinelDate = Date(timeIntervalSince1970: 1_000_000_000)
+
+    var tempDir: URL!
+    var bottleURL: URL!
+    var metadataURL: URL!
+
+    override func setUp() {
+        super.setUp()
+        tempDir = FileManager.default.temporaryDirectory.appending(path: "bottle_load_\(UUID().uuidString)")
+        bottleURL = tempDir.appending(path: "TestBottle")
+        metadataURL = bottleURL.appending(path: "Metadata.plist")
+        try? FileManager.default.createDirectory(
+            at: bottleURL.appending(path: "drive_c"),
+            withIntermediateDirectories: true
+        )
+    }
+
+    override func tearDown() {
+        try? FileManager.default.removeItem(at: tempDir)
+        super.tearDown()
+    }
+
+    /// The Metadata.plist's inode and modification date. An atomic save replaces the
+    /// file (new inode), and any write moves the date off the sentinel.
+    private struct FileStamp: Equatable {
+        let inode: UInt64
+        let modified: Date
+    }
+
+    private func metadataStamp() throws -> FileStamp {
+        let attributes = try FileManager.default.attributesOfItem(atPath: metadataURL.path(percentEncoded: false))
+        let inode = try XCTUnwrap(attributes[.systemFileNumber] as? NSNumber)
+        let modified = try XCTUnwrap(attributes[.modificationDate] as? Date)
+        return FileStamp(inode: inode.uint64Value, modified: modified)
+    }
+
+    /// Writes `settings` as the bottle's Metadata.plist and backdates it to the sentinel.
+    private func writeMetadata(_ settings: BottleSettings) throws {
+        try settings.encode(to: metadataURL)
+        try FileManager.default.setAttributes(
+            [.modificationDate: sentinelDate],
+            ofItemAtPath: metadataURL.path(percentEncoded: false)
+        )
+    }
+
+    private func persistedSettings() throws -> BottleSettings {
+        try PropertyListDecoder().decode(BottleSettings.self, from: Data(contentsOf: metadataURL))
+    }
+
+    @MainActor
+    func testLoadingBottleWithoutPinsDoesNotRewriteMetadata() throws {
+        try writeMetadata(BottleSettings())
+        let before = try metadataStamp()
+
+        _ = Bottle(bottleUrl: bottleURL)
+
+        XCTAssertEqual(try metadataStamp(), before, "loading a healthy bottle must not rewrite Metadata.plist")
+    }
+
+    @MainActor
+    func testLoadingBottleWithValidPinsDoesNotRewriteMetadata() throws {
+        let programURL = bottleURL.appending(path: "drive_c/game.exe")
+        try Data("fake".utf8).write(to: programURL)
+        // A pin on a removable volume that isn't mounted is kept, so it counts as valid too.
+        var externalPin = PinnedProgram(name: "External", url: URL(filePath: "/Volumes/\(UUID().uuidString)/game.exe"))
+        externalPin.removable = true
+        var settings = BottleSettings()
+        settings.pins = [PinnedProgram(name: "Game", url: programURL), externalPin]
+        try writeMetadata(settings)
+        let before = try metadataStamp()
+
+        let bottle = Bottle(bottleUrl: bottleURL)
+
+        XCTAssertEqual(bottle.settings.pins, settings.pins)
+        XCTAssertEqual(try metadataStamp(), before, "valid pins must not trigger a Metadata.plist rewrite")
+    }
+
+    @MainActor
+    func testLoadingBottlePrunesStaleAndDuplicatePinsAndPersistsThem() throws {
+        let programURL = bottleURL.appending(path: "drive_c/game.exe")
+        try Data("fake".utf8).write(to: programURL)
+        let validPin = PinnedProgram(name: "Game", url: programURL)
+        let stalePin = PinnedProgram(name: "Removed", url: bottleURL.appending(path: "drive_c/removed.exe"))
+        var settings = BottleSettings()
+        settings.pins = [validPin, stalePin, validPin]
+        try writeMetadata(settings)
+        let before = try metadataStamp()
+
+        let bottle = Bottle(bottleUrl: bottleURL)
+
+        XCTAssertEqual(bottle.settings.pins, [validPin])
+        XCTAssertNotEqual(try metadataStamp(), before, "pruned pins must be saved")
+        XCTAssertEqual(try persistedSettings().pins, [validPin])
+    }
+
+    @MainActor
+    func testDuplicatePinsArePrunedOnceAndRepinningStaysQuiet() throws {
+        let programURL = bottleURL.appending(path: "drive_c/game.exe")
+        try Data("fake".utf8).write(to: programURL)
+        let pin = PinnedProgram(name: "game", url: programURL)
+        var settings = BottleSettings()
+        settings.pins = [pin, pin]
+        try writeMetadata(settings)
+        let original = try metadataStamp()
+
+        // First load repairs the duplicate and saves it.
+        let bottle = Bottle(bottleUrl: bottleURL)
+        XCTAssertEqual(bottle.settings.pins, [pin])
+        XCTAssertNotEqual(try metadataStamp(), original, "the pruned duplicate must be saved")
+        XCTAssertEqual(try persistedSettings().pins, [pin])
+
+        // From here on, nothing should write: re-pin (as the start menu scan does),
+        // then reload.
+        try FileManager.default.setAttributes(
+            [.modificationDate: sentinelDate],
+            ofItemAtPath: metadataURL.path(percentEncoded: false)
+        )
+        let repaired = try metadataStamp()
+
+        let program = Program(url: programURL, bottle: bottle)
+        XCTAssertTrue(program.pinned)
+        program.pinned = true
+        XCTAssertEqual(bottle.settings.pins, [pin])
+        XCTAssertEqual(try metadataStamp(), repaired, "re-pinning a pinned program must not rewrite Metadata.plist")
+
+        let reloaded = Bottle(bottleUrl: bottleURL)
+        XCTAssertEqual(reloaded.settings.pins, [pin])
+        XCTAssertEqual(try metadataStamp(), repaired, "a repaired bottle must load without a rewrite")
+        XCTAssertEqual(try persistedSettings().pins, [pin])
+    }
+}
+
 // MARK: - Program Sequence Extension Tests
 
 final class ProgramSequenceExtensionTests: XCTestCase {

@@ -77,17 +77,18 @@ class Winetricks {
             showMissingResourcesAlert(command: command)
             return
         }
-        let winetricksCmd = terminalCommand(command: command, bottle: bottle, resourcesURL: resourcesURL)
+        let scriptURL: URL
+        do {
+            scriptURL = try writeTerminalScript(command: command, bottle: bottle, resourcesURL: resourcesURL)
+        } catch {
+            logger.error("Failed to write winetricks script: \(error)")
+            showMissingResourcesAlert(command: command)
+            return
+        }
+        let script = TerminalApp.preferred.generateAppleScript(for: scriptURL.path)
 
-        // Via a temp script and `TerminalApp.preferred`, the same way
-        // `Bottle.openTerminal()` does it. Naming Terminal.app in the script
-        // ignored the terminal the user picked in Settings.
-        guard let scriptURL = writeTempScript(for: winetricksCmd, command: command) else { return }
-        TempFileTracker.shared.register(file: scriptURL)
-
-        let source = TerminalApp.preferred.generateAppleScript(for: scriptURL.path)
         var error: NSDictionary?
-        if let appleScript = NSAppleScript(source: source) {
+        if let appleScript = NSAppleScript(source: script) {
             appleScript.executeAndReturnError(&error)
 
             if let error {
@@ -106,23 +107,6 @@ class Winetricks {
     }
 
     @MainActor
-    private static func writeTempScript(for winetricksCmd: String, command: String) -> URL? {
-        let scriptURL = FileManager.default.temporaryDirectory
-            .appending(path: "whisky-winetricks-\(UUID().uuidString).sh")
-        do {
-            try "#!/bin/sh\n\(winetricksCmd)\n".write(to: scriptURL, atomically: true, encoding: .utf8)
-            try FileManager.default.setAttributes(
-                [.posixPermissions: 0o755], ofItemAtPath: scriptURL.path(percentEncoded: false)
-            )
-            return scriptURL
-        } catch {
-            logger.error("Failed to write winetricks script: \(error.localizedDescription)")
-            showCommandError(command: command, description: error.localizedDescription)
-            return nil
-        }
-    }
-
-    @MainActor
     private static func showCommandError(command: String, description: String) {
         let alert = NSAlert()
         alert.messageText = String(localized: "alert.message")
@@ -132,6 +116,30 @@ class Winetricks {
         alert.alertStyle = .critical
         alert.addButton(withTitle: String(localized: "button.ok"))
         alert.runModal()
+    }
+
+    /// Writes the winetricks invocation to a temp script the terminal sources.
+    ///
+    /// Every value is single-quoted so nothing in a path is read as shell
+    /// syntax; the script is tracked for cleanup like the bottle terminal's.
+    @MainActor
+    private static func writeTerminalScript(command: String, bottle: Bottle, resourcesURL: URL) throws -> URL {
+        let winetricksPath = resourcesURL.appending(path: "winetricks").path(percentEncoded: false)
+        let env = processEnvironment(for: bottle, resourcesURL: resourcesURL)
+        var lines = ["#!/bin/bash"]
+        for (key, value) in env.sorted(by: { $0.key < $1.key }) {
+            lines.append("export " + ShellQuoting.assignment(key, value))
+        }
+        lines.append(ShellQuoting.commandLine(["bash", winetricksPath, command]))
+        lines.append("")
+        let scriptContent = lines.joined(separator: "\n")
+
+        let scriptURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("whisky-winetricks-\(UUID().uuidString).sh")
+        try scriptContent.write(to: scriptURL, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptURL.path)
+        TempFileTracker.shared.register(file: scriptURL)
+        return scriptURL
     }
 
     /// Shown when the bundled winetricks resources can't be located. A missing
@@ -272,27 +280,5 @@ class Winetricks {
         }
 
         return categories
-    }
-}
-
-extension Winetricks {
-    /// The shell line Terminal runs for a verb.
-    ///
-    /// Winetricks ships in the app bundle Resources alongside cabextract, and is
-    /// invoked through `bash` so no executable bit is relied upon. The
-    /// environment is the one the headless path builds, for the same reason: a
-    /// bottle with a wineserver already up refuses processes that do not share
-    /// its sync mode.
-    @MainActor
-    static func terminalCommand(command: String, bottle: Bottle, resourcesURL: URL) -> String {
-        let winetricksPath = resourcesURL.appending(path: "winetricks").path(percentEncoded: false)
-        // The quotes are written escaped because this line is interpolated into
-        // an AppleScript string literal before Terminal ever sees it.
-        let exports = processEnvironment(for: bottle, resourcesURL: resourcesURL)
-            .sorted { $0.key < $1.key }
-            .filter { !$0.value.contains("\"") }
-            .map { #"\#($0.key)=\"\#($0.value)\""# }
-            .joined(separator: " ")
-        return #"\#(exports) bash \"\#(winetricksPath)\" -q \#(command)"#
     }
 }

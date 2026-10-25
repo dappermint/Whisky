@@ -223,7 +223,7 @@ extension FixPreviewView {
     private var resolvedParams: [String: String] {
         var params = node.params ?? [:]
         if node.fixId == "install-winetricks-verb", params["verb"] == nil,
-           let missing = engine.lastCheckResult?.evidence["missing"], !missing.isEmpty {
+           let missing = missingVerbsEvidence, !missing.isEmpty {
             // Every missing verb, not the first: installing one of four and
             // then verifying all four fails the flow three times and
             // escalates without the fix it promised ever having been tried.
@@ -232,6 +232,22 @@ extension FixPreviewView {
                 .joined(separator: ", ")
         }
         return params
+    }
+
+    /// The `missing` evidence of the most recent check on the path here.
+    ///
+    /// Read from the session rather than `lastCheckResult`: that one is not
+    /// persisted, so a resumed session offered to install "unknown".
+    private var missingVerbsEvidence: String? {
+        if let missing = engine.lastCheckResult?.evidence["missing"] {
+            return missing
+        }
+        for step in engine.session.stepHistory.reversed() {
+            if let missing = engine.session.checkResults[step.nodeId]?.evidence["missing"] {
+                return missing
+            }
+        }
+        return nil
     }
 
     private func loadPreview() {

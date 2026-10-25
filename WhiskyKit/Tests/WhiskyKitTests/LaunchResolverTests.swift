@@ -105,9 +105,7 @@ struct LaunchResolverTests {
                             "isDefault": true,
                             "settings": {
                                 "graphicsBackend": "dxvk",
-                                "dxvkAsync": true,
-                                "forceD3D11": false,
-                                "performancePreset": "unity"
+                                "dxvkAsync": true
                             },
                             "environmentVariables": {
                                 "DXVK_FRAME_RATE": "120"
@@ -134,8 +132,6 @@ struct LaunchResolverTests {
 
         #expect(plan.overrides.graphicsBackend == .dxvk)
         #expect(plan.overrides.dxvkAsync == true)
-        #expect(plan.overrides.forceD3D11 == false)
-        #expect(plan.overrides.performancePreset == .unity)
         #expect(plan.gameProfileEnvironment["DXVK_FRAME_RATE"] == "120")
         #expect(plan.provenance.count == 1)
         #expect(plan.provenance[0].contains("Casualties: Unknown Demo"))
@@ -154,7 +150,6 @@ struct LaunchResolverTests {
         #expect(plan.overrides.graphicsBackend == .dxmt)
         #expect(plan.overrides.dxvkAsync == false)
         // Fields the user left unset still come from the variant
-        #expect(plan.overrides.performancePreset == .unity)
     }
 
     @Test("No match passes user overrides through untouched")
@@ -198,7 +193,6 @@ struct LaunchResolverTests {
         let plan = try LaunchResolver.plan(forProgramAt: exe, userOverrides: user, entries: fixtureEntries())
 
         #expect(plan.overrides.graphicsBackend == .dxmt)
-        #expect(plan.overrides.performancePreset == .unity)
     }
 
     @Test("An unknown exe plans nothing, so a miss costs nothing")

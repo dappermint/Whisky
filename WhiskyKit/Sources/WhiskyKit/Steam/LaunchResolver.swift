@@ -35,6 +35,12 @@ public struct LaunchPlan {
     /// The matched game's real title, which is the name worth showing in the
     /// Dock. `nil` without a GameDB match, leaving the executable's own name.
     public let title: String?
+    /// The game's executable names as the GameDB lists them, to scope the
+    /// overrides to alongside the ones found in the install folder.
+    public var gameExecutables: [String] = []
+    /// Launchers the game starts on its own inside the Steam session, whose
+    /// processes then need their `AppDefaults` entries ahead of time.
+    public var startsLaunchers: [LauncherType] = []
 }
 
 /// Turns a Steam App ID into a ``LaunchPlan`` by matching the GameDB and
@@ -97,20 +103,26 @@ public enum LaunchResolver {
     ) -> LaunchPlan {
         let database = entries ?? GameDBLoader.loadDefaults()
 
-        guard let match = GameMatcher.bestMatch(metadata: metadata, against: database),
-              let variant = match.recommendedVariant
-        else {
-            return LaunchPlan(
+        let match = GameMatcher.bestMatch(metadata: metadata, against: database)
+        let rockstar = metadata.steamAppId.map { LauncherType.rockstarSteamAppIds.contains($0) } == true
+            || match?.entry.subtitle?.localizedCaseInsensitiveContains("Rockstar Games") == true
+        let startsLaunchers: [LauncherType] = rockstar ? [.rockstar] : []
+
+        guard let match, let variant = match.recommendedVariant else {
+            var plan = LaunchPlan(
                 overrides: userOverrides ?? ProgramOverrides(),
                 gameProfileEnvironment: [:],
                 provenance: [],
                 title: nil
             )
+            plan.gameExecutables = match?.entry.exeNames ?? []
+            plan.startsLaunchers = startsLaunchers
+            return plan
         }
 
         let overrides = merge(variant: variant.settings, dllOverrides: variant.dllOverrides, under: userOverrides)
 
-        return LaunchPlan(
+        var plan = LaunchPlan(
             overrides: overrides,
             gameProfileEnvironment: variant.environmentVariables ?? [:],
             provenance: [
@@ -118,6 +130,9 @@ public enum LaunchResolver {
             ],
             title: match.entry.title
         )
+        plan.gameExecutables = match.entry.exeNames ?? []
+        plan.startsLaunchers = startsLaunchers
+        return plan
     }
 
     /// Fills GameDB variant settings into every field the user left unset.
@@ -136,10 +151,7 @@ public enum LaunchResolver {
         merged.dxvk = merged.dxvk ?? variant.dxvk
         merged.dxvkAsync = merged.dxvkAsync ?? variant.dxvkAsync
         merged.enhancedSync = merged.enhancedSync ?? variant.enhancedSync
-        merged.forceD3D11 = merged.forceD3D11 ?? variant.forceD3D11
         merged.shaderCacheEnabled = merged.shaderCacheEnabled ?? variant.shaderCacheEnabled
-        merged.performancePreset = merged.performancePreset
-            ?? variant.performancePreset.flatMap(PerformancePreset.init(rawValue:))
         merged.dllOverrides = merged.dllOverrides ?? dllOverrides
 
         return merged

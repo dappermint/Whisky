@@ -35,6 +35,8 @@ struct DiagnosticsView: View {
     /// `onAction` still wins. Without either, the cards have no Apply.
     var applyBottle: Bottle?
 
+    @Environment(\.dismiss) private var dismiss
+
     @State private var applyFeedback: String?
     @State private var activeCategoryFilter: CrashCategory?
     @State private var searchText: String = ""
@@ -43,7 +45,9 @@ struct DiagnosticsView: View {
     @State private var isOtherSuggestionsExpanded: Bool = false
 
     private var effectiveOnAction: ((RemediationAction) -> Void)? {
-        if let onAction { return onAction }
+        if let onAction {
+            return onAction
+        }
         guard let applyBottle else { return nil }
         return { action in
             RemediationExecutor.apply(action, to: applyBottle) { message in
@@ -55,7 +59,11 @@ struct DiagnosticsView: View {
     private var resolvedRemediations: [RemediationAction] {
         guard let diagnosis else { return [] }
         let (_, remediations) = PatternLoader.loadDefaults()
-        return diagnosis.remediations(from: remediations)
+        // A card whose change is already in place (a reset to Recommended on
+        // a Recommended bottle) would apply as a silent no-op.
+        return diagnosis.remediations(from: remediations).filter { action in
+            applyBottle.map { action.wouldChange($0.settings) } ?? true
+        }
     }
 
     private var primaryRemediations: [RemediationAction] {
@@ -75,12 +83,25 @@ struct DiagnosticsView: View {
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            if geometry.size.width >= 700 {
-                splitLayout
-            } else {
-                verticalLayout
+        VStack(spacing: 0) {
+            GeometryReader { geometry in
+                if geometry.size.width >= 700 {
+                    splitLayout
+                } else {
+                    verticalLayout
+                }
             }
+
+            Divider()
+
+            // Every presentation of this view is a sheet, and a sheet with no
+            // control of its own can only be left through the cancel chord.
+            HStack {
+                Spacer()
+                Button("Done") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+            }
+            .padding(12)
         }
     }
 

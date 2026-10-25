@@ -187,10 +187,6 @@ public struct GameConfigVariantSettings: Codable, Sendable, Equatable {
     public let dxvkAsync: Bool?
     /// The enhanced sync mode.
     public let enhancedSync: EnhancedSync?
-    /// Whether to force D3D11 mode.
-    public let forceD3D11: Bool?
-    /// The performance preset name.
-    public let performancePreset: String?
     /// Whether shader caching should be enabled.
     public let shaderCacheEnabled: Bool?
     /// Whether AVX instruction set support should be advertised.
@@ -203,8 +199,6 @@ public struct GameConfigVariantSettings: Codable, Sendable, Equatable {
         dxvk: Bool? = nil,
         dxvkAsync: Bool? = nil,
         enhancedSync: EnhancedSync? = nil,
-        forceD3D11: Bool? = nil,
-        performancePreset: String? = nil,
         shaderCacheEnabled: Bool? = nil,
         avxEnabled: Bool? = nil,
         sequoiaCompatMode: Bool? = nil
@@ -213,8 +207,6 @@ public struct GameConfigVariantSettings: Codable, Sendable, Equatable {
         self.dxvk = dxvk
         self.dxvkAsync = dxvkAsync
         self.enhancedSync = enhancedSync
-        self.forceD3D11 = forceD3D11
-        self.performancePreset = performancePreset
         self.shaderCacheEnabled = shaderCacheEnabled
         self.avxEnabled = avxEnabled
         self.sequoiaCompatMode = sequoiaCompatMode
@@ -238,8 +230,6 @@ public struct GameConfigVariantSettings: Codable, Sendable, Equatable {
         } else {
             self.enhancedSync = try container.decodeIfPresent(EnhancedSync.self, forKey: .enhancedSync)
         }
-        self.forceD3D11 = try container.decodeIfPresent(Bool.self, forKey: .forceD3D11)
-        self.performancePreset = try container.decodeIfPresent(String.self, forKey: .performancePreset)
         self.shaderCacheEnabled = try container.decodeIfPresent(Bool.self, forKey: .shaderCacheEnabled)
         self.avxEnabled = try container.decodeIfPresent(Bool.self, forKey: .avxEnabled)
         self.sequoiaCompatMode = try container.decodeIfPresent(Bool.self, forKey: .sequoiaCompatMode)

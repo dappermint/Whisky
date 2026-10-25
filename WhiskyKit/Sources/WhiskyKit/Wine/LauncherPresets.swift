@@ -151,7 +151,7 @@ public enum LauncherType: String, Codable, CaseIterable, Sendable, Identifiable 
     /// - **Steam**: Fixes steamwebhelper crashes (whisky-app/whisky#946, #1224, #1241) via locale and CEF sandbox
     /// - **Rockstar**: Requires DXVK for logo rendering (whisky-app/whisky#1335, #835)
     /// - **EA App/Epic**: Chromium-based, need sandbox and locale fixes
-    /// - **Ubisoft**: Requires D3D11 mode for stability (whisky-app/whisky#1004)
+    /// - **Ubisoft**: DXVK async for Anno 1800 and other Ubisoft games (whisky-app/whisky#1004)
     ///
     /// - Note: For richer metadata including human-readable reasons and categories,
     ///   use ``fixDetails()`` instead.
@@ -187,13 +187,10 @@ public enum LauncherType: String, Codable, CaseIterable, Sendable, Identifiable 
 
         case .rockstar:
             // Rockstar Launcher fixes (whisky-app/whisky#1335, #835, #1120)
-            // DXVK is REQUIRED for logo screen to render
-            env["DXVK_REQUIRED"] = "1"
+            // DXVK is required for the logo screen to render; requiresDXVK makes
+            // BottleSettings add the DXVK DLL overrides for it.
 
             // Note: CEF_DISABLE_SANDBOX is set globally in MacOSCompatibility.swift
-
-            // Force D3D11 mode for better compatibility
-            env["D3DM_FORCE_D3D11"] = "1"
 
             // Launcher initialization improvements
             env["WINE_LARGE_ADDRESS_AWARE"] = "1"
@@ -207,9 +204,6 @@ public enum LauncherType: String, Codable, CaseIterable, Sendable, Identifiable 
             env["LC_ALL"] = "en_US.UTF-8"
             env["LANG"] = "en_US.UTF-8"
 
-            // GPU detection fixes for "GPU not supported" errors
-            env["D3DM_FEATURE_LEVEL_12_1"] = "1"
-
             // Note: Network timeouts configured via bottle.settings.networkTimeout (default 60s)
 
         case .epicGames:
@@ -217,17 +211,8 @@ public enum LauncherType: String, Codable, CaseIterable, Sendable, Identifiable 
             // Note: CEF_DISABLE_SANDBOX is set globally in MacOSCompatibility.swift
             env["LC_ALL"] = "en_US.UTF-8"
 
-            // Epic launcher stability improvements
-            env["D3DM_FORCE_D3D11"] = "1"
-
-            // Thread safety for Epic's web views
-            env["WINE_DISABLE_NTDLL_THREAD_REGS"] = "1"
-
         case .ubisoft:
             // Ubisoft Connect fixes (whisky-app/whisky#1004)
-            // Requires D3D11 mode
-            env["D3DM_FORCE_D3D11"] = "1"
-
             // Anno 1800 and other Ubisoft games compatibility
             env["DXVK_ASYNC"] = "1"
 
@@ -239,16 +224,10 @@ public enum LauncherType: String, Codable, CaseIterable, Sendable, Identifiable 
             // Note: CEF_DISABLE_SANDBOX is set globally in MacOSCompatibility.swift
             env["LC_ALL"] = "en_US.UTF-8"
 
-            // Battle.net requires specific threading
-            env["WINE_CPU_TOPOLOGY"] = "8:8"
-
         case .paradox:
-            // Paradox Launcher fixes (whisky-app/whisky#1091)
-            // Resource lookup bug workaround
-            env["WINE_DISABLE_FAST_PATH"] = "1"
-
-            // Launcher initialization
-            env["D3DM_FORCE_D3D11"] = "1"
+            // No environment fix: the old resource lookup workaround
+            // (whisky-app/whisky#1091) set a variable no runtime reads.
+            break
         }
 
         return env
@@ -271,10 +250,16 @@ public enum LauncherType: String, Codable, CaseIterable, Sendable, Identifiable 
     /// `AppDefaults` is per executable with no inheritance, and Steam draws its
     /// client in `steamwebhelper.exe`, so an override on `steam.exe` alone
     /// leaves the window blank. Games a launcher starts are deliberately absent.
+    ///
+    /// Steam's overlay process is on the list because it draws the in-game
+    /// overlay with Direct3D in a process of its own, beside a game that may be
+    /// on D3DMetal. Current clients ship it as `gameoverlayui64.exe` only;
+    /// `GameOverlayUI.exe` is the name older ones used. Helpers that draw nothing (`steamerrorreporter.exe`,
+    /// `steam_monitor.exe`) run on the bottle's backend unharmed.
     public var helperExecutables: [String] {
         switch self {
         case .steam:
-            ["steamwebhelper.exe", "steamservice.exe"]
+            ["steamwebhelper.exe", "steamservice.exe", "gameoverlayui64.exe", "GameOverlayUI.exe"]
         case .epicGames:
             ["EpicWebHelper.exe"]
         case .eaApp:
@@ -285,6 +270,41 @@ public enum LauncherType: String, Codable, CaseIterable, Sendable, Identifiable 
             []
         }
     }
+
+    /// Executables of this launcher that something else starts, so they never
+    /// go through Whisky's launch path and only get an `AppDefaults` entry if
+    /// one is written ahead of time.
+    ///
+    /// Rockstar's: a Rockstar title bought on Steam (Red Dead Redemption 2's
+    /// `PlayRDR2.exe`) starts the Rockstar Games Launcher and Social Club inside
+    /// the Steam session. Both draw with Chromium and need DXVK the way Steam's
+    /// helper does. `Launcher.exe` also needs `d3d12` off: it asks D3D12 for
+    /// graphics information at startup, and with D3DMetal's `d3d12` reachable
+    /// that query hangs its shutdown, which keeps the game "running" in Steam
+    /// (#276). Social Club gets the same entry, the layout measured there.
+    public var chainExecutables: [String] {
+        switch self {
+        case .rockstar:
+            ["Launcher.exe", "SocialClubHelper.exe"]
+        case .steam, .epicGames, .eaApp, .battleNet, .ubisoft, .paradox:
+            []
+        }
+    }
+
+    /// Steam App IDs of Rockstar titles that start the Rockstar Games Launcher,
+    /// so a Steam launch of one writes Rockstar's ``chainExecutables`` entries
+    /// even before that launcher is installed: the first run installs it and
+    /// starts it in the same session.
+    ///
+    /// Red Dead Redemption 2, Grand Theft Auto V (Legacy and Enhanced), L.A.
+    /// Noire and its VR Case Files, Max Payne 3, Grand Theft Auto IV, Bully:
+    /// Scholarship Edition, Red Dead Redemption, and the three Definitive
+    /// Editions of the GTA trilogy. GameDB entries published by Rockstar Games
+    /// count as well (see ``LaunchResolver``).
+    static let rockstarSteamAppIds: Set<Int> = [
+        1_174_180, 271_590, 3_240_220, 110_800, 722_230, 204_100,
+        12_210, 12_200, 2_668_510, 1_546_990, 1_546_970, 1_547_000
+    ]
 
     /// The recommended locale for this launcher.
     ///
@@ -315,7 +335,7 @@ public enum LauncherType: String, Codable, CaseIterable, Sendable, Identifiable 
         case .battleNet:
             "Fixes authentication and launcher rendering issues"
         case .paradox:
-            "Fixes recursive resource lookup bugs and initialization"
+            "No launcher-specific fixes needed"
         }
     }
 }

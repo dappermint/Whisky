@@ -74,14 +74,21 @@ extension GPTKImporter {
     ///
     /// Callers gate this on ``isRuntimeGPTKCapable()`` — deploying to an
     /// incapable runtime turns every D3DMetal launch into a crash.
+    ///
+    /// - Throws: ``GPTKImportError/storeNotVerified(_:)`` when the store fails
+    ///   the checks an import applies (see ``verifyStoredPayload()``).
     public static func deployStoredPayload() throws {
         try deployStoredPayload(for: nil)
     }
 
     /// Deploys the stored payload into `runtime`'s tree.
     public static func deployStoredPayload(for runtime: String?) throws {
+        let store = storeFolder
+        if case let .failed(reason) = storeVerdict(inStore: store, isAppleSigned: isAppleSigned(_:identifier:)) {
+            throw GPTKImportError.storeNotVerified(reason)
+        }
         try deploy(
-            fromStore: storeFolder,
+            fromStore: store,
             intoLibraryFolder: WhiskyWineInstaller.libraryFolder(for: runtime),
             originalsKey: originalsKey(for: runtime)
         )
@@ -92,6 +99,14 @@ extension GPTKImporter {
     ///
     /// The store survives a runtime install but the deployed copy does not, so
     /// every install has to re-evaluate. Idempotent and safe to call anywhere.
+    ///
+    /// A runtime holding a payload copied in by hand is left as it is. This
+    /// runs without anyone asking, every time Settings opens, and deploying
+    /// would replace that payload, deleting its forwarders or filing them away
+    /// as Wine's own. Importing is what replaces it.
+    ///
+    /// A store that fails the checks an import applies is not deployed either
+    /// (see ``verifyStoredPayload()``).
     @discardableResult
     public static func deployStoredPayloadIfCapable() -> Bool {
         deployStoredPayloadIfCapable(for: nil)
@@ -100,9 +115,36 @@ extension GPTKImporter {
     /// ``deployStoredPayloadIfCapable()`` against a specific runtime.
     @discardableResult
     public static func deployStoredPayloadIfCapable(for runtime: String?) -> Bool {
-        guard storedRecord() != nil, isRuntimeGPTKCapable(for: runtime) else { return false }
+        guard isRuntimeGPTKCapable(for: runtime) else { return false }
+        return deployStoredPayloadIfPresent(
+            fromStore: storeFolder,
+            intoLibraryFolder: WhiskyWineInstaller.libraryFolder(for: runtime),
+            originalsKey: originalsKey(for: runtime),
+            isAppleSigned: isAppleSigned(_:identifier:)
+        )
+    }
+
+    /// Testable seam for ``deployStoredPayloadIfCapable()``, past the runtime
+    /// capability check.
+    @discardableResult
+    static func deployStoredPayloadIfPresent(
+        fromStore store: URL,
+        intoLibraryFolder folder: URL,
+        originalsKey key: String = "default",
+        isAppleSigned: (_ code: URL, _ identifier: String) -> Bool
+    ) -> Bool {
+        guard storedRecord(inStore: store) != nil else { return false }
+        let verdict = verifyStoredPayload(inStore: store, libraryFolder: folder, isAppleSigned: isAppleSigned)
+        guard verdict == .verified else {
+            logger.info("Left the stored GPTK payload undeployed: it fails the checks an import applies")
+            return false
+        }
+        guard !holdsHandPlacedPayload(inLibraryFolder: folder, usingStore: store) else {
+            logger.info("Left the GPTK payload copied into the runtime by hand in place of the stored one")
+            return false
+        }
         do {
-            try deployStoredPayload(for: runtime)
+            try deploy(fromStore: store, intoLibraryFolder: folder, originalsKey: key)
             return true
         } catch {
             logger.error("Deploying the stored GPTK payload failed: \(error.localizedDescription)")
@@ -140,82 +182,6 @@ extension GPTKImporter {
             }
         }
         return DeploySweep(deployed: deployed, failures: failures)
-    }
-
-    /// The runtime version under `folder`, or `nil` if none is readable.
-    static func runtimeVersionStamp(inLibraryFolder folder: URL) -> String? {
-        let plist = folder.appending(path: "WhiskyWineVersion").appendingPathExtension("plist")
-        guard let info = WhiskyWineInstaller.whiskyWineInfo(at: plist) else { return nil }
-        return "\(info.version.major).\(info.version.minor).\(info.version.patch)"
-    }
-
-    /// The store key a runtime's backups live under. The default runtime has no
-    /// identifier of its own, so it gets a reserved one.
-    static func originalsKey(for runtime: String?) -> String {
-        runtime ?? "default"
-    }
-
-    /// Where `key`'s backed-up Wine originals live.
-    ///
-    /// Keyed per runtime, not shared: several runtimes can hold the payload at
-    /// once, and a single backup set means deploying into one destroys the
-    /// originals of another, leaving nothing to restore.
-    static func originalsFolder(inStore store: URL, key: String) -> URL {
-        store.appending(path: "originals").appending(path: key)
-    }
-
-    static func originalsRecordURL(inStore store: URL, key: String) -> URL {
-        originalsFolder(inStore: store, key: key).appending(path: "OriginalsVersion.plist")
-    }
-
-    static func originalsRecord(inStore store: URL, key: String) -> GPTKOriginalsRecord? {
-        guard let data = try? Data(contentsOf: originalsRecordURL(inStore: store, key: key)) else { return nil }
-        return try? PropertyListDecoder().decode(GPTKOriginalsRecord.self, from: data)
-    }
-
-    /// Moves a flat `originals/` set, written when the store only ever backed up
-    /// one runtime, under the default runtime's key. Without this the backups of
-    /// an already-deployed default runtime are orphaned and its real Wine DLLs
-    /// can never be restored.
-    static func migrateFlatOriginals(inStore store: URL) throws {
-        let fileManager = FileManager.default
-        let originals = store.appending(path: "originals")
-        let flatRecord = originals.appending(path: "OriginalsVersion.plist")
-        guard fileManager.fileExists(atPath: flatRecord.path(percentEncoded: false)) else { return }
-
-        let destination = originalsFolder(inStore: store, key: originalsKey(for: nil))
-        if fileManager.fileExists(atPath: destination.path(percentEncoded: false)) {
-            try fileManager.removeItem(at: destination)
-        }
-        try fileManager.createDirectory(at: destination, withIntermediateDirectories: true)
-
-        for entry in try fileManager.contentsOfDirectory(atPath: originals.path(percentEncoded: false))
-            where entry != destination.lastPathComponent {
-            try fileManager.moveItem(at: originals.appending(path: entry), to: destination.appending(path: entry))
-        }
-        logger.info("Migrated flat GPTK originals under the default runtime's key")
-    }
-
-    /// Readies `key`'s originals folder for a deploy against `folder`, dropping
-    /// backups left by a previous engine: restoring those would put that
-    /// engine's DLLs into this one's tree. The stamp is written before the first
-    /// backup so an interrupted deploy still leaves originals remove will
-    /// recognise and restore.
-    private static func prepareOriginals(inStore store: URL, forLibraryFolder folder: URL, key: String) throws {
-        let fileManager = FileManager.default
-        let originals = originalsFolder(inStore: store, key: key)
-        let runtimeStamp = runtimeVersionStamp(inLibraryFolder: folder)
-
-        if originalsRecord(inStore: store, key: key)?.runtimeVersion != runtimeStamp {
-            try? fileManager.removeItem(at: originals)
-        }
-        try fileManager.createDirectory(at: originals, withIntermediateDirectories: true)
-
-        guard let runtimeStamp else { return }
-        let encoder = PropertyListEncoder()
-        encoder.outputFormat = .xml
-        try encoder.encode(GPTKOriginalsRecord(runtimeVersion: runtimeStamp))
-            .write(to: originalsRecordURL(inStore: store, key: key))
     }
 
     /// Testable seam for ``deployStoredPayload()``.
@@ -262,13 +228,17 @@ extension GPTKImporter {
             try fileManager.removeItem(at: externalDest)
         }
         try fileManager.moveItem(at: externalStaged, to: externalDest)
+        // Apple's payload is in place now, which is the only moment the bridge
+        // can be installed: it forwards into the payload's own shared dylib and
+        // has nothing to bind to before this point.
+        try installMetalFXBridge(intoLibraryFolder: folder, usingStore: store)
         // Apple's DLLs are in place now, which is the only moment the swaps can
         // be made: the runtime ships the interposers but has nothing to forward
-        // into until this point.
+        // into until this point. A payload from a build they were never
+        // validated on is deployed without them; install checks the version.
         for interposer in interposers {
             try install(interposer, intoLibraryFolder: folder)
         }
-        try installMetalFXBridge(intoLibraryFolder: folder, usingStore: store)
         try installNVAPIBridge(intoLibraryFolder: folder, usingStore: store)
         logger.info("Deployed GPTK payload into the runtime tree")
     }
@@ -306,7 +276,7 @@ extension GPTKImporter {
     /// Whether `dll` is byte-identical to the store's forwarder of the same
     /// name, so deploy never mistakes an already-deployed Apple DLL for a Wine
     /// original worth backing up and remove only deletes what it put there.
-    private static func isGPTKForwarder(_ dll: URL, matching storeLib: URL) -> Bool {
+    static func isGPTKForwarder(_ dll: URL, matching storeLib: URL) -> Bool {
         let storeDLL = storeLib.appending(path: "wine").appending(path: "x86_64-windows")
             .appending(path: dll.lastPathComponent)
         return FileManager.default.contentsEqual(
@@ -351,12 +321,12 @@ extension GPTKImporter {
         let originalsAreCurrent = originalsRecord(inStore: store, key: key)?.runtimeVersion
             == runtimeVersionStamp(inLibraryFolder: folder)
 
+        removeMetalFXBridge(fromLibraryFolder: folder, usingStore: store)
         // Apple's DLL goes back into the d3d12 slot before the loop reads it,
         // or the slot still holds the interposer, fails the byte match against
         // the store, and is skipped: the tree would keep a d3d12 that forwards
         // to a DLL this call is about to delete.
         removeVideoProcessor(fromLibraryFolder: folder, usingStore: store)
-        removeMetalFXBridge(fromLibraryFolder: folder, usingStore: store)
         removeNVAPIBridge(fromLibraryFolder: folder, usingStore: store)
 
         for name in forwarderDLLNames {
@@ -366,7 +336,9 @@ extension GPTKImporter {
             // Backups from a replaced engine: drop them and leave the tree,
             // which this store never deployed into, untouched.
             guard originalsAreCurrent else {
-                if hasBackup { try fileManager.removeItem(at: backup) }
+                if hasBackup {
+                    try fileManager.removeItem(at: backup)
+                }
                 continue
             }
 

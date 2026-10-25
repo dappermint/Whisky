@@ -50,6 +50,11 @@ struct DiagnosisHistoryView: View {
             loadHistory()
             selectedPreset = program.settings.activeWineDebugPreset ?? .normal
         }
+        // A diagnosis recorded while this page is open (the crash banner's
+        // moment) would otherwise not show until the page is reopened.
+        .onReceive(NotificationCenter.default.publisher(for: .crashDiagnosisAvailable)) { _ in
+            loadHistory()
+        }
     }
 }
 
@@ -81,6 +86,9 @@ extension DiagnosisHistoryView {
                     onAnalyzeLastRun()
                 }
                 .buttonStyle(.bordered)
+                // Analysis reads the last run's log; before the first run the
+                // button would otherwise click through to nothing.
+                .disabled(program.settings.lastLogFileURL == nil)
             }
         }
         .frame(maxWidth: .infinity)

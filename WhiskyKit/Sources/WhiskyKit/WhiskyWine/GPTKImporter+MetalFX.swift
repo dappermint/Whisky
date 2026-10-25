@@ -35,12 +35,21 @@ import os.log
 /// - Builtins are keyed by their PE export name, and this one exports as
 ///   `nvngx.dll` rather than the filename Apple ships it under.
 ///
-/// `nvapi64.dll`, the other half of ``nvidiaBridgeDLLNames``, is deployed as
-/// well: Streamline asks it about the GPU before it will call NGX at all. It is
-/// disabled per launcher helper rather than withheld, because Chromium probes
-/// for an NVIDIA GPU and answering makes it load D3DMetal and take Steam's
-/// helper process down. See ``GPTKImporter/nvidiaBridgeDLLNames`` for the
-/// measurement and `WineDLLOverrideRegistry.disablingNVAPI(in:)` for the guard.
+/// `nvapi64.dll`, the other half of ``nvidiaBridgeDLLNames``, deliberately stays
+/// out: Chromium probes for an NVIDIA GPU, and handing it one makes it load
+/// D3DMetal and take Steam's helper process down. Nothing probes for nvngx that
+/// way, so the bridge itself is safe to deploy on its own.
+///
+/// Leaving it out is not free. A title built on NVIDIA Streamline asks NVAPI
+/// about the GPU before it will consider DLSS at all, and Wine's `nvapi64`
+/// exports nothing, so Streamline decides there is no NVIDIA driver and offers
+/// no DLSS option. Those titles get the bridge and cannot reach it, with nothing
+/// in any log to say why. A title calling NGX directly is unaffected.
+///
+/// Fixing that means a real `nvapi64` for the game but not for the launcher
+/// helper, so a per-exe `AppDefaults` override rather than the environment every
+/// child inherits. Left to a follow-up, which is why frankea/Whisky#198 stays
+/// open.
 extension GPTKImporter {
     /// Apple's bridge under the name the payload ships it as.
     static let metalFXBridgeSourceName = "nvngx-on-metalfx.dll"
@@ -84,16 +93,25 @@ extension GPTKImporter {
     ///
     /// Purely additive: Wine ships no `nvngx.dll`, so unlike the forwarders there
     /// is no builtin here to back up and nothing to restore on the way out.
+    ///
+    /// A destination already matching the store is left alone, so the launch-time
+    /// ``ensureMetalFXBridgeInstalled()`` does not rewrite it every time.
+    /// Anything else is replaced, which is not the rule
+    /// ``removeMetalFXBridge(fromLibraryFolder:usingStore:)`` follows: deleting
+    /// a file someone else put there cannot be undone, and overwriting one in a
+    /// tree we manage is what repair means.
     static func installMetalFXBridge(intoLibraryFolder folder: URL, usingStore store: URL) throws {
         guard let source = metalFXBridgeSource(inStore: store) else { return }
         let fileManager = FileManager.default
         let destination = metalFXBridgePE(inLibraryFolder: folder)
         let link = metalFXBridgeUnixLink(inLibraryFolder: folder)
 
-        if fileManager.fileExists(atPath: destination.path(percentEncoded: false)) {
-            try fileManager.removeItem(at: destination)
+        if !isMetalFXBridgeInstalled(inLibraryFolder: folder, usingStore: store) {
+            if fileManager.fileExists(atPath: destination.path(percentEncoded: false)) {
+                try fileManager.removeItem(at: destination)
+            }
+            try fileManager.copyItem(at: source, to: destination)
         }
-        try fileManager.copyItem(at: source, to: destination)
 
         try fileManager.createDirectory(
             at: link.deletingLastPathComponent(), withIntermediateDirectories: true
@@ -151,36 +169,59 @@ extension GPTKImporter {
     /// Removes any builtin-marked entry, not just a copy this app wrote:
     /// `wineboot` writes its own stub for every builtin it finds, so a prefix
     /// update after the bridge was installed recreates one, and leaving that in
-    /// place would quietly defeat the opt-out. A *native* DLL is left alone —
+    /// place would quietly defeat the opt-out. A *native* DLL is left alone,
     /// that is someone's own `nvngx`, not something we or Wine put there.
     static func clearMetalFXBridgePlaceholder(inBottle bottle: URL) {
         let placeholder = bottle.appending(path: "drive_c").appending(path: "windows")
             .appending(path: "system32").appending(path: metalFXBridgeName)
         guard FileManager.default.fileExists(atPath: placeholder.path(percentEncoded: false)) else { return }
+        // A throwing `isNativePE` compares unequal to `false` and so keeps the
+        // file. Deliberate: a placeholder too short or unreadable to hold the
+        // marker is not something anyone chose to put here, and only wineboot
+        // and this app write to the name.
         guard (try? Wine.isNativePE(placeholder)) == false else { return }
         try? FileManager.default.removeItem(at: placeholder)
     }
 
-    /// Installs the bridge into every runtime that already holds the payload.
+    /// Installs the bridge into a tree that already holds the payload.
     ///
-    /// Same reason as ``ensureVideoProcessorEverywhere(bottles:)``: an install
-    /// that was set up before the bridge existed has the payload deployed and
-    /// never deploys again, so it would stay without MetalFX until it happened to
-    /// reimport. Idempotent and cheap enough to run at launch.
+    /// An install set up before the bridge existed has the payload deployed and
+    /// never deploys again, so it would stay without MetalFX until it happened
+    /// to reimport. Idempotent and cheap enough to run at launch.
     ///
     /// Deliberately seeds no prefixes. The tree-side bridge is inert on its own,
-    /// and which bottles can reach it is
-    /// ``Wine/applyMetalFX(bottle:)``'s decision at launch, from the per-bottle
-    /// setting.
+    /// and which bottles can reach it is ``Wine/applyMetalFX(bottle:backend:)``'s
+    /// decision at launch, from the per-bottle setting.
+    ///
+    /// Only a payload the store deployed gets it. One copied in by hand is its
+    /// owner's, and install replaces whatever `nvngx.dll` is there without a
+    /// backup, which would also put the store's bridge in front of another
+    /// build's dylib.
+    public static func ensureMetalFXBridgeInstalled() {
+        ensureMetalFXBridgeInstalled(inLibraryFolder: WhiskyWineInstaller.libraryFolder, usingStore: storeFolder)
+    }
+
+    /// Installs the bridge into every runtime that already holds the payload.
     public static func ensureMetalFXBridgeEverywhere() {
         for runtime in WhiskyWineInstaller.installedRuntimes().map(\.runtime) {
-            let folder = WhiskyWineInstaller.libraryFolder(for: runtime)
-            guard isDeployed(inLibraryFolder: folder) else { continue }
-            do {
-                try installMetalFXBridge(intoLibraryFolder: folder, usingStore: storeFolder)
-            } catch {
-                logger.error("Installing the MetalFX bridge failed: \(error.localizedDescription)")
-            }
+            ensureMetalFXBridgeInstalled(
+                inLibraryFolder: WhiskyWineInstaller.libraryFolder(for: runtime), usingStore: storeFolder
+            )
+        }
+    }
+
+    /// Testable seam for ``ensureMetalFXBridgeInstalled()``.
+    static func ensureMetalFXBridgeInstalled(inLibraryFolder folder: URL, usingStore store: URL) {
+        guard isDeployed(inLibraryFolder: folder),
+              isStorePayloadDeployed(inLibraryFolder: folder, usingStore: store)
+        else {
+            return
+        }
+
+        do {
+            try installMetalFXBridge(intoLibraryFolder: folder, usingStore: store)
+        } catch {
+            logger.error("Installing the MetalFX bridge failed: \(error.localizedDescription)")
         }
     }
 }

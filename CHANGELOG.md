@@ -696,6 +696,566 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   file's checksum table stopped two runtimes back, which is the copy a fresh
   install is verified against.
 
+### Fixed
+- Removing a stale native dxgi.dll from a bottle now puts Wine's own marked
+  builtin copy back in its place. Wine's loader only finds a builtin through
+  its system32 placeholder, so an empty slot made `dxgi.dll` unloadable and
+  Chromium's GPU process crash-looped into software rendering, which left
+  Steam's Store, Community and Profile pages black. It only surfaced on a
+  runtime whose wine.inf matched the bottle's update stamp, because every
+  other runtime triggers a prefix update that silently reinstalls the
+  placeholder. That is why it looked like a wine 11.16 regression (#251).
+- The Recommended graphics backend now resolves launchers (Steam and other
+  Chromium-based clients) to DXVK on every runtime. Previously a runtime
+  without the D3DMetal payload resolved launchers to DXMT, whose Direct3D
+  layer launcher UIs cannot render on, leaving the client running with no
+  window (#163).
+- Starting Steam no longer turns d3d12 off for every game in the bottle.
+  Play's Steam profile switched the whole bottle to DXVK so the client could
+  draw, which wrote DXVK's overrides, d3d12 disabled included, into the
+  bottle-wide DLL overrides every game Steam starts reads, so a DirectX 12
+  game with no DirectX 11 path, such as Red Dead Redemption 2, never came up.
+  A bottle on Recommended with the D3DMetal payload now keeps its backend,
+  and Steam's own processes (the client, its web helper, its service and the
+  in-game overlay) get DXVK through overrides of their own. Those are written
+  on every launch in a bottle with Steam, so the client draws on DXVK however
+  it starts, including from its installer, Windows autostart or a game
+  launch, and they keep your own overrides for steam.exe. Apply Launcher
+  Fixes in guided troubleshooting now does the same instead of switching the
+  bottle, and the launcher settings no longer warn that a Steam bottle needs
+  DXVK. The Rockstar Games Launcher and Social Club, which a Rockstar title
+  bought on Steam starts inside the Steam session, get DXVK with d3d12 off
+  ahead of time, from the first launch of the title. Starting Steam no longer
+  removes the MetalFX placeholder its games need. Without the payload, Play
+  still switches the bottle to DXVK, and so did earlier versions; such a
+  bottle goes back to Recommended once D3DMetal is installed, on the next
+  launch of the app or right after importing GPTK, and its graphics settings
+  say so. A DXVK you picked yourself is left alone. Bottles set to another
+  backend explicitly, Ubisoft Connect, Battle.net and the standalone Rockstar
+  Games Launcher still switch the bottle to DXVK as before (#302, fixes #276).
+
+  In WhiskyKit, `SteamLauncher.launch` gains a `clientIsRunning` parameter
+  and starts the client with `-silent` when it is not running, and
+  `Wine.runProgram` gains `descendantExecutables` and `descendantLaunchers`.
+  All default, so existing callers still compile.
+- A game started from Whisky's library, `whisky launch` or a whisky:// link
+  gets its own settings again: the game database's recommendation and what
+  you set for its executables in the Programs tab. They only reached the game
+  when the launch also started the Steam client, and then the client and its
+  helpers inherited them too. They now go into overrides of the game's own
+  executables, which also replaces a d3d12 that 3.7.0 turned off there when
+  the game was started directly. The game database no longer recommends DXVK
+  for Red Dead Redemption 2, a DirectX 12 game; that was meant for the
+  Rockstar launcher, which gets it on its own (#302).
+- Game database entries for DirectX 12 only games (including Cyberpunk
+  2077's fallback, both Horizon games, Monster Hunter Wilds, Street
+  Fighter 6 and Starfield) no longer recommend DXVK, which cannot run them
+  and kept them from starting once a game's settings applied on every Steam
+  launch. Several DirectX 11/12 games whose DXVK advice was unrelated to
+  DirectX 11 now use the recommended backend too (#302).
+- The game database entry for Train Sim World 5 now matches the game. It
+  carried the Steam App ID of an unrelated playtest, so its settings never
+  applied (#303).
+- The warnings in a bottle's launcher settings can now be translated; they
+  were shown in English in every language (#303).
+- Enabling DXVK now reconciles the bottle's dxgi.dll against the D3DMetal
+  payload. With the payload deployed, the builtin dxgi is Apple's forwarder,
+  which DXVK's d3d11 cannot pair with, so Wine's own backed-up dxgi is
+  installed into system32 with its builtin marker stripped and loads as a
+  true native PE; it is only rewritten when the copy there no longer
+  matches. A stale native dxgi.dll a previous DXMT launch left behind is
+  removed instead, from both system directories without the payload and
+  from syswow64 with it: that leftover paired DXVK's d3d11 with DXMT's
+  dxgi, which cannot create window swapchains, leaving Chromium-based
+  launchers such as Steam running with no window after a switch from DXMT
+  to DXVK, and with the payload deployed it made the Steam client crash-loop
+  (#251, #295, fixes #248).
+- A Visual C++ Runtime whose installer hung under wine after installing
+  successfully is now detected. The winetricks.log entry is only written once
+  the installer exits, so the Dependencies panel kept saying "Not Installed"
+  although the runtime was in place. When the log lacks the vcruntime verb,
+  the presence of mfc140.dll in system32 -- the x64 redist's payload on the
+  default win64 bottles, which Wine does not ship as a builtin -- now counts
+  as installed, reported with heuristic confidence; a bottle whose log
+  already says installed is never probed (#233).
+- The runtime's GPTK interposers, the D3D12 video processor and the DXGI
+  driver version fix, now only go in front of GPTK 4.0 beta 2, the build
+  they were validated on. With GPTK 3.0 they crash Red Dead Redemption 2 at
+  startup, and opening the app put the D3D12 one back into the runtime every
+  time. Other builds, later GPTK 4 releases included, go without them until
+  they have been checked. Opening the app also takes them back out of any
+  other build they are already in front of, imported or copied into the
+  runtime by hand, and puts Apple's d3d12.dll and dxgi.dll back exactly as
+  they were, so a runtime an earlier version swapped recovers on its own
+  (#276).
+- Opening the app or Settings no longer writes over a GPTK payload copied
+  into the runtime by hand. When a payload had been imported as well, launch
+  installed the imported payload's NVAPI and MetalFX bridges into the
+  runtime, setting the hand-placed nvapi64.dll aside and deleting nvngx.dll,
+  and Settings deployed the imported payload over the whole runtime. Both
+  now only act on the payload the importer deployed; importing a payload
+  still replaces one copied in by hand (#276).
+- Launcher compatibility mode no longer turns DirectX Raytracing on for every
+  game in the bottle. Its GPU spoof, which Play switches on when it sets a
+  bottle up for Steam, carried `D3DM_SUPPORT_DXR=1`, which D3DMetal reads and
+  every game inherits from the launcher. It overrode the bottle's own ray
+  tracing toggle (off by default, and not offered on Macs without hardware
+  ray tracing) and the troubleshooter's Disable Ray Tracing fix, which now
+  decide it alone (#276).
+- The terminal environment (Open in Terminal and `WhiskyCmd shellenv`) now
+  puts the real Wine bin directory on `PATH`. The path was backslash-escaped
+  inside double quotes, so the entry kept a literal backslash before the
+  space in "Application Support" and `wine64` was not found (#270, fixes
+  #269).
+- Open in Terminal and `WhiskyCmd shellenv` now export every variable with
+  its real value. Each value was escaped for a bare shell word and then put
+  inside double quotes, where most of those backslashes stay, so every `=`
+  and `;` in `WINEDLLOVERRIDES` came out with a backslash in front
+  (`d3d11\=n,b\;...`) and `WINEPREFIX` kept one before each space in a
+  custom bottle location. Values are now single-quoted, which zsh, bash and
+  fish read back verbatim (#280, fixes #267).
+- Every `WhiskyCmd run` mode now prepares the bottle and applies the
+  program's settings the way a launch from the app does. `run --command`
+  printed a command that still set `WINEDLLOVERRIDES`, which Wine reads
+  before the registry, so the per-executable overrides a launch writes were
+  shadowed for the program and everything it started. The bottle is now
+  prepared before the command is printed (DLL overrides and audio settings
+  written to its registry, graphics backend files deployed), and the command
+  clears the variable instead of setting it, so a terminal that exports the
+  bottle's overrides (after `WhiskyCmd shellenv` or Open in Terminal) cannot
+  bring the shadowing back. `run --follow` skipped the registry step
+  altogether, and every mode ignored the program's own overrides and its
+  WINEDEBUG preset. Like every launch from the app since #185,
+  `run --command` and `run --follow` now replace the bottle's DllOverrides
+  registry key with Whisky's set, which drops overrides added there with
+  winetricks or winecfg (#281, fixes #266).
+- Run in a program's context menu now applies the bottle's audio settings.
+  It skipped the audio registry sync every other launch runs, so a changed
+  driver or latency setting never reached programs started that way (#281).
+- `WhiskyCmd launch` now starts the game. It printed its confirmation and
+  exited while the launch was still preparing the bottle, which ended the
+  process after the registry import and before Steam was started. Shortcuts
+  to Steam games run the same command and failed the same way. The command
+  now confirms once Wine is running the Steam client, waits for that
+  invocation the way `run` waits for its program, and passes a failing exit
+  code through along with the path of its log (#281, part of #276).
+
+  This changes `SteamLauncher.launch` in WhiskyKit's public API: the task it
+  returns is now a `Task<Wine.ProgramRunResult, any Error>` instead of a
+  `Task<Void, Never>`, which breaks callers that await it. It ships in the
+  same major version bump as the ClickOnce removal.
+- Chinese, Japanese and Korean text in Chromium-based launchers such as
+  Steam no longer renders as boxes in a bottle where winetricks' `cjkfonts`
+  (or `fakechinese`, `fakejapanese`, `fakekorean`) installed Source Han
+  Sans. Wine's DirectWrite falls back to Noto Sans CJK for characters a font
+  lacks, and those verbs alias only the Microsoft font names, so the
+  fallback found no font. Launches, and `WhiskyCmd run --command` when it
+  prepares a printed command, now alias Noto Sans CJK SC, TC, JP and KR to
+  the matching Source Han Sans faces when the fonts are present, also in
+  bottles set up before this release, and leave any value already set alone.
+  A launcher that is already running sees the aliases only after a full
+  restart (#283, #289, fixes #278).
+- Unity 6000.3 games start again in bottles on DXVK or DXMT, which on the
+  standard engine is every bottle left on Recommended. 3.7.0 turned d3d12
+  off under both backends so that a DirectX 12 game could not hand one
+  layer's adapter to D3DMetal, but D3DMetal only sits behind d3d12 once the
+  GPTK payload is deployed. On the standard engine it is Wine's own d3d12,
+  which turns such a game away cleanly and lets it fall back to DirectX 11.
+  Turned off, the DLL could not load at all, and Unity 6000.3 loads it at
+  startup, so those games crashed with exception 0xC06D007E. d3d12 is now
+  only turned off when the payload is deployed (#285, fixes #255 and #257, part of
+  #258).
+
+  The disabled d3d12 that 3.7.0 wrote into the registry entry of a game
+  started directly is cleared the next time the game is started from
+  Whisky, directly or with Play (#302). A disabled d3d12 entry in a bottle's
+  DLL Overrides, which Presets > DXVK (D3D9/10/11) added on 3.7.0, still
+  keeps the DLL off until it is removed.
+
+  In WhiskyKit, `DLLOverrideResolver.dxvkPreset`, `dxmtPreset` and
+  `managedPreset(for:)` now take whether the runtime's builtin d3d12 is
+  D3DMetal's, which changes their public signatures.
+- The conflict warning in a DXMT bottle's DLL Overrides section now names
+  DXMT. It said every managed entry overrode a DXVK setting, whichever
+  backend had applied it (#285).
+- A launch's log holds the program's output again. Since 3.6.1 every launch
+  first imports the bottle's DLL overrides into the registry, and the import
+  opens a log of its own a few milliseconds after the launch's. Log names
+  stopped at the second and the file was written atomically, so whenever
+  the two fell in the same second, which was nearly always, the import's
+  log replaced the launch's: the program went on writing to a file no
+  longer on disk, and the log recorded for the run held only the import's
+  output. Export Diagnostic Report, View Latest Diagnosis, crash
+  classification and the run history all read that log. Log names now go
+  to the millisecond, and a log file is only ever created, never replaced
+  (#281, #286, part of #256, #260 and #261).
+- Listing a bottle's processes no longer writes a log file. The Running
+  Processes page lists them every few seconds, as does the Steam
+  integration while it watches Steam, so the logs folder filled up with
+  `tasklist.exe` logs and the newest file there was rarely the program's
+  (#286).
+- Start Guided Troubleshooting in Bottle Configuration now opens on the
+  symptom picker. It opened on a "Running checks…" spinner with nothing
+  behind it: that entry point never picked a symptom or started a check,
+  and with Skip and Back disabled, Close was the only way out. The wizard
+  now shows that spinner only while a check is running (#287, part of #261).
+- Loading a bottle no longer rewrites its Metadata.plist when nothing has
+  changed. `WhiskyCmd list` and `shellenv` (which Open in Terminal runs)
+  load every registered bottle, so each run rewrote all of their settings
+  files, and opening a terminal while the app was saving a bottle's
+  settings could overwrite that change. Apart from repairs such as
+  replacing a missing or damaged file, loading now saves only when it
+  removes a stale or duplicate pin (#288).
+- Pinning a program that is already pinned no longer adds a second pin. The
+  start menu scan did this whenever it found another shortcut to a pinned
+  program, and the duplicate was written back on every settings save and
+  removed again on the next bottle load. Every start menu shortcut to a program
+  is now cleaned up, not just the first one (#296).
+- Strings that have not been translated yet now show their English text in
+  every language instead of a raw identifier such as `library.title` or
+  `sidebar.bottles`. About 130 strings per language were affected, including
+  the Library and sidebar titles. A build step fills each compiled language
+  from English for any key it lacks, so the catalog and Crowdin stay as they
+  are (#297, fixes #291).
+- Guided Troubleshooting's "Switch to DXVK" fix (Graphics problems and
+  graphics-related launch crashes) now switches the bottle to DXVK. It used
+  to preview Recommended to Recommended and leave the bottle unchanged (#298).
+- The crash diagnosis card that resets the graphics backend is now titled
+  "Reset Graphics Backend to Recommended" and describes that reset, and it
+  no longer appears for a bottle that is already on Recommended (#298, fixes #294).
+- A Game Porting Toolkit payload imported before Whisky checked Apple's
+  signature is now checked once before it is deployed again, and again
+  whenever the stored payload changes. One that fails is no longer
+  deployed (a copy already in the engine stays until it is imported
+  again), and the Game Porting Toolkit section in Settings asks you to
+  import Apple's disk image again. Payloads copied into the engine by hand
+  are left alone (#299).
+- `whisky run` (default, `--follow` and `--command`) and `whisky launch` now
+  set up a bottle's Wine prefix before preparing the launch when it doesn't
+  have one yet, the same way the app does when it creates a bottle. A bottle
+  made with `whisky create` previously failed its first run with "The file
+  d3d11.dll doesn't exist", because preparation deployed the graphics
+  backend's files into a system32 that wasn't there. When the prefix can't be
+  set up, the error now says so instead of naming a DLL (#300, fixes #293).
+- Shift-clicking Run (Run in Terminal) now prepares the bottle before the
+  terminal opens, like `whisky run --command`: the program's DLL overrides go
+  into the bottle's registry, the graphics backend's files and any missing
+  CJK font aliases are put in place, and a missing Wine prefix is created.
+  Previously the terminal ran the program without any of that. A failure to
+  prepare the bottle or open the terminal is now reported instead of opening
+  nothing (#300).
+
+### Security
+- A bottle name, bottle path or DLL override name can no longer run
+  commands in the terminal that Open in Terminal or the Winetricks screen
+  opens. Under fish, a backslash before an apostrophe ended the quoting
+  early, because fish reads a backslash inside single quotes as an escape
+  there, and in any shell a quote with a combining mark on it was left
+  unescaped. Backslashes and quotes now always sit outside the quoted
+  text, which zsh, bash and fish all read the same way (#280).
+- Importing a Game Porting Toolkit payload now verifies the code it puts in
+  every bottle's Wine tree, the D3DMetal framework and its shared library.
+  Each must carry Apple's signature for the identifier Apple gives it, on
+  every architecture it contains, and the folders around them must match
+  Apple's layout, so nothing the loader could pick up in place of Apple's
+  files sits outside the framework's sealed version. The checks run on the
+  source and again on the copy that goes into the store, and a payload that
+  fails is refused with the offending file named. The Windows DLLs cannot
+  carry an Apple signature: the D3D forwarders keep their builtin-marker
+  check, which a hand-made DLL can also pass, and the NVIDIA bridges are
+  not checked (#265).
+
+### Changed
+- The "Auto-Enable DXVK for Launchers" toggle is now "Use DXVK for Rockstar
+  Games Launcher", with help text that says what it does: Rockstar is the
+  only launcher it applies to, and every other launcher already runs on
+  DXVK under the Recommended backend (#298, part of #260).
+
+### Removed
+- ClickOnce support. Games do not arrive as `.appref-ms` deployments, and
+  nobody spoke up for it during the window on #215. The manager, its
+  detection pass in the program scan, the badge, the context menu, the
+  .NET auto-recommendation and the `.appref-ms` file type in the run
+  panels are all gone. The ClickOnce cache filter in the executable scan
+  stays, since a prefix can still contain those artifacts.
+
+  This removes `ClickOnceManager` and the `Program(appRefURL:bottle:displayName:)`
+  initializer from WhiskyKit's public API, along with the `isClickOnce`
+  property, so the kit needs a major version bump (#215).
+- The performance presets (Balanced, Performance, Quality and Unity). No
+  runtime Whisky ships reads most of what they set, and the Unity preset's
+  `MONO_THREADS_SUSPEND=1` is an invalid value that makes Mono abort at
+  startup, the likely cause of the Unity game crashes reported in #271. If
+  you used the Performance preset with DXVK Async turned off, async shader
+  compilation now follows the DXVK Async toggle, and Metal Validation now
+  takes effect in a bottle that also had the Performance preset, which used
+  to switch it off (#272, fixes #271).
+
+  This removes `PerformancePreset` and the `performancePreset` properties of
+  `BottleSettings`, `ProgramOverrides` and `GameConfigVariantSettings` from
+  WhiskyKit's public API (#272).
+- The Force DirectX 11 toggle, from both the Graphics and Performance
+  sections of the bottle settings and from the per-program overrides. It
+  only set `D3DM_FORCE_D3D11` and `D3DM_FEATURE_LEVEL_12_0`, and neither
+  D3DMetal nor the Wine, DXVK and DXMT builds Whisky ships read them, so it
+  never changed how a game ran. The launcher presets for Rockstar, Epic,
+  Ubisoft, Paradox and EA App no longer set those keys or turn the toggle
+  on, the launcher warnings no longer recommend it, the GPU spoof drops its
+  equally unread `D3DM_FEATURE_LEVEL_*` keys, and the troubleshooter offers
+  Switch Graphics Backend for D3D12 errors instead of the old "Force
+  DirectX 11 Mode" fix. Saved bottles, program overrides and game configs
+  that still carry the setting load as before and drop it on the next save
+  (#292, fixes #284).
+
+  This removes the `forceD3D11` properties of `BottleSettings`,
+  `ProgramOverrides` and `GameConfigVariantSettings` (and the matching
+  `GameConfigVariantSettings` initializer parameter) from WhiskyKit's
+  public API, and `GPUDetection.validateSpoofingEnvironment` no longer
+  requires `D3DM_FEATURE_LEVEL_12_1` (#292).
+- Environment variables Whisky set that no runtime it ships reads. On
+  macOS 15.3 and later every launch carried eleven of them, among them
+  `D3DM_VALIDATION`, `WINE_CPU_TOPOLOGY`, `WINE_DISABLE_FAST_PATH` and the
+  `WINE_MACH_PORT_*` pair; the Rockstar, Epic, Battle.net and Paradox
+  launcher presets added `DXVK_REQUIRED`, `WINE_DISABLE_NTDLL_THREAD_REGS`,
+  `WINE_CPU_TOPOLOGY` and `WINE_DISABLE_FAST_PATH`; and GPU spoofing set
+  `GPU_VENDOR_ID`, `GPU_DEVICE_ID`, `GPU_DESCRIPTION`, `GPU_MEMORY_SIZE` and
+  `D3DM_SHADER_MODEL`. They no longer appear in the Active Environment
+  Overrides list or in launch logs. Rockstar still gets DXVK, the Paradox
+  preset now has no environment fix, and `WINEESYNC` and `WINEFSYNC` stay
+  because the v2.5.0 runtime reads them (#301).
+
+## [3.7.0] - 2026-08-29 (App)
+
+### Added
+- Failed dependency installs now record the last few KB of winetricks output
+  in dependency-history.plist alongside the exit code, so the reason for a
+  failure (such as a vc_redist checksum mismatch) is on disk next to the
+  attempt instead of lost with the process (#233).
+- Ways into a game from outside the window. A whisky:// URL scheme launches a
+  Steam game (whisky://launch?steam=<appid>) or a pinned program
+  (whisky://launch?pin=<name>), optionally scoped to a bottle. Only games
+  installed in one of your bottles and pins that exist resolve; anything
+  else is refused before Steam is involved. A URL arrival names what it is
+  about to launch and asks first, with a per-target "always allow" so the
+  dialog does not nag on repeat. The Dock menu lists your pins and launches
+  them without confirming, since you are already in the app, and dropping an
+  executable anywhere on the window opens the same run-this-file sheet as
+  opening it from Finder (#226, part of #172).
+- Discord integration, off by default and per bottle: Whisky can publish the
+  running program as your Discord presence, and games that speak Discord's
+  IPC themselves are bridged from inside the bottle to the host client, so
+  their own rich presence works (#203, fixes #201).
+- Metal 4 command encoding can be turned off for a single program. The
+  bottle-wide default stays on; a toggle in the program's settings masks it
+  for D3D12 titles whose renderer wedges on the Metal 4 submission
+  path (#230).
+- Whisky now opens onto a library of your games and pinned programs instead
+  of a sidebar of bottles. Steam games show their own store artwork from the
+  client's cache, other programs get a backdrop derived from their icon, and
+  cards show running state and last-played times. Bottles are one click away
+  under their own heading (#206).
+- D3DMetal now uses its Metal 4 command encoding backend by default, with a
+  toggle beside MetalFX for titles it does not suit. The engine ignores the
+  setting on macOS versions without Metal 4 and on Direct3D 11 titles, so it
+  is inert where it cannot help (#205).
+- MetalFX upscaling via the DLSS bridge, on by default for D3DMetal bottles.
+  The bridge DLL Apple ships was never deployed, so the MetalFX switch had
+  nothing to act on (#204). Apple's NVAPI is deployed alongside it so games
+  using NVIDIA Streamline actually offer the DLSS option, with launcher
+  helper processes exempted per executable so their embedded browsers stay
+  up (#222, fixes #198).
+- British English localization, generated from the English strings and kept
+  complete by a CI check, so systems set to English (UK) see proper spellings
+  instead of raw localization keys (#208).
+
+### Changed
+- DLSS frame generation is now its own bottle setting, off by default, instead
+  of riding on the MetalFX toggle. Both reach MetalFX through the same bridge,
+  but frame generation ended the login session on the machine it was measured
+  on: every command buffer carrying MetalFX work failed and WindowServer wedged
+  in the GPU driver until its watchdog killed it. Upscaling is unaffected and
+  stays on. Some NVIDIA Streamline titles refuse to start with frame generation
+  off, Deep Rock Galactic among them, so those need the toggle flipped for that
+  bottle (#231).
+- The per-bottle Steam library screen has been removed; the library on the
+  landing screen does that job for every bottle at once (#206).
+- The bottle action bar now emphasizes Run as its primary control, with
+  Liquid Glass styling on macOS 26 and bordered buttons on earlier
+  releases (#210).
+- The Sequoia Compatibility Mode toggle has been removed. The fixes it
+  claimed to control ship unconditionally, so the switch changed nothing in
+  either position (#216).
+
+### Fixed
+- Installing the Visual C++ Runtime no longer stalls on an invisible install
+  wizard. winetricks was run without -q, so the vc_redist installer showed
+  its setup dialog inside the prefix and waited for a click nothing in the
+  Dependencies panel prompts for -- the process never exited, the
+  winetricks.log entry was never written, and the panel stayed on "Not
+  Installed" even after a successful install. The vcrun verbs now run
+  unattended (#233).
+- Five labels showed their raw localization key instead of text: the
+  "currently using" line on the Recommended graphics card and the helper
+  under it, the detected display size next to Virtual Desktop, and the exit
+  code badge and footer in the console. Each interpolates a value, and the
+  catalog only carried the plain key.
+- "Analyze last run" and "View Latest Diagnosis" no longer open a small empty
+  sheet that only cmd-period could dismiss. The sheet was presented on a flag
+  while its content read a separate optional, which SwiftUI can evaluate
+  before the value lands; both are presented from the value itself now.
+- The bottle's "Export Diagnostic Report" and "View Latest Diagnosis" buttons
+  can enable. A recorded crash diagnosis never stamped the program's last
+  diagnosis date, so the buttons stayed disabled forever and the ZIP export
+  was unreachable.
+- The crash diagnosis sheet has a Done button. It had no control of its own,
+  so the only way out was cmd-period or closing the window behind it.
+- "Analyze last run" is disabled until the program has a run to analyze.
+  Before the first run it clicked through to nothing.
+- The crash diagnosis history on a program's page refreshes when a diagnosis
+  is recorded while the page is open, instead of waiting for it to be reopened.
+- A program pinned in a bottle created during the same session now shows up
+  in the library, the Dock menu, and the menu bar extra right away. The
+  bottle list was rebuilt at the end of creation, so the bottle page kept
+  writing to an instance the rest of the app no longer read.
+- "Terminate Wine processes when Whisky closes" (and a bottle's Always Kill
+  policy) now actually ends the bottle's processes on quit. Two things kept
+  it from working: the setting read as off until the toggle had been touched
+  once, because its default was never written to disk, and the kill was
+  queued asynchronously from the termination handler, so the app exited
+  before it ran.
+- "Audio Troubleshooting" no longer opens as a small empty sheet. Same cause
+  as the diagnosis sheet: presented on a flag while the content read a
+  separate optional; it is presented from the engine itself now.
+- The bottle's Terminal button works for bottles whose name contains a space.
+  The name was backslash-escaped inside double quotes, so the shell passed
+  the backslashes through and WhiskyCmd reported that no such bottle exists.
+- Guided troubleshooting no longer dead-ends on a findings card. Info steps
+  such as "Missing dependencies found" only carry a Continue transition, and
+  nothing followed it; the wizard now shows a Continue button there, and Skip
+  moves on as well.
+- Guided troubleshooting no longer reports "Problem resolved" when it has
+  run out of automated steps. The flows' escalation node shares the export
+  phase with the resolved node, and the wizard drew both the same way; a node
+  that hands off to the escalation fragment now shows the escalation screen
+  with its export and retry options.
+- Applying a game configuration now sets the graphics backend it lists. The
+  entry's legacy DXVK flag was written after the backend and its "off" value
+  meant "back to Recommended", so every apply ended on Recommended while the
+  toast said it had applied. The preview also no longer lists Sequoia
+  Compatibility Mode, a setting that no longer exists.
+- Export as Archive writes the bottle as `<folder>/...` entries instead of
+  its absolute path, so the archive no longer carries the user's home
+  directory name and extracts where it is opened. Neither export carries
+  AppleDouble `._` files any more.
+- The Duplicate Bottle sheet's confirm button says Duplicate, not Rename.
+- Guided troubleshooting's install step names the verb it will install after
+  a resumed session, and its game-database check sees the program the wizard
+  was opened from.
+- Cancelling a dependency install stops it. Cancel only closed the sheet,
+  leaving winetricks and the installer it had spawned running in the bottle;
+  it now cancels the install and ends the bottle's Wine processes.
+- Diagnostic exports with "Include sensitive details" off no longer carry
+  credentials in plain sight. Launch arguments were written to the archive
+  verbatim regardless of the toggle, and log redaction only rewrote the home
+  path, so a `-token` argument or a bearer token a game logged went out in a
+  ZIP the sheet described as scrubbed. Arguments and both log members now
+  have common secret shapes removed (`name=value` and `--name value` forms
+  for token, password, secret and key style names, Bearer and Basic
+  credentials, URL user info, sensitive query parameters, JWTs), and the
+  sheet says so. It is best effort by nature; the toggle still exports raw.
+- Running a winetricks verb from the bottle's Winetricks screen no longer
+  hands the bottle's path to the terminal as shell text. A bottle imported
+  from a directory whose name carried `$(...)` or backticks would have had
+  that executed in the user's terminal; the command now goes through a temp
+  script with every value quoted, the same route as the bottle's own Open
+  Terminal, which also means it follows the preferred terminal setting
+  (iTerm and Warp) instead of always opening Terminal.
+- A Windows executable whose icon declares a bitmap height of exactly
+  -2147483648 no longer crashes Whisky while the library renders its icon.
+  The parser took the absolute value of that height before checking its
+  range, and that value has no absolute value in 32 bits.
+- Installing the Visual C++ Runtime from the Dependencies panel no longer
+  fails silently on a stale checksum. Microsoft rotates the vc_redist
+  binaries in place, so the SHA256 sums pinned in the bundled winetricks go
+  stale between releases and the unattended install aborted with exit 1,
+  leaving the panel on "Not Installed" with no hint why. The vcrun verbs now
+  run with --force; every other verb keeps checksum enforcement (#233).
+- A bottle opened on a runtime from the other Wine lineage no longer starts
+  with an empty profile. Every Wine build names the profile after your Unix
+  user, but CrossOver-lineage builds (the GPTK-capable v4 engines) hardcode
+  `users/crossover` for the shell folders, so the same bottle had two profile
+  directories depending on the engine and apps in it saw whichever was empty:
+  Steam asked for a login again, saves were gone, nothing errored. Whisky now
+  makes the profile reachable under both names before every launch, and only
+  ever displaces a directory that is an untouched skeleton (moved aside inside
+  the bottle, never deleted). Two populated profiles are left alone.
+- The launch failure alert from the menu bar extra showed its raw localization
+  key as a title instead of "Couldn't launch <name>". The key was looked up
+  with the program name baked in, so it never matched the catalog entry; the
+  name is now substituted into the translated string. The same alert serves
+  Dock menu and whisky:// launches, so it would have shown far more often.
+- Games that check the graphics driver version can start. D3DMetal answers the
+  DXGI query with success and a version of -1, which reads back as
+  65535.65535.65535.65535 and fails every minimum-driver check: Helldivers 2 put
+  a modal "GPU drivers are out of date" box in front of the game. A runtime that
+  carries the DXGI interposer is now deployed with it, answering the same version
+  Wine already publishes for the adapter so the two agree. It has to be its own
+  module rather than part of the D3D12 one, because the check happens before a
+  game touches D3D12 at all. Runtimes without it are skipped as before (#227).
+- DLSS frame generation is offered to games Steam launches. Whisky steers Steam
+  itself onto DXVK so its Chromium helper paints, and it was stripping
+  CX_ACTIVE_GRAPHICS_BACKEND along with the rest of the DXVK-versus-D3DMetal
+  environment. That variable selects no backend: the only thing in the runtime
+  that reads it is win32u, and all it does there is answer the hardware
+  scheduling query. Steam's games inherit Steam's environment and run on
+  D3DMetal, since DXVK has no d3d12, so stripping it left every one of them
+  reporting that frame generation needs GPU hardware scheduling turned on. It
+  now survives the DXVK and DXMT overrides, and is still dropped for wined3d,
+  which is the one path with no D3DMetal behind it. The variable is only set
+  at all when the bottle's frame generation toggle is on (#225, #231).
+- Games that decode video themselves no longer fall back to a broken
+  half-resolution path under D3DMetal: when the runtime ships the D3D12
+  video processor interposer, it is installed automatically alongside the
+  GPTK payload (#197).
+- The Play Test Tone button now actually plays a tone. The test executable
+  was never included in any build, so the button silently did nothing and
+  then asked whether you heard it. The tone is also gentler: 600ms with
+  fades instead of a 100ms full-scale click (#209).
+- Audio settings, the console, and program overrides no longer show raw
+  localization keys in place of text on English systems: the English source
+  strings were missing from the catalog and have been restored (#207).
+- Troubleshooting fixes now do what their cards say: the crash banner's
+  buttons open the diagnosis they promise, remediation cards actually apply
+  (winetricks installs run and report their real outcome, and a fix that
+  cannot be performed is recorded as failed rather than applied), and the
+  troubleshooting wizard is localized (#213).
+- The shader cache toggle now controls the cache DXVK actually reads, and a
+  dxvk.conf file placed in the bottle root is picked up at launch. The
+  Recommended backend applies the same availability check as the backend
+  picker, so it can no longer select a backend whose payload is missing and
+  then fail at launch (#216).
+- The audio driver and latency settings now actually take effect: they are
+  written to the bottle's Wine registry at launch, which nothing did before,
+  so the options were recorded but never applied (#214).
+- Crash diagnosis now covers games that die later in a session, not just at
+  launch: classification runs when the bottle's Wine session actually ends,
+  and it reads the start of the log as well as the end, which is where
+  missing-DLL and backend failures appear (#217).
+- A D3DMetal bottle answers when a game asks whether hardware accelerated GPU
+  scheduling is available. Wine only answers that query for a caller that says
+  it is running on D3DMetal, and nothing said so, so the answer was always that
+  the feature is not implemented. Since #231 the bottle says so only when its
+  frame generation toggle is on.
+- DirectX 12 games run again in a bottle set to DXVK or DXMT. Neither ships a
+  d3d12 of its own and neither said so, so that one DLL quietly fell through to
+  D3DMetal while the rest of the stack was not. A DX12 game took its adapter
+  from one translation layer into the other and died before it drew anything,
+  with no error of its own to show for it. Both now turn d3d12 off, so such a
+  game falls back to DirectX 11 rather than half landing on something else, and
+  a bottle or a single program set to D3DMetal gets real DirectX 12 back.
+- Newly created bottles are now immediately interactive: the inFlight guard
+  is reset after a successful creation so that state-dependent actions (move,
+  export, duplicate) no longer require an app restart to become available.
 
 ## [3.6.1] - 2026-08-13 (App)
 

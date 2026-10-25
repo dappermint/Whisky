@@ -150,7 +150,7 @@ enum LauncherDiagnostics {
             config += "GPU Vendor: \(bottle.settings.gpuVendor.rawValue)\n"
         }
         config += "Network Timeout: \(bottle.settings.networkTimeout)ms\n"
-        config += "Auto-Enable DXVK: \(bottle.settings.autoEnableDXVK ? "✅ Yes" : "❌ No")\n\n"
+        config += "DXVK for Rockstar: \(bottle.settings.autoEnableDXVK ? "✅ Yes" : "❌ No")\n\n"
 
         // Graphics Settings
         config += "--- Graphics Configuration ---\n"
@@ -166,10 +166,8 @@ enum LauncherDiagnostics {
 
         // Performance Settings
         config += "--- Performance Configuration ---\n"
-        config += "Performance Preset: \(bottle.settings.performancePreset)\n"
         config += "Enhanced Sync: \(bottle.settings.enhancedSync)\n"
         config += "Shader Cache: \(bottle.settings.shaderCacheEnabled ? "✅ Enabled" : "❌ Disabled")\n"
-        config += "Force D3D11: \(bottle.settings.forceD3D11 ? "✅ Yes" : "❌ No")\n"
         config += "AVX Enabled: \(bottle.settings.avxEnabled ? "✅ Yes" : "❌ No")\n\n"
 
         return config
@@ -217,7 +215,7 @@ enum LauncherDiagnostics {
             } else {
                 validation += "⚠️  Configuration warnings for \(launcher.rawValue):\n\n"
                 for warning in warnings {
-                    validation += "  \(warning)\n"
+                    validation += "  \(warning.diagnosticMessage)\n"
                 }
                 validation += "\n"
             }

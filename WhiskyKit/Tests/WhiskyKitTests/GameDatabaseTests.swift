@@ -94,7 +94,6 @@ final class GameDatabaseTests: XCTestCase {
                 "dxvkAsync": false,
                 "enhancedSync": "esync",
                 "forceD3D11": false,
-                "performancePreset": "balanced",
                 "shaderCacheEnabled": true,
                 "avxEnabled": false,
                 "sequoiaCompatMode": false
@@ -151,8 +150,6 @@ final class GameDatabaseTests: XCTestCase {
         XCTAssertEqual(variant.settings.graphicsBackend, .d3dMetal)
         XCTAssertEqual(variant.settings.dxvk, false)
         XCTAssertEqual(variant.settings.enhancedSync, .esync)
-        XCTAssertEqual(variant.settings.forceD3D11, false)
-        XCTAssertEqual(variant.settings.performancePreset, "balanced")
         XCTAssertEqual(variant.settings.shaderCacheEnabled, true)
         XCTAssertEqual(variant.environmentVariables?["D3DM_SUPPORT_DXR"], "0")
         XCTAssertEqual(variant.winetricksVerbs, ["vcrun2022"])
@@ -218,11 +215,30 @@ final class GameDatabaseTests: XCTestCase {
         XCTAssertNil(settings.dxvk)
         XCTAssertNil(settings.dxvkAsync)
         XCTAssertNil(settings.enhancedSync)
-        XCTAssertNil(settings.forceD3D11)
-        XCTAssertNil(settings.performancePreset)
         XCTAssertNil(settings.shaderCacheEnabled)
         XCTAssertNil(settings.avxEnabled)
         XCTAssertNil(settings.sequoiaCompatMode)
+    }
+
+    func testLegacyForceD3D11KeyIsIgnoredInVariantSettings() throws {
+        // GameDB files written before the toggle was removed still carry the key.
+        let json = """
+        {
+          "graphicsBackend": "dxvk",
+          "dxvkAsync": true,
+          "forceD3D11": true,
+          "shaderCacheEnabled": false,
+          "sequoiaCompatMode": true
+        }
+        """
+
+        let data = try XCTUnwrap(json.data(using: .utf8))
+        let settings = try JSONDecoder().decode(GameConfigVariantSettings.self, from: data)
+
+        XCTAssertEqual(settings.graphicsBackend, .dxvk)
+        XCTAssertEqual(settings.dxvkAsync, true)
+        XCTAssertEqual(settings.shaderCacheEnabled, false)
+        XCTAssertEqual(settings.sequoiaCompatMode, true)
     }
 
     // MARK: - Test 6: Default Variant Returns First isDefault

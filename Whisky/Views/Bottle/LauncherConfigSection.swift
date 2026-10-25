@@ -101,11 +101,14 @@ extension LauncherConfigSection {
         // Network configuration
         networkControls
 
-        // Auto-enable DXVK
-        Toggle("Auto-Enable DXVK for Launchers", isOn: $bottle.settings.autoEnableDXVK)
+        // Rockstar is the only launcher that requires DXVK; every launcher
+        // already resolves to DXVK under the Recommended backend
+        Toggle("Use DXVK for Rockstar Games Launcher", isOn: $bottle.settings.autoEnableDXVK)
             .help("""
-            Automatically enables DXVK when launcher requires it \
-            (e.g., Rockstar Games Launcher)
+            Rockstar Games Launcher shows no window without DXVK. When it is this bottle's \
+            launcher, the bottle switches to DXVK on detection and every program in it runs \
+            with DXVK, whatever Graphics Backend is set to. Other launchers already run on DXVK \
+            under the Recommended backend.
             """)
 
         Divider()
@@ -289,7 +292,7 @@ extension LauncherConfigSection {
                         .fontWeight(.medium)
 
                     ForEach(warnings, id: \.self) { warning in
-                        Text(warning)
+                        Text(warning.localizedMessage)
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.leading, 24)
@@ -314,7 +317,7 @@ private struct ActiveEnvironmentOverrides: View {
     var body: some View {
         DisclosureGroup("Active Environment Overrides", isExpanded: $isExpanded) {
             VStack(alignment: .leading, spacing: 12) {
-                if let launcher {
+                if let launcher, !launcher.fixDetails().isEmpty {
                     launcherFixesSection(launcher)
                 }
 

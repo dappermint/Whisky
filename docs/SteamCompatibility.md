@@ -55,9 +55,19 @@ Steam is the most widely used game launcher in Whisky, but also has the most com
 
 ### Step 3: Configure for Optimal Performance
 
-1. **Enable DXVK:**
-   - Config → DXVK → Toggle **ON**
-   - Enable **DXVK Async** for smoother UI
+1. **Leave the graphics backend on Recommended:**
+   - Steam's own processes (steam.exe, steamwebhelper.exe, steamservice.exe,
+     GameOverlayUI.exe) get DXVK through per-executable overrides, so the
+     client draws on DXVK while the games it starts keep the bottle's backend.
+     With the D3DMetal payload that is D3DMetal, which DirectX 12 games need.
+   - A game started from Whisky's library, `whisky launch` or a whisky:// link
+     gets its own settings (Programs tab and game database) in per-executable
+     overrides for its executables, whichever process starts it.
+   - On a runtime without the D3DMetal payload, Play still switches the bottle
+     to DXVK. Importing GPTK later puts it back on Recommended once, with a
+     note in the bottle's graphics settings, unless you picked DXVK yourself.
+   - Setting the whole bottle to DXVK turns d3d12 off for every game when the
+     payload is deployed; only do it for a bottle whose games all want DXVK.
 
 2. **Adjust Network Timeout:**
    - Config → Launcher Compatibility
@@ -298,10 +308,9 @@ Apple changed mach port and threading behavior in macOS 15.4, breaking Wine's pr
    - macOS Version should show 15.4 or higher
    - Check for these environment variables:
      ```
-     WINE_MACH_PORT_TIMEOUT = 30000
-     WINE_MACH_PORT_RETRY_COUNT = 5
-     WINE_CPU_TOPOLOGY = 8:8
-     WINE_THREAD_PRIORITY_PRESERVE = 1
+     WINEFSYNC = 0
+     STEAM_RUNTIME = 0
+     CEF_DISABLE_SANDBOX = 1
      ```
 
 3. **Restart Bottle:**
@@ -373,14 +382,7 @@ For specific games launched through Steam:
    - DXVK Async: ON
    - DXVK HUD: OFF (unless debugging)
 
-2. **Performance Preset:**
-   - Config → Performance → "Performance" preset
-
-3. **Force D3D11:**
-   - If game supports both DX11 and DX12
-   - DX11 often more stable under Wine
-
-4. **Shader Cache:**
+2. **Shader Cache:**
    - Enable shader cache (after first run)
    - Reduces stuttering significantly
 
@@ -641,21 +643,18 @@ Detection: Automatic
 Locale: English (en_US.UTF-8)
 GPU Spoofing: Enabled (NVIDIA)
 Network Timeout: 90 seconds
-Auto-Enable DXVK: Enabled
+DXVK for Rockstar: Yes
 ```
 
-**DXVK:**
+**Graphics:**
 ```
-DXVK: Enabled
-DXVK Async: Enabled
+Backend: Recommended (Steam itself gets DXVK per executable)
 DXVK HUD: Off (or FPS for monitoring)
 ```
 
 **Performance:**
 ```
-Preset: Balanced or Performance
 Shader Cache: Enabled
-Force D3D11: Per-game basis
 ```
 
 **Wine:**

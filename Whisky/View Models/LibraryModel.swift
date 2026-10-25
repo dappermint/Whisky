@@ -343,7 +343,8 @@ extension LibraryModel {
             return existing
         }
 
-        let made = SteamClientOrchestrator(bottle: bottle)
+        let driver = AppSteamClientDriver(bottle: bottle)
+        let made = SteamClientOrchestrator(bottle: bottle, driver: driver)
         let url = bottle.url
         made.$phases
             .sink { [weak self] phases in
@@ -355,7 +356,7 @@ extension LibraryModel {
                 self?.steamRunning[url] = running
             }
             .store(in: &cancellables)
-        made.$downloadStatus
+        driver.downloadMonitor.$status
             .sink { [weak self] status in
                 self?.steamDownloads[url] = status
             }

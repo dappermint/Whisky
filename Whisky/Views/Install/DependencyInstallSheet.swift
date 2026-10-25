@@ -31,6 +31,10 @@ struct DependencyInstallSheet: View {
     @ObservedObject var bottle: Bottle
     @Environment(\.dismiss) private var dismiss
 
+    /// The running install, kept so Cancel can stop it. Dismissing the sheet
+    /// alone left winetricks and the redist installer running in the bottle.
+    @State private var installTask: Task<Void, Never>?
+
     @State private var stage: InstallStage = .info
     @State private var logLines: [String] = []
     @State private var isInstalling: Bool = false
@@ -38,7 +42,6 @@ struct DependencyInstallSheet: View {
     @State private var showLog: Bool = false
     @State private var preflightResult: PreflightResult?
     @State private var verifyStatus: DependencyInstallStatus?
-    @State private var installTask: Task<Void, Never>?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -52,7 +55,7 @@ struct DependencyInstallSheet: View {
         // invisibly and a reopened sheet races a second copy against the
         // same prefix.
         .onDisappear {
-            installTask?.cancel()
+            cancelInstall()
         }
     }
 }
@@ -345,6 +348,7 @@ extension DependencyInstallSheet {
         HStack {
             if stage != .verify {
                 Button("Cancel") {
+                    cancelInstall()
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
@@ -425,9 +429,9 @@ extension DependencyInstallSheet {
                 }
             }
 
-            // A cancelled install has no result worth recording: the sheet is
-            // gone, and a history entry for it would say the attempt ran.
-            if Task.isCancelled { return }
+            // Cancelled: the sheet is gone and the processes are being killed;
+            // there is nothing to verify or record.
+            guard !Task.isCancelled else { return }
 
             let result: InstallResult = if hadError {
                 .error("One or more verbs failed")
@@ -455,6 +459,17 @@ extension DependencyInstallSheet {
             }
             await saveInstallAttempt(verified ? .success : result)
         }
+    }
+
+    /// Stops a running install. Cancelling the task terminates winetricks
+    /// through the stream, and the bottle's wine processes are killed so the
+    /// redist installer it spawned does not keep running headless.
+    private func cancelInstall() {
+        guard isInstalling else { return }
+        installTask?.cancel()
+        installTask = nil
+        isInstalling = false
+        Wine.killBottle(bottle: bottle)
     }
 
     private func runVerification() async {
