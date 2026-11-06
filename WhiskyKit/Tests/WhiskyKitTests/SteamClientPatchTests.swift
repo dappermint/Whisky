@@ -148,31 +148,63 @@ struct SteamClientPatchGateTests {
 struct SteamClientPatchInterfaceTests {
     /// The bundle is minified, so the names change between builds while the
     /// comparison does not.
-    @Test("Finds the gate whatever the minifier called things")
+    @Test("Finds the gate whatever the minifier called things or however it ordered them")
     func findsTheInterfaceGate() throws {
-        for source in [
-            #"...,function C(){return"linux"==a.TS.PLATFORM},foo"#,
-            #"...,function qZ$(){return"linux"==_x9.TS.PLATFORM},foo"#
+        for (source, name) in [
+            (#"...,function C(){return"linux"==a.TS.PLATFORM},foo"#, "C"),
+            (#"...,function qZ$(){return"linux"==_x9.TS.PLATFORM},foo"#, "qZ$"),
+            (#"...,function $(){return a.TS.PLATFORM=="linux"},foo"#, "$")
         ] {
-            let range = try #require(SteamClientPatch.interfaceGateRange(in: source))
-            #expect(source[range].hasSuffix(".TS.PLATFORM}"))
+            let gate = try #require(SteamClientPatch.interfaceGate(in: source))
+            #expect(source[gate.range].hasPrefix("function \(name)()"))
+            #expect(source[gate.range].hasSuffix("}"))
+            #expect(gate.name == name)
         }
     }
 
     @Test("A bundle with no such check is left alone")
     func findsNothingWhenAbsent() {
-        #expect(SteamClientPatch.interfaceGateRange(in: "function C(){return!0}") == nil)
-        #expect(SteamClientPatch.interfaceGateRange(in: "") == nil)
+        #expect(SteamClientPatch.interfaceGate(in: "function C(){return!0}") == nil)
+        #expect(SteamClientPatch.interfaceGate(in: "function $(){return!0/*whisky*/}") == nil)
+        #expect(SteamClientPatch.interfaceGate(in: #"function _(){return a.TS.PLATFORM=="macos"}"#) == nil)
+        #expect(SteamClientPatch.interfaceGate(in: "") == nil)
     }
 
-    @Test("Patching replaces only the check")
+    /// Every caller refers to the function by name, so writing a different
+    /// one leaves them pointing at nothing and the interface stops loading.
+    @Test("Patching replaces only the check and keeps its name")
     func replacesOnlyTheCheck() throws {
-        let source = #"a=1,function C(){return"linux"==a.TS.PLATFORM},b=2"#
-        let range = try #require(SteamClientPatch.interfaceGateRange(in: source))
+        let source = #"a=1,function $(){return a.TS.PLATFORM=="linux"},b=2"#
+        let gate = try #require(SteamClientPatch.interfaceGate(in: source))
 
-        let patched = source.replacingCharacters(in: range, with: SteamClientPatch.openedInterfaceGate)
+        let patched = source.replacingCharacters(
+            in: gate.range, with: SteamClientPatch.openedInterfaceGate(named: gate.name)
+        )
 
-        #expect(patched == "a=1,function C(){return!0},b=2")
+        #expect(patched == "a=1,function $(){return!0/*whisky*/},b=2")
+        #expect(SteamClientPatch.isInterfaceOpened(patched))
+    }
+
+    @Test("Reads its own patch back, and the one earlier versions wrote")
+    func readsBackAnOpenedGate() throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "ui_\(UUID().uuidString)")
+        let bundle = SteamClientPatch.interfaceBundle(steamRoot: root)
+        try FileManager.default.createDirectory(
+            at: bundle.deletingLastPathComponent(), withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let unpatched = #"a=1,function $(){return a.TS.PLATFORM=="linux"},b=2"#
+        try unpatched.write(to: bundle, atomically: true, encoding: .utf8)
+        #expect(SteamClientPatch.interfaceState(steamRoot: root) == .patchable)
+
+        try SteamClientPatch.applyInterfacePatch(steamRoot: root)
+        #expect(SteamClientPatch.interfaceState(steamRoot: root) == .patched)
+        let backup = try String(contentsOf: SteamClientPatch.backup(of: bundle), encoding: .utf8)
+        #expect(backup.contains(#"PLATFORM=="linux""#))
+
+        try "a=1,function C(){return!0},b=2".write(to: bundle, atomically: true, encoding: .utf8)
+        #expect(SteamClientPatch.interfaceState(steamRoot: root) == .patched)
     }
 }
 

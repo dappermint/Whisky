@@ -248,11 +248,14 @@ public enum SteamCompatTool {
         return FileManager.default.isWritableFile(atPath: parent)
     }
 
-    /// The command that makes the directory writable, which needs an
-    /// administrator and so is the user's to run.
-    public static func prepareCommand(for root: URL = sharedToolsDirectory) -> String {
-        let path = root.path(percentEncoded: false)
-        return "sudo mkdir -p \(path) && sudo chown -R \"$(whoami)\" \(path)"
+    /// Makes the directory writable; needs an administrator. The owner is
+    /// named, not `whoami`, since behind the password prompt it runs as root.
+    public static func prepareCommand(
+        for root: URL = sharedToolsDirectory, owner: String = NSUserName(), sudo: Bool = true
+    ) -> String {
+        let path = shellQuoted(root.path(percentEncoded: false))
+        let prefix = sudo ? "sudo " : ""
+        return "\(prefix)mkdir -p \(path) && \(prefix)chown -R \(shellQuoted(owner)) \(path)"
     }
 
     /// Whether the tool is installed and its runner is executable.
