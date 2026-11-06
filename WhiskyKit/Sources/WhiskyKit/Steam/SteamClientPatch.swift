@@ -174,8 +174,8 @@ public enum SteamClientPatch {
     static func interfaceState(steamRoot: URL) -> PartState {
         guard let source = try? String(contentsOf: interfaceBundle(steamRoot: steamRoot), encoding: .utf8)
         else { return .unrecognised }
-        if source.contains(Self.openedInterfaceGate) { return .patched }
-        return interfaceGateRange(in: source) != nil ? .patchable : .unrecognised
+        if interfaceGate(in: source) != nil { return .patchable }
+        return isInterfaceOpened(source) ? .patched : .unrecognised
     }
 
     // MARK: - Applying
@@ -232,14 +232,14 @@ public enum SteamClientPatch {
         let target = interfaceBundle(steamRoot: steamRoot)
         guard let source = try? String(contentsOf: target, encoding: .utf8)
         else { throw SteamClientPatchError.notFound(.interface) }
-        if source.contains(openedInterfaceGate) { return }
-        guard let range = interfaceGateRange(in: source) else {
+        guard let gate = interfaceGate(in: source) else {
+            if isInterfaceOpened(source) { return }
             throw SteamClientPatchError.notFound(.interface)
         }
 
         try refreshBackup(of: target)
 
-        try source.replacingCharacters(in: range, with: openedInterfaceGate)
+        try source.replacingCharacters(in: gate.range, with: openedInterfaceGate(named: gate.name))
             .write(to: target, atomically: true, encoding: .utf8)
     }
 
@@ -331,27 +331,6 @@ public enum SteamClientPatch {
             }
         }
         return nil
-    }
-
-    // MARK: - The interface's gate
-
-    /// What the gate is replaced with, and how an already-patched bundle is
-    /// recognised.
-    static let openedInterfaceGate = "function C(){return!0}"
-
-    /// Finds the check that hides the Compatibility pages.
-    ///
-    /// Matched by shape rather than exact text: the bundle is minified, so the
-    /// function and module names change between builds while the comparison
-    /// does not.
-    static func interfaceGateRange(in source: String) -> Range<String.Index>? {
-        let pattern = #"function [A-Za-z_$][\w$]*\(\)\{return"linux"==[A-Za-z_$][\w$]*\.TS\.PLATFORM\}"#
-        guard let regex = try? NSRegularExpression(pattern: pattern),
-              let match = regex.firstMatch(
-                  in: source, range: NSRange(source.startIndex ..< source.endIndex, in: source)
-              )
-        else { return nil }
-        return Range(match.range, in: source)
     }
 
     // MARK: - Signing
