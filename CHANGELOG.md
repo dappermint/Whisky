@@ -206,6 +206,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   generation after the bottle turned it off.
 
 ### Fixed
+- Turn On Compatibility Tools works with the current macOS Steam client again.
+  It now writes the check that hides the Compatibility pages as
+  `function $(){return a.TS.PLATFORM=="linux"}`, the other way round from before,
+  so Whisky reported the interface as unrecognised. The patch now matches either
+  order and keeps the function's own name: it used to always write `function C`,
+  which only worked while the minifier happened to pick `C`.
 - Play in the macOS Steam client no longer does nothing when the game is mapped
   to a compatibility tool that has since been renamed. A runtime update renames
   its tool, the old mapping stayed in `config.vdf`, and Steam ran a runner that
