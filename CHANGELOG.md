@@ -206,6 +206,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   generation after the bottle turned it off.
 
 ### Fixed
+- An Unreal game started from the macOS Steam client shows its own name and
+  icon in the Dock. Steam starts those through a bootstrapper in the install
+  root, which opens no window and starts the real binary under
+  `<Project>/Binaries/Win64`. The identity was scoped to the bootstrapper, so
+  Ready or Not and S.T.A.L.K.E.R. 2 came up as `ReadyOrNotSteam-Win64-Shipping`
+  and `Stalker2-Win64-Shipping` with the bare icon out of the executable, while
+  the composed one sat unused in the cache. The identity now follows the
+  bootstrapper to the binary it starts.
 - Turn On Compatibility Tools works with the current macOS Steam client again.
   It now writes the check that hides the Compatibility pages as
   `function $(){return a.TS.PLATFORM=="linux"}`, the other way round from before,
