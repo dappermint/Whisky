@@ -83,6 +83,32 @@ public extension SteamCompatTool {
         return diagnostic
     }
 
+    /// What moves the game's process into a bundle of its own.
+    ///
+    /// Empty when the client named no App ID or the bundle could not be
+    /// written, and a runtime that predates the variable ignores it, so
+    /// either way the launch keeps the name and icon it already had.
+    static func dockBundleEnvironment(
+        appId: Int, executable: URL, title: String?, runtime: String?
+    ) async -> [String: String] {
+        let loader = WhiskyWineInstaller.binFolder(for: runtime)
+            .appending(path: "wine64")
+            .resolvingSymlinksInPath()
+        guard appId > 0,
+              let name = DockIdentity.displayName(
+                  for: executable, title: title ?? SteamAppManifest.manifest(forAppId: appId)?.name
+              ),
+              let ntdll = DockIdentity.ntdllNear(loader)
+        else { return [:] }
+
+        let icon = await NativeAppIcon.iconFile(for: executable, steamAppId: appId)
+        guard let directory = DockIdentity.gameBundle(
+            appId: appId, displayName: name, iconFile: icon, ntdll: ntdll
+        )
+        else { return [:] }
+        return [DockIdentity.linkDirectoryKey: directory.path(percentEncoded: false)]
+    }
+
     /// Whether the prefix already names the bridge.
     ///
     /// `steam_api64.dll` reads `SteamClientDll64` out of `ActiveProcess`, loads

@@ -850,7 +850,10 @@ extension Whisky {
                 environment: SteamCompatTool.passthroughEnvironment()
                     .merging(SteamCompatTool.overlayEnvironment()) { _, overlay in overlay }
                     .merging(program.generateEnvironment()) { steam, _ in steam }
-                    .merging(SteamCompatTool.diagnosticEnvironment()) { _, debug in debug },
+                    .merging(SteamCompatTool.diagnosticEnvironment()) { _, debug in debug }
+                    .merging(SteamCompatTool.dockBundleEnvironment(
+                        appId: appId, executable: program.url, title: plan.title, runtime: target.settings.runtime
+                    )) { current, _ in current },
                 programOverrides: plan.overrides,
                 programSettings: program.settings,
                 gameProfileEnvironment: plan.gameProfileEnvironment,

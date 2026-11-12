@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- A game started from the macOS Steam client runs from a bundle of its own,
+  kept under `Games` in Whisky's application support folder. A process with no
+  bundle has a name and an icon only while it runs, so a tile kept in the Dock
+  pointed at a loader link that started nothing. The bundle gives the game an
+  identifier, the games category and a Dock tile that can be kept: the tile
+  starts the game through the client again. It needs a runtime that reads
+  `WINE_APP_LINK_DIR`, and changes nothing on one that does not.
 - DLSS frame generation can be set per program, beside the Metal 4 override in a
   program's graphics overrides. It is the setting most likely to be right for one
   title and wrong for the next: a title that ships DLSS-G and holds is worth the

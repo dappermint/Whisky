@@ -125,6 +125,37 @@ final class DockIdentityTests: XCTestCase {
         )
     }
 
+    /// A tile kept in the Dock starts the bundle's own executable, so that has
+    /// to hand the launch back to the client, and the loader looks for ntdll
+    /// beside wherever it was exec'd from.
+    func testGameBundleCarriesWhatAProcessRunFromItNeeds() throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let ntdll = root.appending(path: "ntdll.so")
+        try Data().write(to: ntdll)
+
+        let macos = try XCTUnwrap(DockIdentity.gameBundle(
+            appId: 1_643_320, displayName: "S.T.A.L.K.E.R. 2", iconFile: nil, ntdll: ntdll, in: root
+        ))
+        let app = macos.deletingLastPathComponent().deletingLastPathComponent()
+        let info = try XCTUnwrap(NSDictionary(contentsOf: app.appending(path: "Contents/Info.plist")))
+        let launcher = macos.appending(path: "launch")
+
+        XCTAssertEqual(app.lastPathComponent, "S.T.A.L.K.E.R. 2.app")
+        XCTAssertEqual(info["CFBundleName"] as? String, "S.T.A.L.K.E.R. 2")
+        XCTAssertEqual(info["CFBundleExecutable"] as? String, "launch")
+        XCTAssertEqual((info["CFBundleIdentifier"] as? String)?.hasSuffix(".game.1643320"), true)
+        XCTAssertTrue(FileManager.default.isExecutableFile(atPath: launcher.path(percentEncoded: false)))
+        XCTAssertTrue(try String(contentsOf: launcher, encoding: .utf8).contains("steam://rungameid/1643320"))
+        XCTAssertEqual(
+            try FileManager.default.destinationOfSymbolicLink(
+                atPath: macos.appending(path: "ntdll.so").path(percentEncoded: false)
+            ),
+            ntdll.path(percentEncoded: false)
+        )
+    }
+
     func testLoaderAliasIsNilWhenTheRuntimeIsNotInstalled() {
         XCTAssertNil(
             DockIdentity.loaderAlias(displayName: "Celeste", runtime: "whisky-not-installed-0.0.0")
