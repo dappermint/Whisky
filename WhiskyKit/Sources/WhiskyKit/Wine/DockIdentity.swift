@@ -73,6 +73,32 @@ public enum DockIdentity {
         return sanitized(url.deletingPathExtension().lastPathComponent)
     }
 
+    /// The executable a program-scoped identity belongs to: the one that will
+    /// own the window, which is not always the one that was started.
+    ///
+    /// Steam starts an Unreal game through a bootstrapper in the install root.
+    /// It opens no window and starts the real binary under
+    /// `<Project>/Binaries/Win64`, so an identity scoped to the bootstrapper
+    /// names a process with no Dock tile and leaves the game showing its raw
+    /// executable. Only that layout is recognised; any other launcher keeps
+    /// its own name.
+    public static func identityExecutable(for url: URL) -> String {
+        let fileManager = FileManager.default
+        let projects = (try? fileManager.contentsOfDirectory(
+            at: url.deletingLastPathComponent(), includingPropertiesForKeys: nil
+        )) ?? []
+        let shipping = projects
+            .filter { $0.lastPathComponent != "Engine" }
+            .flatMap {
+                (try? fileManager.contentsOfDirectory(
+                    at: $0.appending(path: "Binaries/Win64"), includingPropertiesForKeys: nil
+                )) ?? []
+            }
+            .map(\.lastPathComponent)
+            .filter { $0.lowercased().hasSuffix("-shipping.exe") }
+        return shipping.count == 1 ? shipping[0] : url.lastPathComponent
+    }
+
     /// Returns a hard link to `runtime`'s loader named `displayName`, creating
     /// it on first use, for a launch to exec in the loader's place.
     ///

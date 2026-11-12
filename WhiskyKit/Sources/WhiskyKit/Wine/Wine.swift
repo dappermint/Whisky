@@ -450,7 +450,7 @@ public class Wine {
         }
         let iconFile = await NativeAppIcon.iconFile(for: url, steamAppId: appId)
         let identity = DockIdentity.environment(
-            displayName: dockName, exeName: url.lastPathComponent, iconFile: iconFile,
+            displayName: dockName, exeName: DockIdentity.identityExecutable(for: url), iconFile: iconFile,
             runtime: bottle.settings.runtime, scope: scope
         )
         let executable = DockIdentity.loaderAlias(displayName: dockName, runtime: bottle.settings.runtime)

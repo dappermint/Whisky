@@ -99,6 +99,32 @@ final class DockIdentityTests: XCTestCase {
         XCTAssertEqual(environment["WINE_APP_DISPLAY_NAME"], "Steam")
     }
 
+    /// Steam starts an Unreal game through a bootstrapper that never opens a
+    /// window, so the identity has to follow the binary it starts.
+    func testIdentityFollowsAnUnrealBootstrapperToTheGame() throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        let binaries = root.appending(path: "Stalker2/Binaries/Win64")
+        let engine = root.appending(path: "Engine/Binaries/Win64")
+        try FileManager.default.createDirectory(at: binaries, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: engine, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try Data().write(to: binaries.appending(path: "Stalker2-Win64-Shipping.exe"))
+        try Data().write(to: engine.appending(path: "CrashReportClient-Win64-Shipping.exe"))
+
+        XCTAssertEqual(
+            DockIdentity.identityExecutable(for: root.appending(path: "Stalker2.exe")),
+            "Stalker2-Win64-Shipping.exe"
+        )
+        XCTAssertEqual(
+            DockIdentity.identityExecutable(for: binaries.appending(path: "Stalker2-Win64-Shipping.exe")),
+            "Stalker2-Win64-Shipping.exe"
+        )
+        XCTAssertEqual(
+            DockIdentity.identityExecutable(for: URL(fileURLWithPath: "/nowhere/bin/helldivers2.exe")),
+            "helldivers2.exe"
+        )
+    }
+
     func testLoaderAliasIsNilWhenTheRuntimeIsNotInstalled() {
         XCTAssertNil(
             DockIdentity.loaderAlias(displayName: "Celeste", runtime: "whisky-not-installed-0.0.0")
