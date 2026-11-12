@@ -80,6 +80,21 @@ struct SteamHelperTests {
         ])
     }
 
+    /// EA titles are handed over as `steam2ea://` and the registered handler
+    /// needs the whole URL, which `.path` would cut down to `/1262560`.
+    @Test("A launcher URL reaches the helper whole")
+    func passesALauncherURLWhole() throws {
+        let url = "steam2ea://launchgame/1262560?platform=steam&theme=nfsmw"
+        let program = try #require(URL(string: url))
+        let command = try #require(SteamHelper.command(
+            program: program, args: [], workingDirectory: Self.installRoot,
+            environment: Self.session, helperURL: Self.helper
+        ))
+        let index = try #require(command.firstIndex(of: "--exec"))
+
+        #expect(command[index + 1] == url)
+    }
+
     /// Steam runs a game from its install root and not from wherever the
     /// executable sits inside it, and with the helper in between there is no
     /// longer an obvious directory to fall into.

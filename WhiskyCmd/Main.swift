@@ -793,6 +793,15 @@ extension Whisky {
                 throw DomainError("No executable was passed after --.")
             }
 
+            // EA and Ubisoft wrap some titles behind a launcher URL
+            // (`steam2ea://...`) instead of handing Steam the exe directly.
+            // URL(filePath:) would resolve that as a relative path against
+            // the working directory and mangle it, so a scheme URL parses as
+            // one instead.
+            let executableURL = executable.contains("://")
+                ? (URL(string: executable) ?? URL(filePath: executable))
+                : URL(filePath: executable)
+
             let target = try resolveTarget()
 
             // Steam resolves cloud save paths inside the prefix directory it
@@ -826,7 +835,7 @@ extension Whisky {
             // path uses. Without them a game Steam started ignores the graphics
             // backend, the overrides and everything else set against its exe,
             // and behaves differently depending on where it was launched from.
-            let program = Program(url: URL(filePath: executable), bottle: target, peFile: nil)
+            let program = Program(url: executableURL, bottle: target, peFile: nil)
 
             // The App ID is a hard identifier, so the same GameDB profile the
             // app's own launcher applies is available here for free. Without
@@ -834,13 +843,13 @@ extension Whisky {
             // that ignores its own profile.
             let plan = LaunchResolver.plan(
                 steamAppId: appId,
-                exeName: URL(filePath: executable).lastPathComponent,
+                exeName: executableURL.lastPathComponent,
                 userOverrides: program.settings.overrides
             )
             reportLaunch(plan: plan)
 
             let result = try await Wine.runProgram(
-                at: URL(filePath: executable),
+                at: executableURL,
                 args: Array(command.dropFirst()),
                 bottle: target,
                 // Steam described this session in the environment before running
@@ -867,7 +876,7 @@ extension Whisky {
                 keepAttached: true,
                 // Steam runs a game from its install root, not from wherever
                 // the executable happens to sit inside it.
-                workingDirectory: SteamCompatTool.workingDirectory(for: URL(filePath: executable))
+                workingDirectory: SteamCompatTool.workingDirectory(for: executableURL)
             )
 
             if result.exitCode != 0 {
