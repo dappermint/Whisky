@@ -864,6 +864,9 @@ extension Whisky {
                 // a sibling, and handing it the game's identity makes the
                 // engine name both after the same preloader link.
                 identityScope: .program,
+                descendantExecutables: SteamLauncher.gameExecutables(
+                    installURL: SteamCompatTool.workingDirectory(for: URL(filePath: executable)), plan: plan
+                ),
                 keepAttached: true,
                 // Steam runs a game from its install root, not from wherever
                 // the executable happens to sit inside it.
