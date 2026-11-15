@@ -100,7 +100,8 @@ public extension Wine {
     ///   entry. For anything else the variable stays, since `AppDefaults` cannot
     ///   express overrides for an executable whose name is not known.
     /// - Parameter descendantExecutables: The executable names the overrides
-    ///   belong to when they apply to descendants.
+    ///   belong to when they apply to descendants, or the processes the launched
+    ///   executable starts that need its overrides too.
     /// - Parameter descendantLaunchers: Launchers the descendants start on their
     ///   own, whose ``LauncherType/chainExecutables`` need entries ahead of time.
     /// - Parameter recommendedBackend: What `.recommended` resolves to for the
@@ -158,6 +159,9 @@ public extension Wine {
             // The launched executable needs its own entry too: AppDefaults is per
             // executable and children do not inherit it.
             scopes.add([url.lastPathComponent], own)
+            // Nor does the game a bootstrapper starts, an Unreal `-Shipping.exe`
+            // under a Steam launch, which would otherwise run on the bottle's set.
+            gamePlan = own
         }
 
         // Steam's own processes, whatever this launch is. Something other than

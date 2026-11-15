@@ -279,6 +279,27 @@ final class LauncherScopingTests {
         #expect(recorder.programScopes.contains("SocialClubHelper.exe"))
     }
 
+    @Test("A game a bootstrapper starts gets the launched game's set, not the bottle's")
+    func bootstrappedGameGetsTheGamesSet() async throws {
+        let bottle = try makeBottle(.dxvk)
+        let bootstrapper = try makeExecutable("Games/Stalker2.exe", in: bottle)
+        var plan = ProgramOverrides()
+        plan.graphicsBackend = .d3dMetal
+        let recorder = ScopeRecorder()
+
+        _ = try await Wine.prepareProgramLaunch(
+            at: bootstrapper, bottle: bottle, programOverrides: plan,
+            descendantExecutables: ["Stalker2-Win64-Shipping.exe"],
+            recommendedBackend: .d3dMetal, builtinD3D12IsD3DMetal: true,
+            overrideWriter: recorder.writer, importer: recorder.importer
+        )
+
+        let game = recorder.overrides(for: .program("Stalker2.exe"))
+        #expect(game != nil)
+        #expect(recorder.overrides(for: .program("Stalker2-Win64-Shipping.exe")) == game)
+        #expect(recorder.overrides(for: .bottle)?["d3d12"] != game?["d3d12"])
+    }
+
     // MARK: - Matrix row 9: the MetalFX placeholder
 
     @Test("Starting Steam leaves the MetalFX placeholder its games need")
