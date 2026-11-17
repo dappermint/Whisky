@@ -315,6 +315,22 @@ final class SteamGameLaunchScopingTests {
         #expect(plan.startsLaunchers == (rockstar ? [.rockstar] : []), "\(appId)")
     }
 
+    @Test("Unreal shipping executables absent from GameDB still get the game's plan")
+    func gameExecutablesIncludeTheUnrealShippingBinary() throws {
+        let bottle = try makeBottle()
+        let directory = "Games/Ready Or Not"
+        let install = bottle.url.appending(path: "drive_c/\(directory)")
+        _ = try makeExecutable("\(directory)/ReadyOrNot.exe", in: bottle)
+        _ = try makeExecutable("\(directory)/ReadyOrNot/Binaries/Win64/ReadyOrNotSteam-Win64-Shipping.exe", in: bottle)
+        _ = try makeExecutable("\(directory)/Engine/Binaries/Win64/CrashReportClient-Win64-Shipping.exe", in: bottle)
+        let plan = LaunchResolver.plan(steamAppId: 1_144_200)
+
+        let names = SteamLauncher.gameExecutables(installURL: install, plan: plan)
+
+        #expect(names.contains("ReadyOrNotSteam-Win64-Shipping.exe"))
+        #expect(!names.contains("CrashReportClient-Win64-Shipping.exe"))
+    }
+
     @Test("The game executables are the install folder's plus the GameDB's, each once")
     func gameExecutablesMergeFolderAndGameDB() throws {
         let bottle = try makeBottle()

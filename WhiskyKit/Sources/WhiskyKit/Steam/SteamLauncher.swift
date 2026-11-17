@@ -134,10 +134,11 @@ public enum SteamLauncher {
         }
     }
 
-    /// The executable names a game launch scopes the game's plan to: what the
-    /// install folder holds, then what the GameDB lists, each name once.
+    /// The executable names a game launch scopes the game's plan to: installed
+    /// executables, their Unreal shipping targets, then the GameDB, each name once.
     public static func gameExecutables(installURL: URL?, plan: LaunchPlan) -> [String] {
-        let found = installURL.map { SteamLibrary.executableURLs(under: $0).map(\.lastPathComponent) } ?? []
+        let executables = installURL.map { SteamLibrary.executableURLs(under: $0) } ?? []
+        let found = executables.flatMap { [$0.lastPathComponent, DockIdentity.identityExecutable(for: $0)] }
         var seen = Set<String>()
         return (found + plan.gameExecutables).filter { seen.insert($0.lowercased()).inserted }
     }
