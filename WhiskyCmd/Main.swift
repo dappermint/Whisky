@@ -788,13 +788,7 @@ extension Whisky {
         }
 
         @MainActor
-        private func launch() async throws {
-            guard let executable = command.first else {
-                throw DomainError("No executable was passed after --.")
-            }
-
-            let target = try resolveTarget()
-
+        private func preparePrefix(for target: Bottle) async {
             // Steam resolves cloud save paths inside the prefix directory it
             // allocated, which the game never writes to because it runs in the
             // bottle. Pointing that at the bottle is what makes Steam Cloud
@@ -821,12 +815,27 @@ extension Whisky {
                     "Could not seed the prefix for Steam: \(error.localizedDescription)\n".utf8
                 ))
             }
+        }
+
+        @MainActor
+        private func launch() async throws {
+            guard let executable = command.first else {
+                throw DomainError("No executable was passed after --.")
+            }
+
+            // Steam can hand off a launcher URL such as steam2ea:// instead of an exe.
+            let executableURL = executable.contains("://")
+                ? (URL(string: executable) ?? URL(filePath: executable))
+                : URL(filePath: executable)
+            let workingDirectory = SteamCompatTool.workingDirectory(for: executableURL)
+            let target = try resolveTarget()
+            await preparePrefix(for: target)
 
             // The per program settings are the same ones the app's own launch
             // path uses. Without them a game Steam started ignores the graphics
             // backend, the overrides and everything else set against its exe,
             // and behaves differently depending on where it was launched from.
-            let program = Program(url: URL(filePath: executable), bottle: target, peFile: nil)
+            let program = Program(url: executableURL, bottle: target, peFile: nil)
 
             // The App ID is a hard identifier, so the same GameDB profile the
             // app's own launcher applies is available here for free. Without
@@ -834,13 +843,13 @@ extension Whisky {
             // that ignores its own profile.
             let plan = LaunchResolver.plan(
                 steamAppId: appId,
-                exeName: URL(filePath: executable).lastPathComponent,
+                exeName: executableURL.lastPathComponent,
                 userOverrides: program.settings.overrides
             )
             reportLaunch(plan: plan)
 
             let result = try await Wine.runProgram(
-                at: URL(filePath: executable),
+                at: executableURL,
                 args: Array(command.dropFirst()),
                 bottle: target,
                 // Steam described this session in the environment before running
@@ -865,12 +874,12 @@ extension Whisky {
                 // engine name both after the same preloader link.
                 identityScope: .program,
                 descendantExecutables: SteamLauncher.gameExecutables(
-                    installURL: SteamCompatTool.workingDirectory(for: URL(filePath: executable)), plan: plan
+                    installURL: workingDirectory, plan: plan
                 ),
                 keepAttached: true,
                 // Steam runs a game from its install root, not from wherever
                 // the executable happens to sit inside it.
-                workingDirectory: SteamCompatTool.workingDirectory(for: URL(filePath: executable))
+                workingDirectory: workingDirectory
             )
 
             if result.exitCode != 0 {
