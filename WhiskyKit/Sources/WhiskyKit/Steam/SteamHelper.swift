@@ -84,10 +84,16 @@ public enum SteamHelper {
         // on nothing.
         guard program.lastPathComponent != helperURL.lastPathComponent else { return nil }
 
+        // A launcher URL (`steam2ea://...`) has no meaningful file path:
+        // `.path` strips the scheme, host and query, leaving the helper with
+        // a fragment it cannot hand to ShellExecuteW. The full string is
+        // what the registered protocol handler expects.
+        let target = program.isFileURL ? program.path(percentEncoded: false) : program.absoluteString
+
         return [
             helperURL.path(percentEncoded: false),
             "--workdir", workingDirectory.path(percentEncoded: false),
-            "--exec", program.path(percentEncoded: false)
+            "--exec", target
         ] + args
     }
 }
